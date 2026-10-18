@@ -1,0 +1,71 @@
+.game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-block: 1rem;
+}
+
+.game-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(var(--columns), 1fr);
+  gap: 0.5rem;
+  width: min(100%, 30rem);
+}
+
+.cell {
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 12%;
+  border: 3px solid var(--line);
+  border-radius: 0.75rem;
+  background: transparent;
+  cursor: pointer;
+  /* No tap highlight and no double-tap zoom: a fast second tap is a move, not a zoom. */
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.cell[aria-disabled='true'] {
+  cursor: default;
+}
+
+.cell:not([aria-disabled='true']):hover {
+  border-color: var(--text);
+}
+
+/* The winning line has a thick border as well as a colour, so it doesn't depend on colour alone. */
+.cell[data-winning] {
+  border: 6px solid var(--win);
+  padding: calc(12% - 3px);
+}
+
+.cell:focus-visible,
+.rematch:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.rematch {
+  min-height: 3rem;
+  padding: 0.5rem 1.5rem;
+  border: 0;
+  border-radius: 0.75rem;
+  background: var(--text);
+  color: var(--page);
+  font: inherit;
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
