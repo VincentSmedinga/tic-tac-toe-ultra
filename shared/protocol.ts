@@ -1,5 +1,11 @@
 import { z } from 'zod'
-import { FIELD_LIMITS, ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, isValidField } from './room.ts'
+import {
+  FIELD_LIMITS,
+  PLAYER_LIMITS,
+  ROOM_CODE_ALPHABET,
+  ROOM_CODE_LENGTH,
+  isValidField,
+} from './room.ts'
 import { SHAPE_IDS } from './shapes.ts'
 
 /** What goes over the WebSocket between a player and a room: JSON, validated on both sides. */
@@ -25,13 +31,20 @@ const nameSchema = z
 
 export const shapeSchema = z.enum(SHAPE_IDS)
 
+const fieldShape = z.object({
+  width: z.number().int().min(FIELD_LIMITS.minSide).max(FIELD_LIMITS.maxSide),
+  height: z.number().int().min(FIELD_LIMITS.minSide).max(FIELD_LIMITS.maxSide),
+  winLength: z.number().int().min(FIELD_LIMITS.minWin).max(FIELD_LIMITS.maxWin),
+})
+
 /** The field of a room, as asked for when it is made and as told to the players. */
-export const fieldSchema = z
-  .object({
-    width: z.number().int().min(FIELD_LIMITS.minSide).max(FIELD_LIMITS.maxSide),
-    height: z.number().int().min(FIELD_LIMITS.minSide).max(FIELD_LIMITS.maxSide),
-    winLength: z.number().int().min(FIELD_LIMITS.minWin).max(FIELD_LIMITS.maxWin),
-  })
+export const fieldSchema = fieldShape.refine(isValidField, {
+  message: 'odd numbers, and the row must fit on the field',
+})
+
+/** What whoever makes a room asks for: the field, and how many people may play (two by default). */
+export const roomSettingsSchema = fieldShape
+  .extend({ players: z.number().int().min(PLAYER_LIMITS.min).max(PLAYER_LIMITS.max).optional() })
   .refine(isValidField, { message: 'odd numbers, and the row must fit on the field' })
 
 export const clientMessageSchema = z.discriminatedUnion('type', [
@@ -44,6 +57,8 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
   }),
   /** Chooses a shape, or another one, until the game has started. */
   z.object({ type: z.literal('choose'), shape: shapeSchema }),
+  /** Starts the game with the people who are there: only for the one who made the room. */
+  z.object({ type: z.literal('start') }),
   z.object({
     type: z.literal('move'),
     x: z.number().int().min(0).max(99),
@@ -63,6 +78,9 @@ export const errorCodeSchema = z.enum([
   'shape-needed',
   'shape-taken',
   'shape-locked',
+  'game-started',
+  'not-host',
+  'not-enough-players',
   'game-over',
   'game-not-over',
   'not-your-turn',
@@ -146,6 +164,8 @@ export const stateMessageSchema = z.object({
   you: z.string(),
   /** The field of this room, from the moment it is made: how big, and how many in a row win. */
   field: fieldSchema,
+  /** How many seats the room has, taken or not: the first one is the one who may start the game. */
+  seats: z.number().int().min(PLAYER_LIMITS.min).max(PLAYER_LIMITS.max),
   /** Which round of the evening this is; the starting player alternates with it. */
   round: z.number().int().min(0),
   /** Who has a seat, in seat order, and whether they are connected right now. */

@@ -121,7 +121,7 @@ describe('StartScreen', () => {
       const api = fakeApi()
       render(<StartScreen api={api} />)
       await userEvent.setup().click(screen.getByRole('button', { name: 'Nieuwe kamer' }))
-      expect(api.createRoom).toHaveBeenCalledWith({ width: 3, height: 3, winLength: 3 })
+      expect(api.createRoom).toHaveBeenCalledWith({ width: 3, height: 3, winLength: 3, players: 2 })
     })
 
     it('has the field to choose in the card of the new room, and makes the room with it', async () => {
@@ -133,7 +133,50 @@ describe('StartScreen', () => {
 
       await user.click(card.getByRole('button', { name: /Groter/ }))
       await user.click(card.getByRole('button', { name: 'Nieuwe kamer' }))
-      expect(api.createRoom).toHaveBeenCalledWith({ width: 7, height: 7, winLength: 5 })
+      expect(api.createRoom).toHaveBeenCalledWith({ width: 7, height: 7, winLength: 5, players: 2 })
+    })
+
+    it('makes a room for as many people as are chosen, two being what it is', async () => {
+      const api = fakeApi()
+      const user = userEvent.setup()
+      render(<StartScreen api={api} />)
+      expect(screen.getByLabelText('Aantal spelers')).toHaveValue('2')
+      await user.selectOptions(screen.getByLabelText('Aantal spelers'), '5')
+      await user.click(screen.getByRole('button', { name: 'Nieuwe kamer' }))
+      expect(api.createRoom).toHaveBeenCalledWith({
+        width: 3,
+        height: 3,
+        winLength: 3,
+        players: 5,
+      })
+    })
+
+    it('offers two to twelve players', () => {
+      render(<StartScreen api={fakeApi()} />)
+      const options = [...screen.getByLabelText('Aantal spelers').querySelectorAll('option')]
+      expect(options.map((option) => option.value)).toEqual([
+        '2',
+        '3',
+        '4',
+        '5',
+        '6',
+        '7',
+        '8',
+        '9',
+        '10',
+        '11',
+        '12',
+      ])
+    })
+
+    it('says that a bigger field is nicer with more than two players, while the field is classic', async () => {
+      render(<StartScreen api={fakeApi()} />)
+      const user = userEvent.setup()
+      expect(screen.queryByText(/groter veld leuker/)).not.toBeInTheDocument()
+      await user.selectOptions(screen.getByLabelText('Aantal spelers'), '4')
+      expect(screen.getByText('Met meer dan twee spelers is een groter veld leuker.')).toBeVisible()
+      await user.click(screen.getByRole('button', { name: /Groter/ }))
+      expect(screen.queryByText(/groter veld leuker/)).not.toBeInTheDocument()
     })
 
     it('makes a room on a field of your own', async () => {
@@ -144,7 +187,12 @@ describe('StartScreen', () => {
       await user.selectOptions(screen.getByLabelText('Breedte'), '11')
       await user.selectOptions(screen.getByLabelText('Hoogte'), '9')
       await user.click(screen.getByRole('button', { name: 'Nieuwe kamer' }))
-      expect(api.createRoom).toHaveBeenCalledWith({ width: 11, height: 9, winLength: 5 })
+      expect(api.createRoom).toHaveBeenCalledWith({
+        width: 11,
+        height: 9,
+        winLength: 5,
+        players: 2,
+      })
     })
 
     it('says so when it does not work, and stays on the start screen', async () => {

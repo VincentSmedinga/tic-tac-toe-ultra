@@ -221,3 +221,37 @@
   border: 3px dashed var(--line);
   border-radius: 0.5rem;
 }
+
+/* "Aantal spelers" and its list side by side, as wide as what is in them, together in the middle. */
+.player-count-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.player-count-row label {
+  font-weight: 600;
+}
+
+.player-count {
+  box-sizing: border-box;
+  width: auto;
+  min-height: 3rem;
+  padding: 0 0.75rem;
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page);
+  color: inherit;
+  font: inherit;
+}
+
+.player-count:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.player-free {
+  opacity: 0.65;
+}

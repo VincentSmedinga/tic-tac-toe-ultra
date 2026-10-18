@@ -1,9 +1,16 @@
 import { useEffect, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { MAX_NAME_LENGTH, roomCodeSchema } from '../../shared/protocol.ts'
-import { CLASSIC_FIELD, ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from '../../shared/room.ts'
+import {
+  CLASSIC_FIELD,
+  DEFAULT_PLAYERS,
+  PLAYER_LIMITS,
+  ROOM_CODE_ALPHABET,
+  ROOM_CODE_LENGTH,
+} from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
 import { FieldPicker } from '../play/FieldPicker.tsx'
+import { isClassic } from '../play/field.ts'
 import type { RoomApi } from './api.ts'
 import { roomApi } from './api.ts'
 import { clearLastRoom, getLastRoom, getName, setName } from './identity.ts'
@@ -32,12 +39,13 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
     notice === 'bad-code'
       ? {
           card: 'join',
-          text: 'Dat is geen geldige code. Vraag de code opnieuw aan je tegenspeler.',
+          text: 'Dat is geen geldige code. Vraag de code opnieuw aan degene die de kamer maakte.',
         }
       : null,
   )
   const [busy, setBusy] = useState(false)
   const [field, setField] = useState<FieldSettings>(CLASSIC_FIELD)
+  const [players, setPlayers] = useState(DEFAULT_PLAYERS)
   // The room this browser last sat in, when it is still there: a way back after going to the start.
   const [resume, setResume] = useState<string | null>(null)
 
@@ -65,7 +73,7 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
     setMessage(null)
     setName(name)
     try {
-      navigate(roomPath(await api.createRoom(field)))
+      navigate(roomPath(await api.createRoom({ ...field, players })))
     } catch {
       setMessage({
         card: 'create',
@@ -150,9 +158,31 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
       <section className="choice choice-primary" aria-labelledby="create-title">
         <h2 id="create-title">Een nieuwe kamer starten</h2>
         <p>
-          Je krijgt een code die je aan je tegenspeler geeft. Jullie spelen elk op je eigen
-          apparaat.
+          Je krijgt een code die je aan de anderen geeft. Jullie spelen elk op je eigen apparaat.
         </p>
+        <div className="player-count-row">
+          <label htmlFor="player-count">Aantal spelers</label>
+          <select
+            id="player-count"
+            className="player-count"
+            value={players}
+            onChange={(event) => {
+              setPlayers(Number(event.target.value))
+            }}
+          >
+            {Array.from(
+              { length: PLAYER_LIMITS.max - PLAYER_LIMITS.min + 1 },
+              (_, index) => PLAYER_LIMITS.min + index,
+            ).map((count) => (
+              <option key={count} value={count}>
+                {count}
+              </option>
+            ))}
+          </select>
+        </div>
+        {players > 2 && isClassic(field) && (
+          <p className="field-tip">Met meer dan twee spelers is een groter veld leuker.</p>
+        )}
         <FieldPicker value={field} onChange={setField} />
         <button
           type="button"

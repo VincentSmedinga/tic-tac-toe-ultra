@@ -30,7 +30,10 @@ interface RoomPageProps {
 
 const PROBLEMS: Record<RoomProblem, string> = {
   'unknown-room': 'Deze kamer bestaat niet (meer). Controleer de code, of maak een nieuwe kamer.',
-  'room-full': 'Deze kamer zit vol: er spelen al twee mensen.',
+  'room-full': 'Deze kamer zit vol: alle plekken zijn bezet.',
+  'game-started': 'Het spel in deze kamer is al begonnen, dus je kunt niet meer meedoen.',
+  'not-host': 'Alleen wie de kamer maakte kan het spel starten.',
+  'not-enough-players': 'Er zijn minstens twee spelers nodig.',
   replaced:
     'Je speelt al in een ander venster of tabblad. Ga daar verder, of probeer het hier opnieuw.',
   unreachable: 'De kamer is nu niet te bereiken. Controleer je verbinding en probeer het opnieuw.',
@@ -62,7 +65,8 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
   const seated = state !== null
   useEffect(() => {
     if (seated) setLastRoom(code)
-    else if (problem === 'unknown-room' || problem === 'room-full') clearLastRoom()
+    else if (problem === 'unknown-room' || problem === 'room-full' || problem === 'game-started')
+      clearLastRoom()
   }, [seated, problem, code])
 
   // Remember the shape this browser plays with, so that the next room asks for it again.
@@ -120,20 +124,31 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
 
 /** The room before the game: the code, who is here, and everybody choosing their shape. */
 function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMessage) => void }) {
-  const together = state.players.length >= 2
   const mine = state.players.find((player) => player.id === state.you)
-  const other = state.players.find((player) => player.id !== state.you)
+  const host = state.players[0]
+  const isHost = host?.id === state.you
+  const free = state.seats - state.players.length
+  const everyoneChose = state.players.every((player) => player.shape !== undefined)
+  const stillChoosing = state.players.filter((player) => player.shape === undefined)
 
-  // The shapes the other player has, so that those can't be picked: with whose they are.
+  // The shapes the others have, so that those can't be picked: with whose they are.
   const taken: Partial<Record<ShapeId, string>> = {}
   for (const player of state.players) {
-    if (player.id !== state.you && player.shape) taken[player.shape] = player.name ?? 'de ander'
+    if (player.id !== state.you && player.shape) taken[player.shape] = player.name ?? 'een ander'
   }
 
+  const names = (people: StateMessage['players']) =>
+    people.map((player) => player.name ?? 'een speler').join(' en ')
   let status = 'Wachten op een tweede speler…'
-  if (together && mine?.shape === undefined) status = 'Kies een vorm om te beginnen.'
-  else if (together && other?.shape === undefined)
-    status = `${other?.name ?? 'De ander'} kiest nog een vorm…`
+  if (state.players.length >= 2) {
+    if (mine?.shape === undefined) status = 'Kies een vorm om te beginnen.'
+    else if (!everyoneChose) status = `${names(stillChoosing)} kiest nog een vorm…`
+    else if (free > 0 && isHost)
+      status = `${free === 1 ? 'Er is nog 1 plek vrij' : `Er zijn nog ${free.toString()} plekken vrij`}. Start nu, of wacht op meer spelers.`
+    else if (free > 0) status = `Wachten tot ${host?.name ?? 'de eerste speler'} het spel start…`
+  } else if (state.seats > 2) {
+    status = 'Wachten op meer spelers…'
+  }
 
   return (
     <>
@@ -141,8 +156,11 @@ function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMes
       <p className="room-code" aria-label={`Code ${state.code.split('').join(' ')}`}>
         {state.code}
       </p>
-      <p className="field-label">Veld: {fieldLabel(state.field)}</p>
-      {!together && <ShareLink code={state.code} />}
+      <p className="field-label">
+        Veld: {fieldLabel(state.field)}
+        {state.seats > 2 && ` · ${state.seats.toString()} spelers`}
+      </p>
+      {free > 0 && <ShareLink code={state.code} several={state.seats > 2} />}
       <Players state={state} />
       <ShapePicker
         label="Kies je vorm"
@@ -153,6 +171,18 @@ function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMes
         }}
       />
       <p role="status">{status}</p>
+      {isHost && free > 0 && state.players.length >= 2 && (
+        <button
+          type="button"
+          className="button button-primary"
+          disabled={!everyoneChose}
+          onClick={() => {
+            send({ type: 'start' })
+          }}
+        >
+          Start met {state.players.length.toString()} spelers
+        </button>
+      )}
     </>
   )
 }
@@ -200,15 +230,24 @@ function Players({ state }: { state: StateMessage }) {
           </div>
         )
       })}
+      {Array.from({ length: Math.max(0, state.seats - state.players.length) }, (_, index) => (
+        <div
+          key={`free-${(index + state.players.length).toString()}`}
+          className="player player-free"
+        >
+          <span className="shape-blank" aria-hidden="true" />
+          <span>Plek {(state.players.length + index + 1).toString()}: nog vrij</span>
+        </div>
+      ))}
     </div>
   )
 }
 
-function ShareLink({ code }: { code: string }) {
+function ShareLink({ code, several }: { code: string; several: boolean }) {
   return (
     <CopyLink
       link={`${window.location.origin}${roomPath(code)}`}
-      lead="Geef deze code of deze link aan je tegenspeler:"
+      lead={`Geef deze code of deze link aan ${several ? 'de andere spelers' : 'je tegenspeler'}:`}
     />
   )
 }

@@ -1,10 +1,24 @@
 import type { GameConfig, PlayerId } from './game/index.ts'
 
 /**
- * The seats of a room, in the order people join: the first to join has the first seat. A seat is
- * not a player of the game: the player is the shape that whoever sits there has chosen.
+ * How many people a room can have: from two to one for every shape. Whoever makes the room says
+ * how many seats it has, two being what it is when nobody says anything.
  */
-export const ROOM_SEATS: readonly string[] = ['X', 'O']
+export const PLAYER_LIMITS = { min: 2, max: 12 } as const
+export const DEFAULT_PLAYERS = 2
+
+/**
+ * A seat of a room, in the order people join: the first to join has the first seat, and is the one
+ * who may start the game. A seat is not a player of the game: the player is the shape that whoever
+ * sits there has chosen. The seats are named `X`, `O`, `3`, `4`, … (the first two as they always were).
+ */
+export function seatId(index: number): string {
+  return index === 0 ? 'X' : index === 1 ? 'O' : (index + 1).toString()
+}
+
+export function isValidPlayerCount(count: number): boolean {
+  return Number.isInteger(count) && count >= PLAYER_LIMITS.min && count <= PLAYER_LIMITS.max
+}
 
 /** The field of a room: how big it is and how many marks in a row win. */
 export interface FieldSettings {

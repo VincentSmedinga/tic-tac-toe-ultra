@@ -12,6 +12,8 @@ import {
   stateFor,
   upgradeRoom,
   fieldOf,
+  seatCountOf,
+  startGame,
 } from './room-logic.ts'
 import type { Change, RoomState } from './room-logic.ts'
 
@@ -526,5 +528,178 @@ describe('the field of a room', () => {
     )
     expect(finished?.config).toMatchObject(big)
     expect(finished?.result).toEqual({ kind: 'won', winner: 'star' })
+  })
+})
+
+describe('a room for more than two people', () => {
+  const TOKENS = ['a'.repeat(20), 'b'.repeat(20), 'c'.repeat(20), 'd'.repeat(20), 'e'.repeat(20)]
+  const SHAPES = ['cross', 'circle', 'star', 'heart', 'fort'] as const
+  const field = { width: 7, height: 7, winLength: 5 }
+
+  /** A room with this many seats, with this many people in it who have chosen their shapes. */
+  function seated(seats: number, people: number, chosen = people): RoomState {
+    let current = newRoom(field, seats)
+    for (let i = 0; i < people; i++) {
+      current = room(join(current, TOKENS[i] ?? '', undefined, i < chosen ? SHAPES[i] : undefined))
+    }
+    return current
+  }
+
+  it('has two seats when nothing is asked for, also for a room from before', () => {
+    expect(seatCountOf(newRoom())).toBe(2)
+    expect(seatCountOf({ round: 0, seats: [], moves: [] })).toBe(2)
+    expect(seatCountOf(newRoom(field, 5))).toBe(5)
+  })
+
+  it('seats the people in the order they come, the first two as they always were named', () => {
+    expect(seated(5, 5).seats.map(({ id }) => id)).toEqual(['X', 'O', '3', '4', '5'])
+  })
+
+  it('refuses somebody new when every seat is taken, and gives a seat back to who has one', () => {
+    const full = seated(3, 3)
+    expect(join(full, TOKENS[3] ?? '', undefined)).toEqual({ ok: false, error: 'room-full' })
+    expect(room(join(full, TOKENS[1] ?? '', undefined)).seats).toHaveLength(3)
+  })
+
+  it('waits for every seat to be taken, and for every shape, before the game starts by itself', () => {
+    expect(gameOf(seated(3, 2)).kind).toBe('waiting')
+    expect(gameOf(seated(3, 3, 2)).kind).toBe('choosing')
+    expect(gameOf(seated(3, 3)).kind).toBe('game')
+  })
+
+  it('plays with all the shapes, in the order of the seats, and each player moves in turn', () => {
+    let current = seated(3, 3)
+    const game = gameOf(current)
+    expect(game.kind === 'game' && game.game.config.players).toEqual(['cross', 'circle', 'star'])
+    current = room(play(current, TOKENS[0] ?? '', { x: 0, y: 0 }))
+    expect(play(current, TOKENS[2] ?? '', { x: 1, y: 0 })).toEqual({
+      ok: false,
+      error: 'not-your-turn',
+    })
+    current = room(play(current, TOKENS[1] ?? '', { x: 1, y: 0 }))
+    current = room(play(current, TOKENS[2] ?? '', { x: 2, y: 0 }))
+    current = room(play(current, TOKENS[0] ?? '', { x: 0, y: 1 }))
+    expect(current.moves.map(({ player }) => player)).toEqual(['cross', 'circle', 'star', 'cross'])
+  })
+
+  it('moves the starting player one seat on in every round, and back round to the first', () => {
+    const rotation = (round: number) => {
+      const current = { ...seated(3, 3), round }
+      const game = gameOf(current)
+      return game.kind === 'game' ? game.game.config.players : []
+    }
+    expect(rotation(0)).toEqual(['cross', 'circle', 'star'])
+    expect(rotation(1)).toEqual(['circle', 'star', 'cross'])
+    expect(rotation(2)).toEqual(['star', 'cross', 'circle'])
+    expect(rotation(3)).toEqual(['cross', 'circle', 'star'])
+  })
+
+  it('has a winner who is any of them, and keeps the seats and the field in a rematch', () => {
+    let current = seated(3, 3)
+    // The star (third seat) plays the top row, the others play elsewhere.
+    const turns: [number, number, number][] = [
+      [0, 0, 6],
+      [1, 1, 6],
+      [2, 0, 0],
+      [0, 2, 6],
+      [1, 3, 6],
+      [2, 1, 0],
+      [0, 4, 6],
+      [1, 5, 6],
+      [2, 2, 0],
+      [0, 6, 5],
+      [1, 6, 4],
+      [2, 3, 0],
+      [0, 5, 5],
+      [1, 5, 4],
+      [2, 4, 0],
+    ]
+    for (const [seat, x, y] of turns) current = room(play(current, TOKENS[seat] ?? '', { x, y }))
+    expect(isOver(current)).toBe(true)
+    const finished = finishedGame(current)
+    expect(finished?.result).toEqual({ kind: 'won', winner: 'star' })
+    expect(finished?.players.map(({ id }) => id)).toEqual(['cross', 'circle', 'star'])
+    expect(finished?.owners).toHaveLength(3)
+
+    const next = room(rematch(current, TOKENS[1] ?? ''))
+    expect(seatCountOf(next)).toBe(3)
+    expect(fieldOf(next)).toEqual(field)
+    expect(next.seats).toHaveLength(3)
+  })
+
+  it('tells the players how many seats there are, taken or not', () => {
+    const state = stateFor(seated(5, 2), TOKENS[0] ?? '', 'BCDF', new Set())
+    expect(state?.seats).toBe(5)
+    expect(state?.players).toHaveLength(2)
+  })
+
+  describe('starting the game with the people who are there', () => {
+    it('is for the one who made the room, with two or more people who have all chosen', () => {
+      const started = room(startGame(seated(5, 3), TOKENS[0] ?? ''))
+      expect(started.started).toBe(true)
+      const game = gameOf(started)
+      expect(game.kind === 'game' && game.game.config.players).toEqual(['cross', 'circle', 'star'])
+    })
+
+    it('is not for anybody else', () => {
+      expect(startGame(seated(5, 3), TOKENS[1] ?? '')).toEqual({ ok: false, error: 'not-host' })
+      expect(startGame(seated(5, 3), TOKENS[4] ?? '')).toEqual({ ok: false, error: 'not-joined' })
+    })
+
+    it('is not possible alone, nor while somebody has not chosen a shape', () => {
+      expect(startGame(seated(5, 1), TOKENS[0] ?? '')).toEqual({
+        ok: false,
+        error: 'not-enough-players',
+      })
+      expect(startGame(seated(5, 3, 2), TOKENS[0] ?? '')).toEqual({
+        ok: false,
+        error: 'shape-needed',
+      })
+    })
+
+    it('is not needed, and not possible, once every seat is taken and the game is on', () => {
+      expect(startGame(seated(3, 3), TOKENS[0] ?? '')).toEqual({ ok: false, error: 'game-started' })
+      expect(startGame(room(startGame(seated(5, 3), TOKENS[0] ?? '')), TOKENS[0] ?? '')).toEqual({
+        ok: false,
+        error: 'game-started',
+      })
+    })
+
+    it('closes the room to others, who are told the game has started, but not to those who sit', () => {
+      const started = room(startGame(seated(5, 3), TOKENS[0] ?? ''))
+      expect(join(started, TOKENS[3] ?? '', undefined)).toEqual({
+        ok: false,
+        error: 'game-started',
+      })
+      expect(room(join(started, TOKENS[2] ?? '', undefined)).seats).toHaveLength(3)
+    })
+
+    it('keeps the people who played in a rematch, with seats left over', () => {
+      let current = room(startGame(seated(5, 3), TOKENS[0] ?? ''))
+      expect(isOver(current)).toBe(false)
+      // Make the game end quickly: the cross plays the top row with the others elsewhere.
+      for (const [seat, x, y] of [
+        [0, 0, 0],
+        [1, 0, 6],
+        [2, 0, 5],
+        [0, 1, 0],
+        [1, 1, 6],
+        [2, 1, 5],
+        [0, 2, 0],
+        [1, 2, 6],
+        [2, 2, 5],
+        [0, 3, 0],
+        [1, 3, 6],
+        [2, 3, 5],
+        [0, 4, 0],
+      ] as const) {
+        current = room(play(current, TOKENS[seat] ?? '', { x, y }))
+      }
+      expect(isOver(current)).toBe(true)
+      const next = room(rematch(current, TOKENS[2] ?? ''))
+      expect(next.started).toBe(true)
+      expect(gameOf(next).kind).toBe('game')
+      expect(join(next, TOKENS[3] ?? '', undefined)).toEqual({ ok: false, error: 'game-started' })
+    })
   })
 })

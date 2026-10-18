@@ -309,4 +309,81 @@ describe('Game', () => {
       expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(225)
     })
   })
+
+  describe('with more than two players', () => {
+    const picker = (player: number) =>
+      within(screen.getByRole('group', { name: `Speler ${player.toString()} kiest een vorm` }))
+
+    it('has two players unless more are chosen, up to twelve, each with a picker', async () => {
+      render(<Game />)
+      expect(screen.getByLabelText('Aantal spelers')).toHaveValue('2')
+      expect(screen.getAllByRole('group', { name: /kiest een vorm$/ })).toHaveLength(2)
+
+      await userEvent.setup().selectOptions(screen.getByLabelText('Aantal spelers'), '12')
+      expect(screen.getAllByRole('group', { name: /kiest een vorm$/ })).toHaveLength(12)
+    })
+
+    it('gives every new player the first shape that is free, and takes the last ones away again', async () => {
+      render(<Game />)
+      const user = userEvent.setup()
+      await user.click(picker(1).getByRole('button', { name: 'ster' }))
+      await user.selectOptions(screen.getByLabelText('Aantal spelers'), '4')
+      expect(picker(3).getByRole('button', { name: 'kruis' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      expect(picker(4).getByRole('button', { name: 'vierkant' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+
+      await user.selectOptions(screen.getByLabelText('Aantal spelers'), '2')
+      expect(screen.getAllByRole('group', { name: /kiest een vorm$/ })).toHaveLength(2)
+      expect(picker(1).getByRole('button', { name: 'ster' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+    })
+
+    it('does not let two players have the same shape, and says whose it is', async () => {
+      render(<Game />)
+      await userEvent.setup().selectOptions(screen.getByLabelText('Aantal spelers'), '3')
+      expect(picker(3).getByRole('button', { name: 'kruis, van speler 1' })).toBeDisabled()
+      expect(picker(1).getByRole('button', { name: 'vierkant, van speler 3' })).toBeDisabled()
+    })
+
+    it('takes turns over all of them, and the first one who gets five in a row wins', async () => {
+      render(<Game />)
+      const user = userEvent.setup()
+      await user.selectOptions(screen.getByLabelText('Aantal spelers'), '3')
+      await user.click(screen.getByRole('button', { name: /Groter/ }))
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis begint')
+
+      await tap([1, 1])
+      expect(screen.getByRole('status')).toHaveTextContent('Cirkel is aan de beurt')
+      await tap([2, 1])
+      expect(screen.getByRole('status')).toHaveTextContent('Vierkant is aan de beurt')
+      await tap([3, 1])
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis is aan de beurt')
+
+      // The square (third) plays the row 3, one cell at a time, while the others play elsewhere.
+      for (const x of [2, 3, 4, 5]) await tap([1, x], [2, x], [3, x])
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis heeft gewonnen!')
+    })
+
+    it('lets the next player start every round', async () => {
+      render(<Game />)
+      const user = userEvent.setup()
+      await user.selectOptions(screen.getByLabelText('Aantal spelers'), '3')
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+      await tap([1, 1], [2, 1], [3, 1], [1, 2], [2, 2], [3, 2], [1, 3])
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis heeft gewonnen!')
+      await user.click(screen.getByRole('button', { name: 'Nog een keer' }))
+      expect(screen.getByRole('status')).toHaveTextContent('Cirkel begint')
+      await tap([1, 1])
+      await user.click(screen.getByRole('button', { name: 'Rij 2, kolom 1: leeg' }))
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis is aan de beurt')
+    })
+  })
 })
