@@ -1,7 +1,7 @@
 /**
- * The shapes a player can have: the first set, drawn by hand (docs/reference/shapes.png). A
- * player is assigned one of these; the game engine only knows the player's id. The Dutch names
- * are confirmed by the person who drew the shapes.
+ * The shapes a player can have: the sets drawn by hand (docs/reference/shapes.png has the first
+ * seven, shapes-2.png adds the other five). A player is assigned one of these; the game engine
+ * only knows the player's id. The Dutch names are chosen by the person who drew the shapes.
  */
 export const SHAPES = [
   { id: 'cross', name: 'kruis', marker: 'vivid red 4' },
@@ -11,6 +11,11 @@ export const SHAPES = [
   { id: 'star', name: 'ster', marker: 'WG8' },
   { id: 'plus', name: 'plus', marker: 'vivid pink 6' },
   { id: 'asterisk', name: 'sterretje', marker: 'ice blue 65' },
+  { id: 'oval', name: 'ovaal', marker: 'viridian 54' },
+  { id: 'heart', name: 'hart', marker: 'wine red 1' },
+  { id: 'fort', name: 'fort', marker: 'prussian blue 69' },
+  { id: 'waves', name: 'golven', marker: 'orange 23' },
+  { id: 'goldbar', name: 'goudstaaf', marker: 'lemon yellow 35' },
 ] as const
 
 export type ShapeId = (typeof SHAPES)[number]['id']
@@ -24,6 +29,23 @@ export const PATHS: Record<ShapeId, readonly string[]> = {
   star: ['M31 7 L40 25 L58 23 L44 36 L49 54 L32 44 L15 55 L20 36 L6 24 L24 25 Z'],
   plus: ['M33 6 L35 58', 'M8 26 L56 27'],
   asterisk: ['M30 7 L33 57', 'M10 16 L55 54', 'M53 13 L14 50'],
+  oval: ['M31 6 C43 6 48 20 48 33 C48 48 41 58 31 58 C21 58 16 46 16 32 C16 18 21 7 32 6'],
+  heart: [
+    'M32 56 C15 43 8 33 8 23 C8 14 15 8 22 8 C27 8 31 11 32 16 C34 11 38 8 43 8 C50 8 56 14 56 23 C56 33 49 43 32 56 Z',
+  ],
+  fort: [
+    'M8 56 L8 22 L13 22 L13 16 L19 16 L19 22 L24 22 L24 16 L30 16 L30 30 L38 30 L38 16 L44 16 L44 22 L49 22 L49 16 L56 16 L56 56 Z',
+  ],
+  waves: [
+    'M6 14 Q14 5 22 14 T38 14 T55 14',
+    'M6 30 Q14 21 22 30 T38 30 T55 30',
+    'M6 46 Q14 37 22 46 T38 46 T55 46',
+  ],
+  goldbar: [
+    'M8 30 L46 30 L46 54 L8 54 Z',
+    'M8 30 L18 18 L56 18 L46 30',
+    'M46 30 L56 18 L56 42 L46 54',
+  ],
 }
 
 export function shapeById(id: ShapeId) {
