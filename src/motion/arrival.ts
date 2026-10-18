@@ -127,3 +127,8 @@ export function arrivalPlan(seed: number, move: number, lengths: readonly number
   })
   return { variant, easing: rhythm.easing, strokes }
 }
+
+/** The moment the last stroke of a plan is done, in milliseconds from its start. */
+export function arrivalEnd(plan: ArrivalPlan): number {
+  return Math.max(0, ...plan.strokes.map(({ delay, duration }) => delay + duration))
+}

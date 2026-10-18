@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { GameConfig, GameState } from '../../shared/game/index.ts'
-import { arrivalPlan } from '../motion/arrival.ts'
+import { arrivalEnd, arrivalPlan } from '../motion/arrival.ts'
 import { resetAnimations, setAnimations } from '../motion/preference.ts'
 import { strokeLengths } from '../shapes/length.ts'
 import { Board } from './Board.tsx'
@@ -349,6 +349,62 @@ describe('writing a shape', () => {
     expect(document.querySelector('[data-arrival]')).toBeNull()
     rerender(<Board game={play(play(board(), 1, 1), 0, 0)} onPlay={vi.fn()} seed={1} />)
     expect(calls).toHaveLength(2)
+  })
+
+  describe('the win colour', () => {
+    // The cross wins the top row with the last move, at (2, 0).
+    const almost = () => {
+      let game = board()
+      for (const [x, y] of [
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 1],
+      ] as const) {
+        game = play(game, x, y)
+      }
+      return game
+    }
+    const winningCells = () =>
+      screen
+        .getAllByRole('button', { name: /^Rij / })
+        .filter((cell) => cell.hasAttribute('data-winning'))
+
+    it('waits until the winning shape is written, and then fades in', () => {
+      animated()
+      const before = almost()
+      const { rerender } = render(<Board game={before} onPlay={vi.fn()} seed={3} />)
+      const won = play(before, 2, 0)
+      rerender(<Board game={won} onPlay={vi.fn()} seed={3} />)
+      const plan = arrivalPlan(3, 4, strokeLengths('cross'))
+      expect(winningCells()).toHaveLength(3)
+      for (const cell of winningCells()) {
+        expect(cell).toHaveAttribute('data-win-late')
+        expect(cell.style.getPropertyValue('--win-delay')).toBe(`${arrivalEnd(plan).toString()}ms`)
+      }
+      expect(arrivalEnd(plan)).toBeGreaterThan(700)
+      expect(gameCss).toMatch(/\.cell\[data-win-late\]::before \{[^}]*animation: win-in/)
+      expect(gameCss).toMatch(/@keyframes win-in \{\s*from \{\s*opacity: 0;\s*\}\s*\}/)
+    })
+
+    it('is there at once on a board that is first shown won, and when nothing moves', () => {
+      const won = play(almost(), 2, 0)
+      render(<Board game={won} onPlay={vi.fn()} seed={3} />)
+      expect(winningCells()).toHaveLength(3)
+      expect(document.querySelector('[data-win-late]')).toBeNull()
+    })
+
+    it('is there at once when the animations are switched off', () => {
+      animated()
+      act(() => {
+        setAnimations(false)
+      })
+      const before = almost()
+      const { rerender } = render(<Board game={before} onPlay={vi.fn()} seed={3} />)
+      rerender(<Board game={play(before, 2, 0)} onPlay={vi.fn()} seed={3} />)
+      expect(winningCells()).toHaveLength(3)
+      expect(document.querySelector('[data-win-late]')).toBeNull()
+    })
   })
 
   it('leaves the status line and the names of the cells as they are', () => {
