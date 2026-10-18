@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { isRing } from '../shapes/closure.ts'
 import { strokeLengths } from '../shapes/length.ts'
 import { SHAPES } from '../shapes/shapes.ts'
+import type { ShapeId } from '../shapes/shapes.ts'
 import {
   ARRIVAL_VARIANTS,
   MAX_ARRIVAL_MS,
@@ -103,5 +105,55 @@ describe('arrivalPlan', () => {
       return total.reduce((sum, value) => sum + value, 0) / total.length
     })
     expect(Math.max(...ends) - Math.min(...ends)).toBeLessThan(60)
+  })
+})
+
+describe('arrivalPlan of a shape that closes on itself', () => {
+  const seeds = Array.from({ length: 200 }, (_, seed) => seed)
+  const plan = (id: ShapeId, seed: number, move = 0) =>
+    arrivalPlan(seed, move, strokeLengths(id), isRing(id))
+
+  it('writes the circle, the oval and the diamond with the clock or against it, nothing else', () => {
+    for (const id of ['circle', 'oval', 'diamond'] as const) {
+      const strokes = seeds.map((seed) => plan(id, seed).strokes)
+      // One line, from one end to the other: only the direction is chosen.
+      for (const stroke of strokes) expect(stroke).toHaveLength(1)
+      expect(new Set(strokes.map(([stroke]) => stroke?.reverse))).toEqual(new Set([true, false]))
+      expect(JSON.stringify(strokes)).not.toContain('from')
+    }
+  })
+
+  it('goes round the square from any of its four sides, either way: eight ways to start', () => {
+    const plans = seeds.map((seed) => plan('square', seed).strokes)
+    const starts = plans.map(([first]) => `${String(first?.path)}${first?.reverse ? '-' : '+'}`)
+    expect(new Set(starts).size).toBe(8)
+    for (const strokes of plans) {
+      const reverse = strokes[0]?.reverse
+      expect(strokes.every((stroke) => stroke.reverse === reverse)).toBe(true)
+      const step = reverse ? 3 : 1
+      strokes.forEach(({ path }, i) => {
+        expect(path).toBe(((strokes[0]?.path ?? 0) + i * step) % 4)
+      })
+    }
+  })
+
+  it('is the same plan for the same seed, and takes as long as any shape', () => {
+    for (const id of ['circle', 'oval', 'diamond', 'square'] as const) {
+      expect(plan(id, 7, 2)).toEqual(plan(id, 7, 2))
+      for (const seed of seeds) {
+        const first = plan(id, seed, 3)
+        expect(first.variant).not.toBe(plan(id, seed, 2).variant)
+        expect(first.strokes[0]?.delay).toBe(0)
+        expect(end(first)).toBeGreaterThanOrEqual(MIN_ARRIVAL_MS - 3)
+        expect(end(first)).toBeLessThanOrEqual(MAX_ARRIVAL_MS + 3)
+      }
+    }
+  })
+
+  it('does not change the rhythm of the square: only the order and the direction of its strokes', () => {
+    const lengths = strokeLengths('square')
+    const [bare, round] = [arrivalPlan(5, 1, lengths), arrivalPlan(5, 1, lengths, true)]
+    expect(round.variant).toBe(bare.variant)
+    expect(round.easing).toBe(bare.easing)
   })
 })
