@@ -29,6 +29,14 @@ const NINE: Stats = {
     { shape: 'heart', games: 2, won: 0, drawn: 0 },
   ],
   starter: { won: 5, lost: 2, drawn: 2 },
+  rooms: {
+    made: 5,
+    played: 4,
+    rematches: 3,
+    averageRounds: 2.25,
+    mostRounds: 6,
+    rounds: [1, 1, 1, 0, 1],
+  },
   kinds: [
     {
       width: 3,
@@ -148,6 +156,32 @@ describe('StatsPage', () => {
         'De speler die begon won 5 van de 9 spellen (56%), verloor er 2 en speelde er 2 gelijk.',
       ),
     ).toBeVisible()
+  })
+
+  it('shows the rooms and how often there was a rematch', async () => {
+    render(<StatsPage api={apiWith(NINE)} />)
+    const rooms = within(await screen.findByRole('region', { name: 'Kamers en herkansingen' }))
+    expect(
+      rooms.getByText(
+        'Er zijn 5 kamers gemaakt. In 4 daarvan is een spel uitgespeeld, en in 3 (75%) is daarna nog een keer gespeeld.',
+      ),
+    ).toBeVisible()
+    expect(rooms.getByText('Gemiddeld 2,3 rondes per kamer, de meeste 6.')).toBeVisible()
+    expect(rooms.getByText('5 of meer rondes: 1 kamer')).toBeInTheDocument()
+    expect(rooms.getByText('1 ronde: 1 kamer')).toBeInTheDocument()
+  })
+
+  it('leaves out the rooms when none were counted, and the rounds when no room finished a game', async () => {
+    const none = { ...NINE.rooms, made: 0, played: 0, rematches: 0, rounds: [0, 0, 0, 0, 0] }
+    const { unmount } = render(<StatsPage api={apiWith({ ...NINE, rooms: none })} />)
+    await screen.findByRole('region', { name: 'Samen gespeeld' })
+    expect(screen.queryByRole('region', { name: 'Kamers en herkansingen' })).not.toBeInTheDocument()
+    unmount()
+
+    render(<StatsPage api={apiWith({ ...NINE, rooms: { ...none, made: 1 } })} />)
+    const rooms = within(await screen.findByRole('region', { name: 'Kamers en herkansingen' }))
+    expect(rooms.getByText('Er is 1 kamer gemaakt.')).toBeVisible()
+    expect(rooms.queryByText(/Gemiddeld/)).not.toBeInTheDocument()
   })
 
   it('shows a heat map for each kind of game, with its busiest cells in words', async () => {
