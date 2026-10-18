@@ -25,7 +25,7 @@
 .replay-speed button {
   min-width: 3rem;
   min-height: 3rem;
-  padding: 0.25rem 0.75rem;
+  padding: 0.25rem;
   border: 3px solid var(--line);
   border-radius: 0.75rem;
   background: transparent;
@@ -40,9 +40,27 @@
   cursor: default;
 }
 
-.replay-controls .replay-play,
 .replay-speed button[aria-pressed='true'] {
   border-color: var(--text);
+}
+
+/* Play is the one button that starts something: a round, solid, bigger one in the middle of the
+   steps, so it can't be taken for a step by its shape, its size or its weight. The attribute
+   selector makes this win over how each look shapes its buttons. */
+html[data-look] .replay-controls .replay-play {
+  width: 4.5rem;
+  height: 4.5rem;
+  min-width: 0;
+  padding: 0;
+  border-color: var(--text);
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--page);
+}
+
+html[data-look] .replay-controls .replay-play svg {
+  display: block;
+  margin: auto;
 }
 
 .replay-speed button[aria-pressed='true'] {

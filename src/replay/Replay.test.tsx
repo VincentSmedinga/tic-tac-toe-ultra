@@ -34,7 +34,47 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+/** What is drawn on a button: the shape of its picture, which is all that tells two buttons apart. */
+const pictureOf = (name: string) =>
+  screen.getByRole('button', { name }).querySelector('path')?.getAttribute('d')
+
 describe('Replay', () => {
+  describe('the buttons', () => {
+    it('draws every control differently, so that play is not taken for a step', () => {
+      render(<Replay config={CLASSIC} moves={X_WINS} />)
+      const pictures = [
+        'Naar het begin',
+        'Een zet terug',
+        'Afspelen',
+        'Een zet verder',
+        'Naar het einde',
+      ].map(pictureOf)
+      expect(new Set(pictures).size).toBe(5)
+    })
+
+    it('gives play a button of its own, apart from the steps', () => {
+      render(<Replay config={CLASSIC} moves={X_WINS} />)
+      expect(screen.getByRole('button', { name: 'Afspelen' })).toHaveClass('replay-play')
+      for (const name of ['Naar het begin', 'Een zet terug', 'Een zet verder', 'Naar het einde']) {
+        expect(screen.getByRole('button', { name })).not.toHaveClass('replay-play')
+      }
+    })
+
+    it('changes the picture and the label of play while it plays', async () => {
+      const user = userEvent.setup()
+      render(<Replay config={CLASSIC} moves={X_WINS} />)
+      const triangle = pictureOf('Afspelen')
+
+      await user.click(screen.getByRole('button', { name: 'Afspelen' }))
+      const bars = pictureOf('Pauzeren')
+      expect(bars).toBeDefined()
+      expect(bars).not.toBe(triangle)
+
+      await user.click(screen.getByRole('button', { name: 'Pauzeren' }))
+      expect(pictureOf('Afspelen')).toBe(triangle)
+    })
+  })
+
   it('starts at the empty field, with the first player', () => {
     render(<Replay config={CLASSIC} moves={X_WINS} />)
     expect(status()).toHaveTextContent('Het spel begint: Kruis is de eerste')

@@ -112,6 +112,11 @@ html[data-look='playful'] .replay-speed button[aria-pressed='true'] {
   color: var(--on-accent);
 }
 
+html[data-look='playful'] .replay-controls button.replay-play {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
 html[data-look='playful'] .button-quiet {
   border-color: transparent;
   background: transparent;
