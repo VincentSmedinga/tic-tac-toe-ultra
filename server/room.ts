@@ -12,6 +12,7 @@ import type { Host } from './room-session.ts'
 
 const ROOM_KEY = 'room'
 const CODE_KEY = 'code'
+const ROOM_ID_KEY = 'room-id'
 const TOUCHED_KEY = 'touched'
 const PENDING_KEY = 'pending-archive'
 /** A room that nobody has touched for this long is deleted, with everything in it. */
@@ -38,19 +39,36 @@ export class Room extends DurableObject<Env> {
       if (pending.length > 0) this.ctx.storage.kv.put(PENDING_KEY, pending)
       else this.ctx.storage.kv.delete(PENDING_KEY)
     },
-    save: ({ id, finishedAt, game }) =>
-      this.env.ARCHIVE.getByName(ARCHIVE_NAME).save({ id, ...game }, finishedAt),
+    save: ({ id, finishedAt, game }) => {
+      const roomId = this.ctx.storage.kv.get<string>(ROOM_ID_KEY)
+      return this.env.ARCHIVE.getByName(ARCHIVE_NAME).save(
+        { id, ...(roomId === undefined ? {} : { roomId }), ...game },
+        finishedAt,
+      )
+    },
     saved: (id) => {
       this.session().archived(id)
     },
   })
 
-  /** Makes the room with this code; false when it already exists. Called by the Worker. */
-  create(code: string, field: FieldSettings, seats: number): boolean {
+  /**
+   * Makes the room with this code; false when it already exists. Called by the Worker. The room
+   * gets an id of its own (the code is used again once a room is gone), which the archive uses to
+   * count the rooms and the rounds of each.
+   */
+  async create(code: string, field: FieldSettings, seats: number): Promise<boolean> {
     if (this.exists()) return false
+    const roomId = newGameId()
     this.ctx.storage.kv.put(CODE_KEY, code)
+    this.ctx.storage.kv.put(ROOM_ID_KEY, roomId)
     this.ctx.storage.kv.put(ROOM_KEY, newRoom(field, seats))
     this.touch()
+    try {
+      await this.env.ARCHIVE.getByName(ARCHIVE_NAME).roomMade(roomId, Date.now(), seats)
+    } catch (error) {
+      // Only a count is lost: the room works without it.
+      console.error('could not note the new room in the archive', error)
+    }
     return true
   }
 

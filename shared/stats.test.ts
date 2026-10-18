@@ -219,6 +219,29 @@ describe('statistics', () => {
     ])
   })
 
+  it('count the rooms and the rounds of each, from the rooms that are known', () => {
+    expect(computeStats(GAMES, NOW, { made: 6, rounds: [1, 3, 1, 7] }).rooms).toEqual({
+      made: 6,
+      played: 4,
+      rematches: 2,
+      averageRounds: 3,
+      mostRounds: 7,
+      rounds: [2, 0, 1, 0, 1],
+    })
+  })
+
+  it('say no rooms when none were counted, and never fewer made than played', () => {
+    expect(computeStats(GAMES, NOW).rooms).toEqual({
+      made: 0,
+      played: 0,
+      rematches: 0,
+      averageRounds: 0,
+      mostRounds: 0,
+      rounds: [0, 0, 0, 0, 0],
+    })
+    expect(computeStats(GAMES, NOW, { made: 1, rounds: [2, 1] }).rooms.made).toBe(2)
+  })
+
   it('count the days of the week (Monday first) and the hours of the day, in Dutch time', () => {
     const { weekdays, hours } = computeStats(GAMES, NOW)
     expect(weekdays).toEqual([1, 0, 0, 0, 0, 1, 2])
