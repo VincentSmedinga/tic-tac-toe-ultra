@@ -1,6 +1,7 @@
-import { useReducer } from 'react'
+import { useReducer, useState } from 'react'
 import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { Cell, GameConfig, GameState } from '../../shared/game/index.ts'
+import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { Board } from './Board.tsx'
 import { nameOf, playersForRound, shapeOf } from './players.ts'
@@ -50,7 +51,20 @@ function describe(game: GameState): { player: string | null; text: string } {
 /** Two players take turns on one screen. */
 export function Game() {
   const [{ game }, dispatch] = useReducer(reducer, 0, newGame)
+  const [replaying, setReplaying] = useState(false)
   const { player, text } = describe(game)
+
+  if (replaying && game.status.kind !== 'playing') {
+    return (
+      <Replay
+        config={game.config}
+        moves={game.moves}
+        onClose={() => {
+          setReplaying(false)
+        }}
+      />
+    )
+  }
 
   return (
     <section className="game" aria-label="Boter, kaas en eieren">
@@ -65,15 +79,26 @@ export function Game() {
         }}
       />
       {game.status.kind !== 'playing' && (
-        <button
-          type="button"
-          className="rematch"
-          onClick={() => {
-            dispatch({ type: 'rematch' })
-          }}
-        >
-          Nog een keer
-        </button>
+        <div className="game-actions">
+          <button
+            type="button"
+            className="rematch"
+            onClick={() => {
+              dispatch({ type: 'rematch' })
+            }}
+          >
+            Nog een keer
+          </button>
+          <button
+            type="button"
+            className="rematch rematch-quiet"
+            onClick={() => {
+              setReplaying(true)
+            }}
+          >
+            Kijk terug
+          </button>
+        </div>
       )}
     </section>
   )
