@@ -1,35 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import tokens from '../styles/tokens.css?raw'
+import { contrast, themes } from '../styles/tokens.ts'
 import { ShapeGallery } from './ShapeGallery.tsx'
 import { ShapeIcon } from './ShapeIcon.tsx'
 import { PATHS, SHAPES } from './shapes.ts'
-
-/** The `--name: #hex` tokens of one theme. */
-function hexTokens(css: string): Record<string, string> {
-  return Object.fromEntries(
-    [...css.matchAll(/(--[\w-]+):\s*(#[0-9a-f]{6})/gi)].map(
-      ([, name = '', hex = '']): [string, string] => [name, hex],
-    ),
-  )
-}
-
-const [lightCss = '', darkCss = ''] = tokens.split('@media')
-const themes = { light: hexTokens(lightCss), dark: hexTokens(darkCss) }
-
-/** WCAG relative luminance of a #rrggbb colour. */
-function luminance(hex: string): number {
-  const [r = 0, g = 0, b = 0] = [1, 3, 5].map((i) => {
-    const channel = parseInt(hex.slice(i, i + 2), 16) / 255
-    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
-  })
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b
-}
-
-function contrast(a: string, b: string): number {
-  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x)
-  return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05)
-}
 
 describe('the set of shapes', () => {
   it('has the seven shapes of the drawn set, each once', () => {
@@ -74,6 +48,12 @@ describe('ShapeIcon', () => {
     const icon = screen.getByRole('img', { name })
     expect(icon).toHaveStyle({ stroke: `var(--shape-${id})` })
     expect(icon.querySelectorAll('path')).toHaveLength(PATHS[id].length)
+  })
+
+  it('can be left out for screen readers when the text next to it says what it is', () => {
+    const { container } = render(<ShapeIcon shape="cross" decorative />)
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+    expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('has the size it is given', () => {
