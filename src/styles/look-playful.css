@@ -79,8 +79,7 @@ html[data-look='playful'] .choice-primary {
 
 html[data-look='playful'] .button,
 html[data-look='playful'] .rematch,
-html[data-look='playful'] .replay-controls button,
-html[data-look='playful'] .replay-speed button {
+html[data-look='playful'] .replay-controls button {
   min-height: 3.5rem;
   border: 4px solid var(--edge);
   border-radius: 999px;
@@ -101,15 +100,9 @@ html[data-look='playful'] .rematch {
   color: var(--on-accent);
 }
 
-html[data-look='playful'] .rematch-quiet,
-html[data-look='playful'] .replay-speed button[aria-pressed='true'] {
+html[data-look='playful'] .rematch-quiet {
   background: var(--page);
   color: var(--ink);
-}
-
-html[data-look='playful'] .replay-speed button[aria-pressed='true'] {
-  background: var(--accent);
-  color: var(--on-accent);
 }
 
 html[data-look='playful'] .replay-controls button.replay-play {

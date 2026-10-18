@@ -82,8 +82,7 @@ legend,
 /* Touch targets of 48 px at least, and hover only where there is hover. */
 .button,
 .rematch,
-.replay-controls button,
-.replay-speed button {
+.replay-controls button {
   min-height: 3rem;
 }
 

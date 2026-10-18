@@ -142,8 +142,7 @@ html[data-look='calm'] .players {
   justify-content: center;
 }
 
-html[data-look='calm'] .replay-controls button,
-html[data-look='calm'] .replay-speed button {
+html[data-look='calm'] .replay-controls button {
   width: auto;
   min-height: 3.5rem;
   border-radius: 999px;

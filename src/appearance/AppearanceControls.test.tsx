@@ -1,6 +1,7 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readAnimations, resetAnimations } from '../motion/preference.ts'
 import { AppearanceControls } from './AppearanceControls.tsx'
 
 /** The system says dark or light, and can change its mind while the page is open. */
@@ -30,6 +31,7 @@ function systemIs(dark: boolean) {
 }
 
 afterEach(() => {
+  resetAnimations()
   window.localStorage.clear()
   delete document.documentElement.dataset.look
   delete document.documentElement.dataset.scheme
@@ -97,5 +99,22 @@ describe('AppearanceControls', () => {
     expect(document.documentElement.dataset.scheme).toBe('light')
     system.change(true)
     expect(document.documentElement.dataset.scheme).toBe('light')
+  })
+
+  it('has a switch for the animations: on until it is turned off, kept for this device', async () => {
+    render(<AppearanceControls />)
+    const group = screen.getByRole('group', { name: 'Animaties' })
+    expect(within(group).getByRole('button', { name: 'Aan' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await userEvent.setup().click(within(group).getByRole('button', { name: 'Uit' }))
+    expect(within(group).getByRole('button', { name: 'Uit' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(readAnimations()).toBe(false)
+    await userEvent.setup().click(within(group).getByRole('button', { name: 'Aan' }))
+    expect(readAnimations()).toBe(true)
   })
 })

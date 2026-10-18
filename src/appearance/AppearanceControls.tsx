@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { setAnimations, useAnimations, useReducedMotion } from '../motion/preference.ts'
 import { LOOKS, applyLook, readLook, saveLook } from './look.ts'
 import type { LookId } from './look.ts'
 import {
@@ -19,8 +20,8 @@ const SCHEMES = [
 ] as const
 
 /**
- * The two choices about how the game looks, kept per device: the theme (a look, of which there are
- * three) and light or dark. They live in the footer, which has a place of its own on every screen.
+ * The choices about how the game looks, kept per device: the theme (a look, of which there are
+ * three), light or dark, and whether the game may move. They live in the footer, which has a place of its own on every screen.
  * Light or dark has two buttons, of which the one you see is pressed; there is no "Systeem": see
  * `chooseScheme`. Both are applied as soon as the page has loaded; public/appearance.js did it
  * before the first paint.
@@ -30,6 +31,8 @@ export function AppearanceControls() {
   const [preference, setPreference] = useState<SchemePreference>(() => readPreference())
   const [systemIsDark, setSystemIsDark] = useState(() => matchMedia(DARK_QUERY).matches)
   const scheme = resolveScheme(preference, systemIsDark)
+  const animations = useAnimations()
+  const reducedMotion = useReducedMotion()
 
   useEffect(() => {
     const query = matchMedia(DARK_QUERY)
@@ -78,6 +81,24 @@ export function AppearanceControls() {
         options={SCHEMES}
         value={scheme}
         onChange={chooseLightOrDark}
+      />
+      <Segmented
+        label="Animaties"
+        options={[
+          {
+            value: 'on',
+            label: 'Aan',
+            // A phone that asks for less motion gets a fade and no moving strokes.
+            hint: reducedMotion
+              ? 'Je apparaat vraagt om minder beweging: alleen zacht verschijnen'
+              : undefined,
+          },
+          { value: 'off', label: 'Uit' },
+        ]}
+        value={animations ? 'on' : 'off'}
+        onChange={(wanted) => {
+          setAnimations(wanted === 'on')
+        }}
       />
     </section>
   )

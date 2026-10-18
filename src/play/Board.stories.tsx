@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { useState } from 'react'
 import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { GameConfig, GameState } from '../../shared/game/index.ts'
 import { Screen } from '../styleguide/Screen.tsx'
@@ -119,5 +120,41 @@ export const BigField: Story = {
       [4, 3],
     ]),
     lastMove: { x: 4, y: 3 },
+  },
+}
+
+/**
+ * A shape is written as with a marker when it is placed: tap an empty cell and watch (the next tap
+ * cuts it short). The Animaties switch in the game's footer, or the system's wish for less motion,
+ * is the same here: use the toolbar's `prefers-reduced-motion` emulation to see the gentle fade.
+ */
+export const Writing: Story = {
+  name: 'Schrijven',
+  args: { game: createGame(classic) },
+  render: function Render() {
+    const [game, setGame] = useState(() => createGame(classic))
+    const [seed, setSeed] = useState(1)
+    return (
+      <>
+        <Board
+          game={game}
+          seed={seed}
+          onPlay={({ x, y }) => {
+            if (game.status.kind !== 'playing') return
+            const result = applyMove(game, { player: game.status.next, x, y })
+            if (result.ok) setGame(result.state)
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setGame(createGame(classic))
+            setSeed((current) => current + 1)
+          }}
+        >
+          Opnieuw, op een andere manier
+        </button>
+      </>
+    )
   },
 }

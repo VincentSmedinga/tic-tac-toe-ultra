@@ -147,6 +147,19 @@
   background: color-mix(in srgb, var(--win) 50%, var(--page));
 }
 
+/* When the move that wins was just placed, its shape is still being written: the win colour fades
+   in once that is done (--win-delay is set by the board), and not at the start of the writing.
+   Only opacity changes, so nothing moves. */
+.cell[data-win-late]::before {
+  animation: win-in 300ms ease-out var(--win-delay, 0ms) backwards;
+}
+
+@keyframes win-in {
+  from {
+    opacity: 0;
+  }
+}
+
 .cell:focus-visible,
 .rematch:focus-visible {
   outline: 3px solid var(--focus);
