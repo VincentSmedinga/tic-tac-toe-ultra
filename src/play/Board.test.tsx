@@ -5,6 +5,7 @@ import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { GameConfig, GameState } from '../../shared/game/index.ts'
 import { arrivalPlan } from '../motion/arrival.ts'
 import { resetAnimations, setAnimations } from '../motion/preference.ts'
+import { strokeLengths } from '../shapes/length.ts'
 import { Board } from './Board.tsx'
 import gameCss from './Game.css?raw'
 import { boardLines } from './lines.ts'
@@ -230,17 +231,23 @@ describe('writing a shape', () => {
     const first = play(empty, 1, 1)
     rerender(<Board game={first} onPlay={vi.fn()} seed={42} />)
     const kruis = cell('Rij 2, kolom 2: kruis').querySelector('svg')
-    expect(kruis).toHaveAttribute('data-arrival', arrivalPlan(42, 0, 2).variant)
+    expect(kruis).toHaveAttribute(
+      'data-arrival',
+      arrivalPlan(42, 0, strokeLengths('cross')).variant,
+    )
 
     const second = play(first, 0, 0)
     rerender(<Board game={second} onPlay={vi.fn()} seed={42} />)
     // The move before keeps its variant; the new shape is written in a variant of its own.
     expect(cell('Rij 2, kolom 2: kruis').querySelector('svg')).toHaveAttribute(
       'data-arrival',
-      arrivalPlan(42, 0, 2).variant,
+      arrivalPlan(42, 0, strokeLengths('cross')).variant,
     )
     const cirkel = cell('Rij 1, kolom 1: cirkel').querySelector('svg')
-    expect(cirkel).toHaveAttribute('data-arrival', arrivalPlan(42, 1, 1).variant)
+    expect(cirkel).toHaveAttribute(
+      'data-arrival',
+      arrivalPlan(42, 1, strokeLengths('circle')).variant,
+    )
     expect(cirkel?.getAttribute('data-arrival')).not.toBe(kruis?.getAttribute('data-arrival'))
   })
 

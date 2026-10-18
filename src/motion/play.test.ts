@@ -24,7 +24,7 @@ function fakeSvg(paths = 2) {
 describe('playArrival', () => {
   it('writes every stroke with the delay, the duration and the direction of the plan', () => {
     const { svg, animate } = fakeSvg(2)
-    const plan = arrivalPlan(1, 0, 2)
+    const plan = arrivalPlan(1, 0, [60, 60])
     playArrival(svg, plan, 'full')
     expect(animate).toHaveBeenCalledTimes(2)
     plan.strokes.forEach(({ reverse, delay, duration }, call) => {
@@ -37,7 +37,7 @@ describe('playArrival', () => {
 
   it('moves nothing but the stroke and its opacity', () => {
     const { svg, animate } = fakeSvg(1)
-    playArrival(svg, arrivalPlan(2, 0, 1), 'full')
+    playArrival(svg, arrivalPlan(2, 0, [100]), 'full')
     const properties = new Set(
       animate.mock.calls.flatMap(([keyframes]) =>
         keyframes.flatMap((keyframe) => Object.keys(keyframe)),
@@ -50,7 +50,7 @@ describe('playArrival', () => {
 
   it('only fades the whole shape in when less motion is wanted', () => {
     const { svg, animate, elements } = fakeSvg(3)
-    playArrival(svg, arrivalPlan(1, 0, 3), 'gentle')
+    playArrival(svg, arrivalPlan(1, 0, [40, 50, 60]), 'gentle')
     expect(animate).toHaveBeenCalledOnce()
     expect(animate.mock.calls[0]?.[0]).toEqual([{ opacity: 0 }, { opacity: 1 }])
     expect(animate.mock.calls[0]?.[1]).toMatchObject({ duration: GENTLE_MS })
@@ -59,7 +59,7 @@ describe('playArrival', () => {
 
   it('stops every animation when it is cut short', () => {
     const { svg, cancels } = fakeSvg(3)
-    const stop = playArrival(svg, arrivalPlan(1, 0, 3), 'full')
+    const stop = playArrival(svg, arrivalPlan(1, 0, [40, 50, 60]), 'full')
     stop()
     expect(cancels).toHaveLength(3)
     for (const cancel of cancels) expect(cancel).toHaveBeenCalledOnce()
@@ -68,7 +68,7 @@ describe('playArrival', () => {
   it('shows the shape at once where the browser cannot animate', () => {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     expect(() => {
-      playArrival(svg, arrivalPlan(1, 0, 1), 'full')()
+      playArrival(svg, arrivalPlan(1, 0, [100]), 'full')()
     }).not.toThrow()
   })
 })
