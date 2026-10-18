@@ -28,7 +28,8 @@ interface BoardProps {
  * one that fits fills the room that is left. For the keyboard the board is one stop, as in a grid:
  * Tab goes in and out, the arrow keys, Home and End move over the cells (a field of 19 × 19 would
  * be 361 stops otherwise). A shape that has just been placed is written on the field as with a
- * marker (`useArrival`): the move has counted already, the next one cuts the writing short.
+ * marker (`useArrival`): the move has counted already, and the writing of an earlier shape carries on
+ * while the next one is placed.
  */
 export function Board({
   game,
@@ -53,7 +54,7 @@ export function Board({
   const lines = boardLines(width, height)
   const [ownSeed] = useState(newSeed)
   const motion = useMotion()
-  const arrival = useArrival(game, seed ?? ownSeed)
+  const arrivals = useArrival(game, seed ?? ownSeed)
 
   const moveTo = (x: number, y: number) => {
     const index = Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))
@@ -138,6 +139,7 @@ export function Board({
           const x = index % width
           const y = Math.floor(index / width)
           const open = playing && player === null
+          const plan = arrivals.get(index)
           const content = player === null ? 'leeg' : shapeById(shapeOf(player)).name
           return (
             <button
@@ -160,11 +162,7 @@ export function Board({
                   shape={shapeOf(player)}
                   size="100%"
                   decorative
-                  arrival={
-                    arrival?.index === index && motion !== 'off'
-                      ? { plan: arrival.plan, mode: motion }
-                      : undefined
-                  }
+                  arrival={plan && motion !== 'off' ? { plan, mode: motion } : undefined}
                 />
               )}
             </button>

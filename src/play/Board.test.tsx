@@ -234,14 +234,17 @@ describe('writing a shape', () => {
 
     const second = play(first, 0, 0)
     rerender(<Board game={second} onPlay={vi.fn()} seed={42} />)
-    // The move before is whole again; the new shape is written, in a variant of its own.
-    expect(cell('Rij 2, kolom 2: kruis').querySelector('svg')).not.toHaveAttribute('data-arrival')
+    // The move before keeps its variant; the new shape is written in a variant of its own.
+    expect(cell('Rij 2, kolom 2: kruis').querySelector('svg')).toHaveAttribute(
+      'data-arrival',
+      arrivalPlan(42, 0, 2).variant,
+    )
     const cirkel = cell('Rij 1, kolom 1: cirkel').querySelector('svg')
     expect(cirkel).toHaveAttribute('data-arrival', arrivalPlan(42, 1, 1).variant)
     expect(cirkel?.getAttribute('data-arrival')).not.toBe(kruis?.getAttribute('data-arrival'))
   })
 
-  it('writes the strokes of the new shape, and stops when the next move is played', () => {
+  it('writes the strokes of the new shape, and lets them finish when the next move is played', () => {
     const calls = animated()
     const empty = board()
     const { rerender } = render(<Board game={empty} onPlay={vi.fn()} seed={1} />)
@@ -254,11 +257,20 @@ describe('writing a shape', () => {
     const svg = cell('Rij 2, kolom 2: kruis').querySelector('svg')
     for (const { element } of calls) expect(element.closest('svg')).toBe(svg)
 
-    const running = [...calls]
     rerender(<Board game={play(first, 0, 0)} onPlay={vi.fn()} seed={1} />)
-    for (const { cancel } of running) expect(cancel).toHaveBeenCalledOnce()
-    // The new shape (a circle: one stroke) is being written now.
+    // The new shape (a circle: one stroke) is written too, and the cross is not cut off or begun again.
     expect(calls).toHaveLength(3)
+    for (const { cancel } of calls) expect(cancel).not.toHaveBeenCalled()
+  })
+
+  it('stops the writing of shapes that are taken off the field', () => {
+    const calls = animated()
+    const first = play(board(), 1, 1)
+    const { rerender } = render(<Board game={board()} onPlay={vi.fn()} seed={1} />)
+    rerender(<Board game={first} onPlay={vi.fn()} seed={1} />)
+    rerender(<Board game={board()} onPlay={vi.fn()} seed={1} />)
+    for (const { cancel } of calls) expect(cancel).toHaveBeenCalledOnce()
+    expect(document.querySelector('[data-arrival]')).toBeNull()
   })
 
   it('writes nothing on a board that is first shown with moves on it, or one that is emptied', () => {
