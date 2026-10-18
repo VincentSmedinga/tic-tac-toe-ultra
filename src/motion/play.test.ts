@@ -35,6 +35,37 @@ describe('playArrival', () => {
     })
   })
 
+  it('writes a shape that is started at a point from there, round the end and on to the start', () => {
+    const { svg, animate } = fakeSvg(1)
+    const plan = {
+      variant: 'steady',
+      easing: 'ease-in-out',
+      strokes: [
+        { path: 0, reverse: false, from: 0.25, delay: 0, duration: 900 },
+        { path: 0, reverse: true, from: 0.25, delay: 0, duration: 900 },
+      ],
+    } as const
+    playArrival(svg, plan, 'full')
+    const [forward, backward] = animate.mock.calls.map(([keyframes]) => keyframes)
+    // A dash of what is written so far in a pattern as long as the stroke: it comes round by itself.
+    expect(forward?.[0]).toMatchObject({
+      strokeDasharray: '0 1',
+      strokeDashoffset: -0.25,
+      opacity: 0,
+    })
+    expect(forward?.at(-1)).toMatchObject({
+      strokeDasharray: '1 0',
+      strokeDashoffset: -0.25,
+      opacity: 1,
+    })
+    expect(backward?.[0]).toMatchObject({ strokeDasharray: '0 1', strokeDashoffset: -0.25 })
+    expect(backward?.at(-1)).toMatchObject({ strokeDasharray: '1 0', strokeDashoffset: 0.75 })
+    // The dash grows from the point where the pen lands and nowhere else.
+    for (const keyframe of forward ?? []) {
+      expect(keyframe.strokeDashoffset).toBe(-0.25)
+    }
+  })
+
   it('moves nothing but the stroke and its opacity', () => {
     const { svg, animate } = fakeSvg(1)
     playArrival(svg, arrivalPlan(2, 0, [100]), 'full')

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { GameState } from '../../shared/game/index.ts'
 import { arrivalPlan } from '../motion/arrival.ts'
 import type { ArrivalPlan } from '../motion/arrival.ts'
+import { closureOf } from '../shapes/closure.ts'
 import { strokeLengths } from '../shapes/length.ts'
 import { shapeOf } from './players.ts'
 
@@ -27,7 +28,11 @@ export function useArrival(game: GameState, seed: number): ReadonlyMap<number, A
     const index = added[0]
     const player = index === undefined ? null : game.cells[index]
     if (added.length === 1 && index !== undefined && player != null) {
-      next.set(index, arrivalPlan(seed, game.moves.length - 1, strokeLengths(shapeOf(player))))
+      const shape = shapeOf(player)
+      next.set(
+        index,
+        arrivalPlan(seed, game.moves.length - 1, strokeLengths(shape), closureOf(shape)),
+      )
     }
     setArrivals(next)
   }

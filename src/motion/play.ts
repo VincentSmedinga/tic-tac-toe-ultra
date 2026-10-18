@@ -7,6 +7,26 @@ export type MotionMode = 'full' | 'gentle'
 export const GENTLE_MS = 200
 
 /**
+ * The keyframes of a stroke that is written from a point `from` along it, round the end and on from
+ * the other end, up to `from` again (a circle that is not started where its line starts). A dash
+ * as long as the part that is written, in a pattern as long as the stroke itself, so that the
+ * dash comes round at the other end by itself: the pattern is `written, rest`, which grows from
+ * `0 1` to `1 0`, and its offset puts the dash at `from` (forward) or ends it there (backward).
+ */
+function wrapped(from: number, reverse: boolean): Keyframe[] {
+  const shown = (written: number) => ({
+    strokeDasharray: `${written} ${1 - written}`,
+    // The pattern starts `offset` before the line does: the dash begins at -offset.
+    strokeDashoffset: reverse ? written - from : -from,
+  })
+  return [
+    { ...shown(0), opacity: 0 },
+    { ...shown(0.03), opacity: 1, offset: 0.03 },
+    { ...shown(1), opacity: 1 },
+  ]
+}
+
+/**
  * Plays a plan on the SVG of a shape and returns what stops it. The shape is always drawn whole in
  * its own styles: the animation only hides what is not written yet, so cancelling it, or the end
  * of it, leaves the finished shape, and a browser without the Web Animations API (or a test)
@@ -30,22 +50,21 @@ export function playArrival(svg: SVGSVGElement, plan: ArrivalPlan, mode: MotionM
   }
 
   const paths = svg.querySelectorAll<SVGPathElement>('path')
-  const animations = plan.strokes.flatMap(({ path, reverse, delay, duration }) => {
+  const animations = plan.strokes.flatMap(({ path, reverse, from, delay, duration }) => {
     const element = paths[path]
     if (!element) return []
     // Gone at the start, the first moments faded in: a round cap would show a dot for a stroke
     // that has no length yet.
     const hidden = { strokeDasharray: '1 1', strokeDashoffset: reverse ? -1 : 1 }
-    return [
-      element.animate(
-        [
-          { ...hidden, opacity: 0 },
-          { ...hidden, opacity: 1, offset: 0.03 },
-          { strokeDasharray: '1 1', strokeDashoffset: 0, opacity: 1 },
-        ],
-        { delay, duration, easing: plan.easing, fill: 'backwards' },
-      ),
-    ]
+    const keyframes: Keyframe[] =
+      from === undefined
+        ? [
+            { ...hidden, opacity: 0 },
+            { ...hidden, opacity: 1, offset: 0.03 },
+            { strokeDasharray: '1 1', strokeDashoffset: 0, opacity: 1 },
+          ]
+        : wrapped(from, reverse)
+    return [element.animate(keyframes, { delay, duration, easing: plan.easing, fill: 'backwards' })]
   })
   return () => {
     for (const animation of animations) animation.cancel()

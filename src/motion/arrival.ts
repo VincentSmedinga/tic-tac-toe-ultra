@@ -1,3 +1,4 @@
+import type { Closure } from '../shapes/closure.ts'
 import { between, createRandom, oneOf, seedFrom, shuffled } from './random.ts'
 import type { Random } from './random.ts'
 
@@ -7,8 +8,8 @@ import type { Random } from './random.ts'
  * never draws the same line twice. Nothing here knows about React or the browser: it picks, and
  * `play.ts` plays what was picked.
  *
- * Everything is a function of (seed, number of the move, number of strokes): the same seed gives
- * the same plan, which is what lets a test fix it and, later, lets a replay write a game the way it
+ * Everything is a function of (seed, number of the move, the strokes and how the shape closes): the
+ * same seed gives the same plan, which is what lets a test fix it and, later, lets a replay write a game the way it
  * was written live.
  */
 
@@ -22,6 +23,13 @@ export interface StrokePlan {
   readonly path: number
   /** Drawn from its end to its start. */
   readonly reverse: boolean
+  /**
+   * Where along the stroke the pen is put down, as a fraction of its length, for a stroke that
+   * goes round and is not started at its beginning (or, with `reverse`, its end): the stroke is
+   * written from there, round the end and on from the other end, up to where it began. Without it,
+   * the stroke is written from one end to the other.
+   */
+  readonly from?: number
   /** Milliseconds from the start of the arrival until this stroke begins. */
   readonly delay: number
   /** Milliseconds the stroke takes. */
@@ -84,17 +92,54 @@ export function arrivalVariant(seed: number, move: number): ArrivalVariant {
 }
 
 /**
- * The plan for writing the shape of the move with this number, whose strokes are this long (only
- * their lengths relative to each other matter; see `strokeLengths`).
+ * How a closed shape is started, which is picked with a generator of its own, so that it never
+ * changes the rhythm or the jitter of the plan. A ring of strokes (the square) goes round from a
+ * stroke at random, one way or the other, every stroke in that direction; a single line (the
+ * circle, the oval, the diamond) gets the point where the pen is put down.
  */
-export function arrivalPlan(seed: number, move: number, lengths: readonly number[]): ArrivalPlan {
+interface Start {
+  readonly order?: readonly number[]
+  readonly reverse?: boolean
+  readonly from?: number
+}
+
+function pickStart(random: Random, strokes: number, closure: Closure | undefined): Start {
+  if (closure?.kind === 'ring' && strokes > 1) {
+    const first = Math.floor(random() * strokes)
+    const reverse = random() < 0.5
+    const step = reverse ? strokes - 1 : 1
+    return {
+      order: Array.from({ length: strokes }, (_, i) => (first + i * step) % strokes),
+      reverse,
+    }
+  }
+  if (strokes !== 1) return {}
+  if (closure?.kind === 'loop') return { from: between(random, 0, closure.until) }
+  if (closure?.kind === 'corners') return { from: oneOf(random, closure.at) }
+  return {}
+}
+
+/**
+ * The plan for writing the shape of the move with this number, whose strokes are this long (only
+ * their lengths relative to each other matter; see `strokeLengths`). A shape that closes on itself
+ * says how (`closureOf`), and is then not started at the same place every time.
+ */
+export function arrivalPlan(
+  seed: number,
+  move: number,
+  lengths: readonly number[],
+  closure?: Closure,
+): ArrivalPlan {
   const variant = arrivalVariant(seed, move)
   const rhythm = RHYTHMS[variant]
   const random = createRandom(seedFrom(seed, move, 2))
-  const order = shuffled(
-    random,
-    lengths.map((_, path) => path),
-  )
+  const start = pickStart(createRandom(seedFrom(seed, move, 3)), lengths.length, closure)
+  const order =
+    start.order ??
+    shuffled(
+      random,
+      lengths.map((_, path) => path),
+    )
   const total = between(random, ...rhythm.total)
 
   // What each stroke weighs in the time: its length, a little off, since a hand is never even.
@@ -115,9 +160,11 @@ export function arrivalPlan(seed: number, move: number, lengths: readonly number
   let delay = 0
   const strokes = order.map((path, i): StrokePlan => {
     const duration = (weights[i] ?? 0) * speed
-    const stroke = {
+    const reverse = random() < 0.5
+    const stroke: StrokePlan = {
       path,
-      reverse: random() < 0.5,
+      reverse: start.reverse ?? reverse,
+      ...(start.from === undefined ? {} : { from: start.from }),
       delay: Math.round(delay),
       duration: Math.round(duration),
     }
