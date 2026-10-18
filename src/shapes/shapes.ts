@@ -23,19 +23,23 @@ export type ShapeId = (typeof SHAPES)[number]['id']
 /** The paths of each shape on a 64 × 64 field, drawn with a slight wobble like the originals. */
 export const PATHS: Record<ShapeId, readonly string[]> = {
   cross: ['M14 12 C24 28 36 44 49 54', 'M52 11 C40 24 26 40 11 53'],
-  circle: ['M38 10 C24 6 9 16 10 33 C11 50 30 58 45 52 C58 47 60 28 51 18 C46 12 38 9 29 12'],
-  square: ['M11 13 L52 11 L54 51 L12 52 L11 12'],
-  diamond: ['M28 8 L56 30 L36 56 L8 31 Z'],
-  star: ['M31 7 L40 25 L58 23 L44 36 L49 54 L32 44 L15 55 L20 36 L6 24 L24 25 Z'],
+  // The end of the line overshoots the start and hooks inside it, as a hand does when it closes a
+  // circle: with a thick line the two have to be well apart to stay two lines.
+  circle: ['M40 8 C24 4 8 15 9 33 C10 51 30 59 46 52 C59 46 60 27 51 17 C46 12 41 11 34 17'],
+  // Four lines that each go a little past the corner, round and round: the corners stay visible.
+  square: ['M6 14 L54 11', 'M53 5 L55 53', 'M59 52 L9 54', 'M12 59 L11 9'],
+  diamond: ['M28 8 L56 30 L36 56 L8 31 L32 4'],
+  star: ['M31 7 L40 25 L58 23 L44 36 L49 54 L32 44 L15 55 L20 36 L6 24 L24 25 L33 4'],
   plus: ['M33 6 L35 58', 'M8 26 L56 27'],
   asterisk: ['M30 7 L33 57', 'M10 16 L55 54', 'M53 13 L14 50'],
-  oval: ['M31 6 C43 6 48 20 48 33 C48 48 41 58 31 58 C21 58 16 46 16 32 C16 18 21 7 32 6'],
+  oval: [
+    'M31 6 C43 6 48 20 48 33 C48 48 41 58 31 58 C21 58 16 46 16 32 C16 18 21 7 32 6 C36 6 38 9 38 14',
+  ],
   heart: [
-    'M32 56 C15 43 8 33 8 23 C8 14 15 8 22 8 C27 8 31 11 32 16 C34 11 38 8 43 8 C50 8 56 14 56 23 C56 33 49 43 32 56 Z',
+    'M32 56 C15 43 8 33 8 23 C8 14 15 8 22 8 C27 8 31 11 32 16 C34 11 38 8 43 8 C50 8 56 14 56 23 C56 33 49 43 32 56 L26 61',
   ],
-  fort: [
-    'M8 56 L8 22 L13 22 L13 16 L19 16 L19 22 L24 22 L24 16 L30 16 L30 30 L38 30 L38 16 L44 16 L44 22 L49 22 L49 16 L56 16 L56 56 Z',
-  ],
+  // Three battlements, wide apart: more would run together under a thick line.
+  fort: ['M8 56 L8 14 L16 14 L16 26 L28 26 L28 14 L36 14 L36 26 L48 26 L48 14 L56 14 L56 56 Z'],
   waves: [
     'M6 14 Q14 5 22 14 T38 14 T55 14',
     'M6 30 Q14 21 22 30 T38 30 T55 30',
