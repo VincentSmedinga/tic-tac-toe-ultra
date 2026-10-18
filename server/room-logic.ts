@@ -1,6 +1,6 @@
 import { applyMove, replayGame } from '../shared/game/index.ts'
 import type { Cell, GameState, Move, PlayerId } from '../shared/game/index.ts'
-import type { ErrorCode, StateMessage } from '../shared/protocol.ts'
+import type { ErrorCode, StateMessage, StoredGame } from '../shared/protocol.ts'
 import { ROOM_PLAYERS, roomConfig } from '../shared/room.ts'
 
 /**
@@ -20,6 +20,8 @@ export interface RoomState {
   round: number
   seats: Seat[]
   moves: Move[]
+  /** The stored game of this round, set when the round is over and cleared by a rematch. */
+  gameId?: string
 }
 
 export type Change = { ok: true; room: RoomState } | { ok: false; error: ErrorCode }
@@ -84,7 +86,34 @@ export function rematch(room: RoomState, token: string): Change {
   if (current.kind === 'waiting') return fail('waiting-for-opponent')
   if (current.kind === 'game' && current.game.status.kind === 'playing')
     return fail('game-not-over')
-  return ok({ ...room, round: room.round + 1, moves: [] })
+  return ok({ round: room.round + 1, seats: room.seats, moves: [] })
+}
+
+/** Whether the round has been won or drawn. A damaged or waiting room is not over. */
+export function isOver(room: RoomState): boolean {
+  const current = gameOf(room)
+  return current.kind === 'game' && current.game.status.kind !== 'playing'
+}
+
+/** What a room hands over to be kept when a round ends: a game without the id and the time. */
+export type Finished = Omit<StoredGame, 'id' | 'finishedAt'> & {
+  /** The tokens of everyone who sat at the game: how the server finds "your games" again. */
+  owners: string[]
+}
+
+/** The finished round of a room as it is kept, or null when the round isn't over. */
+export function finishedGame(room: RoomState): Finished | null {
+  const current = gameOf(room)
+  if (current.kind !== 'game') return null
+  const { status, config, moves } = current.game
+  if (status.kind === 'playing') return null
+  return {
+    config: { ...config, players: [...config.players] },
+    moves: [...moves],
+    players: room.seats.map(({ id, name }) => ({ id, ...(name === undefined ? {} : { name }) })),
+    result: status.kind === 'won' ? { kind: 'won', winner: status.winner } : { kind: 'draw' },
+    owners: room.seats.map((seat) => seat.token),
+  }
 }
 
 /** The room as the player with this token sees it, or null when they have no seat. */
@@ -111,5 +140,6 @@ export function stateFor(
     config: { ...config, players: [...config.players] },
     // A damaged room shows an empty board until someone starts a rematch.
     moves: current.kind === 'game' ? [...current.game.moves] : [],
+    ...(room.gameId === undefined ? {} : { gameId: room.gameId }),
   }
 }

@@ -1,7 +1,9 @@
-import { roomCodeSchema } from '../shared/protocol.ts'
+import { gameIdSchema, roomCodeSchema } from '../shared/protocol.ts'
+import { ARCHIVE_NAME } from './archive.ts'
 import type { Env } from './env.ts'
 import { newRoomCode } from './room-code.ts'
 
+export { Archive } from './archive.ts'
 export { Room } from './room.ts'
 
 /** How often a new room code is tried before giving up: a clash is rare, 160,000 codes are free. */
@@ -12,6 +14,7 @@ const CREATE_ATTEMPTS = 10
  *   POST /api/rooms          make a room, answers { code }
  *   GET  /api/rooms/:code    answers { exists }
  *   GET  /api/rooms/:code/ws the WebSocket of the room, which is a Durable Object
+ *   GET  /api/games/:id      a finished game as it was kept, for anyone who has the id
  */
 export default {
   async fetch(request, env): Promise<Response> {
@@ -20,6 +23,7 @@ export default {
     if (parts[0] !== 'api') return notFound()
 
     if (parts[1] === 'health' && parts.length === 2) return Response.json({ status: 'ok' })
+    if (parts[1] === 'games') return getGame(parts, request, env)
     if (parts[1] !== 'rooms') return notFound()
 
     if (parts.length === 2) {
@@ -50,6 +54,14 @@ export default {
     return notFound()
   },
 } satisfies ExportedHandler<Env>
+
+async function getGame(parts: string[], request: Request, env: Env): Promise<Response> {
+  const id = gameIdSchema.safeParse(parts[2])
+  if (parts.length !== 3 || !id.success) return notFound()
+  if (request.method !== 'GET') return methodNotAllowed('GET')
+  const game = await env.ARCHIVE.getByName(ARCHIVE_NAME).get(id.data)
+  return game ? Response.json(game) : notFound()
+}
 
 async function createRoom(env: Env): Promise<Response> {
   for (let attempt = 0; attempt < CREATE_ATTEMPTS; attempt++) {

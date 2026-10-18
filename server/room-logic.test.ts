@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { roomConfig } from '../shared/room.ts'
-import { gameOf, join, newRoom, play, rematch, stateFor } from './room-logic.ts'
+import {
+  finishedGame,
+  gameOf,
+  isOver,
+  join,
+  newRoom,
+  play,
+  rematch,
+  stateFor,
+} from './room-logic.ts'
 import type { Change, RoomState } from './room-logic.ts'
 
 const TOKEN_X = 'x'.repeat(20)
@@ -237,5 +246,41 @@ describe('the state for a player', () => {
     ])
     const broken: RoomState = { ...twoPlayers(), moves: [{ player: 'O', x: 0, y: 0 }] }
     expect(stateFor(broken, TOKEN_O, 'BCDF', new Set())?.moves).toEqual([])
+  })
+})
+
+describe('a finished game', () => {
+  it('is only there once the round is won or drawn', () => {
+    expect(isOver(newRoom())).toBe(false)
+    expect(finishedGame(twoPlayers())).toBeNull()
+    expect(finishedGame(playCells(twoPlayers(), xWins.slice(0, 4)))).toBeNull()
+    expect(isOver(playCells(twoPlayers(), xWins))).toBe(true)
+  })
+
+  it('holds the config, the moves, the players and who won', () => {
+    const finished = finishedGame(playCells(twoPlayers(), xWins))
+    expect(finished).toMatchObject({
+      config: roomConfig(0),
+      players: [{ id: 'X' }, { id: 'O' }],
+      result: { kind: 'won', winner: 'X' },
+      owners: [TOKEN_X, TOKEN_O],
+    })
+    expect(finished?.moves).toHaveLength(5)
+  })
+
+  it('holds the names that were typed', () => {
+    const named = room(join(room(join(newRoom(), TOKEN_X, 'Anna')), TOKEN_O, undefined))
+    expect(finishedGame(playCells(named, xWins))?.players).toEqual([
+      { id: 'X', name: 'Anna' },
+      { id: 'O' },
+    ])
+  })
+
+  it('is told to the players as the id of the game, until a rematch', () => {
+    const over = { ...playCells(twoPlayers(), xWins), gameId: 'abcdefghijklmnop' }
+    expect(stateFor(over, TOKEN_X, 'BCDF', new Set())?.gameId).toBe('abcdefghijklmnop')
+    const again = room(rematch(over, TOKEN_O))
+    expect(again.gameId).toBeUndefined()
+    expect(stateFor(again, TOKEN_X, 'BCDF', new Set())).not.toHaveProperty('gameId')
   })
 })

@@ -5,9 +5,18 @@
   "compatibility_date": "2026-10-01",
   // The app is the static files of `pnpm build`; the Worker only answers /api/*, the rest goes
   // to the files, with the page itself for any address the app handles in the browser.
-  // One Durable Object class: a room of the game. SQLite storage, which the free plan has too.
-  "durable_objects": { "bindings": [{ "name": "ROOM", "class_name": "Room" }] },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
+  // Two Durable Object classes, both with SQLite storage, which the free plan has too: a room of
+  // the game, and the archive, one object that keeps the finished games of all rooms.
+  "durable_objects": {
+    "bindings": [
+      { "name": "ROOM", "class_name": "Room" },
+      { "name": "ARCHIVE", "class_name": "Archive" },
+    ],
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Room"] },
+    { "tag": "v2", "new_sqlite_classes": ["Archive"] },
+  ],
   "assets": {
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"],

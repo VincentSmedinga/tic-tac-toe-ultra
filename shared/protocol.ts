@@ -48,13 +48,38 @@ export const errorCodeSchema = z.enum([
 ])
 export type ErrorCode = z.infer<typeof errorCodeSchema>
 
-const configSchema = z.object({
+export const configSchema = z.object({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   winLength: z.number().int().min(2),
   players: z.array(z.string()).min(2),
 })
-const moveSchema = z.object({ player: z.string(), x: z.number().int(), y: z.number().int() })
+export const moveSchema = z.object({ player: z.string(), x: z.number().int(), y: z.number().int() })
+
+/** The address of a stored game: random and unguessable, so knowing it is the right to see it. */
+export const GAME_ID_LENGTH = 16
+export const gameIdSchema = z
+  .string()
+  .regex(new RegExp(`^[A-Za-z0-9_-]{${GAME_ID_LENGTH.toString()}}$`))
+
+/**
+ * A finished game as it is kept: its config plus its moves (the engine replays them), who sat
+ * where, when it ended and how. Never holds a token: who played is only known to the server.
+ */
+export const storedGameSchema = z.object({
+  id: gameIdSchema,
+  /** When the last move was played, in milliseconds since 1970. */
+  finishedAt: z.number().int().nonnegative(),
+  config: configSchema,
+  moves: z.array(moveSchema),
+  /** Everyone who sat at the game, by player id, with the name they typed if any. */
+  players: z.array(z.object({ id: z.string(), name: z.string().optional() })),
+  result: z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('won'), winner: z.string() }),
+    z.object({ kind: z.literal('draw') }),
+  ]),
+})
+export type StoredGame = z.infer<typeof storedGameSchema>
 
 /**
  * The whole room as one player sees it, sent again after every change. A game is its config plus
@@ -74,6 +99,8 @@ export const stateMessageSchema = z.object({
   ),
   config: configSchema,
   moves: z.array(moveSchema),
+  /** The id of the stored game once this round is over, so that it can be watched again. */
+  gameId: gameIdSchema.optional(),
 })
 export type StateMessage = z.infer<typeof stateMessageSchema>
 

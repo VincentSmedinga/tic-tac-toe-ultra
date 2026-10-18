@@ -3,10 +3,24 @@ import worker from './index.ts'
 import type { Env } from './env.ts'
 
 /** The rooms of a fake Cloudflare: a list of codes, and what a request to a room answers. */
+const STORED = {
+  id: 'abcdefghijklmnop',
+  finishedAt: 1,
+  config: { width: 3, height: 3, winLength: 3, players: ['X', 'O'] },
+  moves: [],
+  players: [{ id: 'X' }, { id: 'O' }],
+  result: { kind: 'draw' },
+}
+
 function fakeEnv(existing: readonly string[] = []) {
   const rooms = new Set(existing)
   const forwarded: Request[] = []
   const env = {
+    ARCHIVE: {
+      getByName: () => ({
+        get: (id: string) => Promise.resolve(id === STORED.id ? STORED : null),
+      }),
+    },
     ROOM: {
       getByName: (code: string) => ({
         create: (newCode: string) => {
@@ -92,5 +106,25 @@ describe('the WebSocket of a room', () => {
   it('is a 404 for a code that is no code, and for a room that does not exist', async () => {
     expect((await call('/api/rooms/abc/ws', upgrade)).status).toBe(404)
     expect((await call('/api/rooms/GHJK/ws', upgrade)).status).toBe(404)
+  })
+})
+
+describe('a finished game', () => {
+  it('is answered for anyone who has the id', async () => {
+    const response = await call(`/api/games/${STORED.id}`)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(STORED)
+  })
+
+  it('is a 404 for an id nothing was kept under, and for something that is no id', async () => {
+    expect((await call('/api/games/zzzzzzzzzzzzzzzz')).status).toBe(404)
+    expect((await call('/api/games/short')).status).toBe(404)
+    expect((await call('/api/games')).status).toBe(404)
+    expect((await call(`/api/games/${STORED.id}/more`)).status).toBe(404)
+  })
+
+  it('is only for GET', async () => {
+    const response = await call(`/api/games/${STORED.id}`, { method: 'POST' })
+    expect(response.status).toBe(405)
   })
 })

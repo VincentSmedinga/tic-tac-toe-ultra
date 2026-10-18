@@ -6,5 +6,5 @@
     "types": ["@cloudflare/workers-types"]
   },
   "include": ["server", "shared"],
-  "exclude": ["shared/**/*.test.ts"]
+  "exclude": ["shared/**/*.test.ts", "server/archive-store.test.ts"]
 }

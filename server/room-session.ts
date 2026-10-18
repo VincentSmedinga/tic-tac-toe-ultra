@@ -1,7 +1,7 @@
 import { parseClientMessage } from '../shared/protocol.ts'
 import type { ErrorCode, ServerMessage } from '../shared/protocol.ts'
-import { join, play, rematch, stateFor } from './room-logic.ts'
-import type { Change, RoomState } from './room-logic.ts'
+import { finishedGame, isOver, join, play, rematch, stateFor } from './room-logic.ts'
+import type { Change, Finished, RoomState } from './room-logic.ts'
 
 /** What a room needs from Cloudflare, so that the session below can be tested without it. */
 export interface Host {
@@ -18,6 +18,10 @@ export interface Host {
   close(id: string, code: number, reason: string): void
   /** Something happened: a room that nobody touches for a day goes away. */
   touch(): void
+  /** A fresh, unguessable id for a game that is about to be kept. */
+  newGameId(): string
+  /** Keep a finished game, under this id, for good: it outlives the room. Must not throw. */
+  archive(id: string, game: Finished): void
 }
 
 /** WebSocket close codes in the range for applications. */
@@ -80,6 +84,15 @@ export class RoomSession {
         : rematch(room, token)
     if (!change.ok) {
       this.error(socketId, change.error)
+      return
+    }
+    // The move that ends a round keeps the game, right then and only once, however many players are
+    // still connected: a player who has left or lost the connection by now doesn't matter.
+    const finished = !isOver(room) ? finishedGame(change.room) : null
+    if (finished) {
+      const gameId = this.host.newGameId()
+      this.host.archive(gameId, finished)
+      this.commit({ ...change.room, gameId })
       return
     }
     this.commit(change.room)
