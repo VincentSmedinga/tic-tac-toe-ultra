@@ -1,11 +1,14 @@
 import { useReducer, useState } from 'react'
 import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { Cell, GameState } from '../../shared/game/index.ts'
-import { roomConfig } from '../../shared/room.ts'
+import { CLASSIC_FIELD, roomConfig } from '../../shared/room.ts'
+import type { FieldSettings } from '../../shared/room.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import type { ShapeId } from '../shapes/shapes.ts'
 import { Board } from './Board.tsx'
+import { FieldPicker } from './FieldPicker.tsx'
+import { fieldLabel } from './field.ts'
 import { nameOf, shapeOf } from './players.ts'
 import { ShapePicker } from './ShapePicker.tsx'
 import './Game.css'
@@ -19,15 +22,16 @@ interface State {
   game: GameState
 }
 
-type Action = { type: 'play'; cell: Cell } | { type: 'rematch'; shapes: Shapes }
+type Action =
+  { type: 'play'; cell: Cell } | { type: 'rematch'; shapes: Shapes; field: FieldSettings }
 
 /** The game of a round: classic tic-tac-toe, in which the other player starts every round. */
-function newGame(round: number, shapes: Shapes): State {
-  return { round, game: createGame(roomConfig(round, shapes)) }
+function newGame(round: number, shapes: Shapes, field: FieldSettings): State {
+  return { round, game: createGame(roomConfig(round, shapes, field)) }
 }
 
 function reducer(state: State, action: Action): State {
-  if (action.type === 'rematch') return newGame(state.round + 1, action.shapes)
+  if (action.type === 'rematch') return newGame(state.round + 1, action.shapes, action.field)
 
   const { status } = state.game
   if (status.kind !== 'playing') return state
@@ -53,24 +57,34 @@ function describe(game: GameState): { player: string | null; text: string } {
   }
 }
 
-/** Two players take turns on one screen: first they choose a shape each, then they play. */
+/** Two players take turns on one screen: first they choose a shape each and the field, then they play. */
 export function Game() {
-  const [shapes, setShapes] = useState<Shapes | null>(null)
-  if (!shapes) return <ChooseShapes onStart={setShapes} />
+  const [chosen, setChosen] = useState<{ shapes: Shapes; field: FieldSettings } | null>(null)
+  if (!chosen) {
+    return (
+      <ChooseShapes
+        onStart={(shapes, field) => {
+          setChosen({ shapes, field })
+        }}
+      />
+    )
+  }
   return (
     <Play
-      shapes={shapes}
+      shapes={chosen.shapes}
+      field={chosen.field}
       onChooseAgain={() => {
-        setShapes(null)
+        setChosen(null)
       }}
     />
   )
 }
 
 /** Both players choose a shape, the cross and the circle being ready for whoever doesn't care. */
-function ChooseShapes({ onStart }: { onStart: (shapes: Shapes) => void }) {
+function ChooseShapes({ onStart }: { onStart: (shapes: Shapes, field: FieldSettings) => void }) {
   const [first, setFirst] = useState<ShapeId>('cross')
   const [second, setSecond] = useState<ShapeId>('circle')
+  const [field, setField] = useState<FieldSettings>(CLASSIC_FIELD)
   return (
     <section className="game choose-shapes" aria-label="Vormen kiezen">
       <ShapePicker
@@ -85,11 +99,12 @@ function ChooseShapes({ onStart }: { onStart: (shapes: Shapes) => void }) {
         taken={{ [first]: 'speler 1' }}
         onChange={setSecond}
       />
+      <FieldPicker value={field} onChange={setField} />
       <button
         type="button"
         className="rematch"
         onClick={() => {
-          onStart([first, second])
+          onStart([first, second], field)
         }}
       >
         Start
@@ -98,8 +113,16 @@ function ChooseShapes({ onStart }: { onStart: (shapes: Shapes) => void }) {
   )
 }
 
-function Play({ shapes, onChooseAgain }: { shapes: Shapes; onChooseAgain: () => void }) {
-  const [{ game }, dispatch] = useReducer(reducer, shapes, (chosen) => newGame(0, chosen))
+function Play({
+  shapes,
+  field,
+  onChooseAgain,
+}: {
+  shapes: Shapes
+  field: FieldSettings
+  onChooseAgain: () => void
+}) {
+  const [{ game }, dispatch] = useReducer(reducer, undefined, () => newGame(0, shapes, field))
   const [replaying, setReplaying] = useState(false)
   const { player, text } = describe(game)
 
@@ -121,6 +144,7 @@ function Play({ shapes, onChooseAgain }: { shapes: Shapes; onChooseAgain: () => 
         {player !== null && <ShapeIcon shape={shapeOf(player)} size={32} decorative />}
         <span>{text}</span>
       </p>
+      <p className="field-label">{fieldLabel(field)}</p>
       <Board
         game={game}
         onPlay={(cell) => {
@@ -133,7 +157,7 @@ function Play({ shapes, onChooseAgain }: { shapes: Shapes; onChooseAgain: () => 
             type="button"
             className="rematch"
             onClick={() => {
-              dispatch({ type: 'rematch', shapes })
+              dispatch({ type: 'rematch', shapes, field })
             }}
           >
             Nog een keer

@@ -85,6 +85,18 @@ describe('GamePage', () => {
       expect(window.location.pathname).toBe('/kamer/BCDF')
     })
 
+    it('makes it on the same field as the game that was played', async () => {
+      const big: StoredGame = {
+        ...GAME,
+        config: { width: 7, height: 5, winLength: 5, players: ['cross', 'circle'] },
+        moves: [],
+      }
+      const { games, rooms } = apis(big)
+      render(<GamePage id={GAME.id} api={games} rooms={rooms} />)
+      await userEvent.setup().click(await screen.findByRole('button', { name: 'Speel opnieuw' }))
+      expect(rooms.createRoom).toHaveBeenCalledWith({ width: 7, height: 5, winLength: 5 })
+    })
+
     it('says so when no room can be made, and stays', async () => {
       const { games, rooms } = apis()
       vi.mocked(rooms.createRoom).mockRejectedValueOnce(new Error('offline'))

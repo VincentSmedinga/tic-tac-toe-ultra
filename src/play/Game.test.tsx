@@ -58,14 +58,49 @@ describe('Game', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Cirkel is aan de beurt')
   })
 
-  it('can be played with the keyboard', async () => {
+  it('can be played with the keyboard: one stop, the arrow keys over the cells', async () => {
     const user = userEvent.setup()
     await startGame()
-    cell(1, 2).focus()
-    await user.keyboard('{Enter}')
+    await user.tab()
+    expect(cell(1, 1)).toHaveFocus()
+    await user.keyboard('{ArrowRight}{Enter}')
     expect(cell(1, 2)).toHaveAccessibleName('Rij 1, kolom 2: kruis')
-    await user.keyboard('{Tab}{ }')
+    await user.keyboard('{ArrowRight}{ }')
     expect(cell(1, 3)).toHaveAccessibleName('Rij 1, kolom 3: cirkel')
+  })
+
+  it('is one tab stop, however many cells it has', async () => {
+    await startGame()
+    const stops = screen
+      .getAllByRole('button', { name: /^Rij / })
+      .filter((cell) => cell.getAttribute('tabindex') === '0')
+    expect(stops).toHaveLength(1)
+  })
+
+  it('moves over the cells with the arrow keys, Home and End, and stops at the edge', async () => {
+    const user = userEvent.setup()
+    await startGame()
+    await user.tab()
+    await user.keyboard('{ArrowLeft}{ArrowUp}')
+    expect(cell(1, 1)).toHaveFocus()
+    await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}')
+    expect(cell(3, 1)).toHaveFocus()
+    await user.keyboard('{End}')
+    expect(cell(3, 3)).toHaveFocus()
+    await user.keyboard('{Home}')
+    expect(cell(3, 1)).toHaveFocus()
+    await user.keyboard('{ArrowRight}{ArrowUp}')
+    expect(cell(2, 2)).toHaveFocus()
+  })
+
+  it('goes back in at the cell it was on', async () => {
+    const user = userEvent.setup()
+    await startGame()
+    await user.tab()
+    await user.keyboard('{ArrowDown}{ArrowRight}')
+    await user.tab()
+    await user.tab({ shift: true })
+    expect(cell(2, 2)).toHaveFocus()
   })
 
   describe('when someone wins', () => {
@@ -221,6 +256,57 @@ describe('Game', () => {
       await user.click(picker(1).getByRole('button', { name: 'plus' }))
       await user.click(screen.getByRole('button', { name: 'Start' }))
       expect(screen.getByRole('status')).toHaveTextContent('Plus begint')
+    })
+  })
+
+  describe('choosing the field', () => {
+    it('is classic unless another field is chosen, and the game says which field it is', async () => {
+      await startGame()
+      expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(9)
+      expect(screen.getByText('3 × 3, drie op een rij')).toBeVisible()
+    })
+
+    it('plays on the field that was chosen, and wins with the row that goes with it', async () => {
+      render(<Game />)
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: /Groter/ }))
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+      expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(49)
+      expect(screen.getByText('7 × 7, vijf op een rij')).toBeVisible()
+
+      // The cross plays the top row, the circle the second: five in a row wins, and four doesn't.
+      for (const x of [1, 2, 3, 4]) await tap([1, x], [2, x])
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis is aan de beurt')
+      await tap([1, 5])
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis heeft gewonnen!')
+      for (const x of [1, 2, 3, 4, 5]) expect(cell(1, x)).toHaveAttribute('data-winning')
+    })
+
+    /** A game on the 7 × 7 field that the cross has won, so that it is over. */
+    async function wonOnTheBiggerField() {
+      render(<Game />)
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: /Groter/ }))
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+      for (const x of [1, 2, 3, 4]) await tap([1, x], [2, x])
+      await tap([1, 5])
+      return user
+    }
+
+    it('keeps the field in a rematch', async () => {
+      const user = await wonOnTheBiggerField()
+      await user.click(screen.getByRole('button', { name: 'Nog een keer' }))
+      expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(49)
+      expect(screen.getByText('7 × 7, vijf op een rij')).toBeVisible()
+    })
+
+    it('can be chosen again with "Andere vormen"', async () => {
+      const user = await wonOnTheBiggerField()
+      await user.click(screen.getByRole('button', { name: 'Andere vormen' }))
+      expect(screen.getByRole('group', { name: 'Veld' })).toBeVisible()
+      await user.click(screen.getByRole('button', { name: /Groot/ }))
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+      expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(225)
     })
   })
 })

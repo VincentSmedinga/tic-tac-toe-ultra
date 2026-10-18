@@ -3,6 +3,7 @@ import { replayGame } from '../../shared/game/index.ts'
 import type { GameState } from '../../shared/game/index.ts'
 import type { ClientMessage, StateMessage } from '../../shared/protocol.ts'
 import { Board } from '../play/Board.tsx'
+import { fieldLabel } from '../play/field.ts'
 import { nameOf, shapeOf } from '../play/players.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
@@ -104,6 +105,8 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
         )}
         <span>{statusText(state, game)}</span>
       </p>
+
+      <p className="field-label">{fieldLabel(state.field)}</p>
 
       <Board
         game={game}

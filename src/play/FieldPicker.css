@@ -1,0 +1,111 @@
+.field-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.field-picker legend {
+  margin-bottom: 0.5rem;
+  padding: 0;
+  font-weight: 600;
+}
+
+.field-presets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.field-presets button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+  min-width: 0;
+  min-height: 3.5rem;
+  padding: 0.25rem 1rem;
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.field-preset-name {
+  font-weight: 700;
+}
+
+.field-preset-size {
+  font-size: 0.8125rem;
+}
+
+.field-presets button[aria-pressed='true'] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--page);
+}
+
+.field-custom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.field-custom label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.field-custom select {
+  min-width: 5rem;
+  min-height: 3rem;
+  padding: 0 0.5rem;
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page);
+  color: inherit;
+  font: inherit;
+  font-size: 1.125rem;
+}
+
+.field-presets button:focus-visible,
+.field-custom select:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.field-summary {
+  margin: 0.75rem 0 0;
+  font-weight: 600;
+}
+
+.field-tip {
+  margin: 0.5rem 0 0;
+  font-size: 0.9375rem;
+}
+
+.field-tip-button {
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.field-tip-button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}

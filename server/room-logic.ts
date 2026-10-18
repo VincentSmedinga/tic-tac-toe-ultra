@@ -1,7 +1,8 @@
 import { applyMove, replayGame } from '../shared/game/index.ts'
 import type { Cell, GameState, Move } from '../shared/game/index.ts'
 import type { ErrorCode, StateMessage, StoredGame } from '../shared/protocol.ts'
-import { ROOM_SEATS, roomConfig } from '../shared/room.ts'
+import { CLASSIC_FIELD, ROOM_SEATS, roomConfig } from '../shared/room.ts'
+import type { FieldSettings } from '../shared/room.ts'
 import type { ShapeId } from '../shared/shapes.ts'
 
 /**
@@ -21,6 +22,8 @@ export interface Seat {
 }
 
 export interface RoomState {
+  /** How big the field is and how many in a row win; a room stored before this is classic. */
+  field?: FieldSettings
   round: number
   seats: Seat[]
   moves: Move[]
@@ -41,8 +44,13 @@ export type RoomGame =
   /** The stored moves don't replay: only a rematch gets the room going again. */
   | { kind: 'damaged' }
 
-export function newRoom(): RoomState {
-  return { round: 0, seats: [], moves: [] }
+export function newRoom(field: FieldSettings = CLASSIC_FIELD): RoomState {
+  return { field, round: 0, seats: [], moves: [] }
+}
+
+/** The field of a room: the one it was made with, or the classic one for a room from before. */
+export function fieldOf(room: RoomState): FieldSettings {
+  return room.field ?? CLASSIC_FIELD
 }
 
 function ok(room: RoomState): Change {
@@ -65,7 +73,7 @@ export function gameOf(room: RoomState): RoomGame {
   if (room.seats.length < ROOM_SEATS.length) return { kind: 'waiting' }
   const shapes = shapesOf(room)
   if (!shapes) return { kind: 'choosing' }
-  const replayed = replayGame(roomConfig(room.round, shapes), room.moves)
+  const replayed = replayGame(roomConfig(room.round, shapes, fieldOf(room)), room.moves)
   return replayed.ok ? { kind: 'game', game: replayed.state } : { kind: 'damaged' }
 }
 
@@ -147,7 +155,7 @@ export function rematch(room: RoomState, token: string): Change {
   if (current.kind === 'choosing') return fail('shape-needed')
   if (current.kind === 'game' && current.game.status.kind === 'playing')
     return fail('game-not-over')
-  return ok({ round: room.round + 1, seats: room.seats, moves: [] })
+  return ok({ field: room.field, round: room.round + 1, seats: room.seats, moves: [] })
 }
 
 /** Whether the round has been won or drawn. A damaged or waiting room is not over. */
@@ -193,11 +201,12 @@ export function stateFor(
   // The game is there once everybody has a shape; a damaged room shows an empty board until
   // someone starts a rematch.
   const shapes = shapesOf(room)
-  const config = shapes ? roomConfig(room.round, shapes) : undefined
+  const config = shapes ? roomConfig(room.round, shapes, fieldOf(room)) : undefined
   return {
     type: 'state',
     code,
     you: seat.id,
+    field: { ...fieldOf(room) },
     round: room.round,
     players: room.seats.map(({ token: seatToken, id, name, shape }) => ({
       id,

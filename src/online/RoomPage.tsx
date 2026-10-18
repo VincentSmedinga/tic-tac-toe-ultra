@@ -3,6 +3,7 @@ import type { ClientMessage, StateMessage } from '../../shared/protocol.ts'
 import type { ShapeId } from '../../shared/shapes.ts'
 import { ShapePicker } from '../play/ShapePicker.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
+import { fieldLabel } from '../play/field.ts'
 import { nameOf } from '../play/players.ts'
 import {
   clearLastRoom,
@@ -140,6 +141,7 @@ function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMes
       <p className="room-code" aria-label={`Code ${state.code.split('').join(' ')}`}>
         {state.code}
       </p>
+      <p className="field-label">Veld: {fieldLabel(state.field)}</p>
       {!together && <ShareLink code={state.code} />}
       <Players state={state} />
       <ShapePicker

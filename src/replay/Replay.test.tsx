@@ -261,7 +261,9 @@ describe('Replay', () => {
       const moves = played(30)
       render(<Replay config={config} moves={moves} />)
       expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(144)
-      expect(screen.getByRole('group', { name: 'Speelveld' })).toHaveAttribute('data-dense')
+      expect(screen.getByRole('group', { name: 'Speelveld' }).parentElement).toHaveAttribute(
+        'data-dense',
+      )
 
       await userEvent.click(screen.getByRole('button', { name: 'Naar het einde' }))
       expect(cell(1, 1)).toHaveAccessibleName('Rij 1, kolom 1: ster')
