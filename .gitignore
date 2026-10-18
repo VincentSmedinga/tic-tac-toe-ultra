@@ -26,3 +26,8 @@ blob-report/
 
 # Personal Claude Code settings
 .claude/settings.local.json
+
+# Photos straight from a phone carry the place where they were taken: only commit a copy without
+# metadata (a PNG without its eXIf and iTXt chunks, see docs/plan.md, Shapes and colours)
+docs/reference/*.heic
+docs/reference/*.HEIC
