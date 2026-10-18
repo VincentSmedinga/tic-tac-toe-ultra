@@ -18,6 +18,8 @@ export { Room } from './room.ts'
 
 /** How often a new room code is tried before giving up: a clash is rare, 160,000 codes are free. */
 const CREATE_ATTEMPTS = 10
+/** How long a browser may keep the statistics: short, so a game just played soon shows up. */
+const STATS_MAX_AGE = 30
 
 /**
  * The Worker: answers /api/*; every other address is the app, which Cloudflare serves itself.
@@ -38,6 +40,7 @@ export default {
 
     if (parts[1] === 'health' && parts.length === 2) return Response.json({ status: 'ok' })
     if (parts[1] === 'games') return getGame(parts, request, env)
+    if (parts[1] === 'stats' && parts.length === 2) return getStats(request, env)
     if (parts[1] !== 'rooms') return notFound()
 
     if (parts.length === 2) {
@@ -76,6 +79,15 @@ async function getGame(parts: string[], request: Request, env: Env): Promise<Res
   if (request.method !== 'GET') return methodNotAllowed('GET')
   const game = await env.ARCHIVE.getByName(ARCHIVE_NAME).get(id.data)
   return game ? Response.json(game) : notFound()
+}
+
+async function getStats(request: Request, env: Env): Promise<Response> {
+  if (request.method !== 'GET') return methodNotAllowed('GET')
+  const stats = await env.ARCHIVE.getByName(ARCHIVE_NAME).stats()
+  // Only counts and shapes, the same for everyone: a browser may keep it for a moment.
+  return Response.json(stats, {
+    headers: { 'Cache-Control': `public, max-age=${STATS_MAX_AGE.toString()}` },
+  })
 }
 
 async function listGames(request: Request, env: Env): Promise<Response> {

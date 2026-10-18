@@ -153,6 +153,77 @@ export const GAMES_PAGE_SIZE = 20
 export const MAX_GAMES_PAGE_SIZE = 50
 
 /**
+ * What `GET /api/stats` answers: the numbers of all finished games together, worked out from the
+ * archive. It holds no names, no tokens and no moves of a single game: only counts, and the shapes.
+ * Anything about how long a game took leaves out the games kept before they had a start time.
+ */
+const countSchema = z.number().int().min(0)
+const spreadSchema = z.object({
+  /** How many games the numbers are from. */
+  games: countSchema,
+  average: z.number().min(0),
+  median: z.number().min(0),
+  shortest: z.number().min(0),
+  longest: z.number().min(0),
+})
+const outcomesSchema = z.object({ won: countSchema, drawn: countSchema })
+const starterSchema = z.object({ won: countSchema, lost: countSchema, drawn: countSchema })
+
+export const statsSchema = z.object({
+  games: countSchema,
+  won: countSchema,
+  drawn: countSchema,
+  /** The last twelve weeks, oldest first, empty weeks included; `start` is a Monday, as YYYY-MM-DD. */
+  weeks: z.array(outcomesSchema.extend({ start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) })),
+  /** Milliseconds from the first move to the last. */
+  duration: spreadSchema.nullable(),
+  /** Moves per game. */
+  moves: spreadSchema.nullable(),
+  /** Every shape that was played, the most played first. */
+  shapes: z.array(outcomesSchema.extend({ shape: shapeSchema, games: countSchema })),
+  /** The player who made the first move, over all games: did starting win? */
+  starter: starterSchema,
+  /** The kinds of game that were played (field, row and number of players), the most played first. */
+  kinds: z.array(
+    z.object({
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+      winLength: z.number().int().min(2),
+      players: z.number().int().min(2),
+      games: countSchema,
+      won: countSchema,
+      drawn: countSchema,
+      starter: starterSchema,
+      averageMoves: z.number().min(0),
+      /** How often each cell was played first, row by row (`width` × `height` numbers). */
+      firstMoves: z.array(countSchema),
+      /** In how many won games each cell was part of a winning line, row by row. */
+      winningCells: z.array(countSchema),
+    }),
+  ),
+  /** Games finished on each day of the week (Monday first) and each hour of the day, Dutch time. */
+  weekdays: z.array(countSchema).length(7),
+  hours: z.array(countSchema).length(24),
+  fun: z.object({
+    /** The quickest win, by the clock. */
+    fastestWin: z
+      .object({ shape: shapeSchema, milliseconds: countSchema, moves: countSchema })
+      .nullable(),
+    /** The game with the most moves. */
+    longestGame: z
+      .object({ moves: countSchema, width: countSchema, height: countSchema })
+      .nullable(),
+    /** The most games won in a row by one shape, counting only the games that shape played. */
+    longestRun: z.object({ shape: shapeSchema, wins: countSchema }).nullable(),
+    /** The two shapes that sat at the same game most often. */
+    favouritePair: z
+      .object({ shapes: z.tuple([shapeSchema, shapeSchema]), games: countSchema })
+      .nullable(),
+  }),
+})
+export type Stats = z.infer<typeof statsSchema>
+
+/**
  * The whole room as one player sees it, sent again after every change. A game is its config plus
  * its moves (see shared/game/): the receiver rebuilds the game with `replayGame`, so there is no
  * second description of a game to keep in step.

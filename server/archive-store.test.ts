@@ -128,6 +128,25 @@ describe('the archive store', () => {
     expect(again.get(WON.id)?.id).toBe(WON.id)
   })
 
+  describe('listing every game', () => {
+    it('gives all games oldest first, and skips one that was damaged', () => {
+      store.save({ ...WON, id: 'second-second-se' }, 20)
+      store.save({ ...WON, id: 'first-first-firs' }, 10)
+      store.save({ ...WON, id: 'broken-broken-br' }, 30)
+      database.prepare("UPDATE games SET data = 'not json' WHERE id = 'broken-broken-br'").run()
+      expect(store.all().map(({ id }) => id)).toEqual(['first-first-firs', 'second-second-se'])
+    })
+
+    it('is empty before a game is kept', () => {
+      expect(store.all()).toEqual([])
+    })
+
+    it('holds no token, hash or owner, so the statistics can never give one away', () => {
+      store.save({ ...WON, owners: ['hash-x'] }, 1)
+      expect(JSON.stringify(store.all())).not.toContain('hash-')
+    })
+  })
+
   describe('listing the games of a player', () => {
     /** A game with an id made from a number, played by these owners at this time. */
     const idOf = (n: number) => n.toString().padStart(16, 'g')
