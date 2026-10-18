@@ -21,15 +21,15 @@ A game where many players play noughts and crosses together on one big field, ea
 
 The first set is drawn by hand: [docs/reference/shapes.png](reference/shapes.png). Seven shapes, each with its own marker colour (name and number are on the photo):
 
-| Shape                                           | Colour         |
-| ----------------------------------------------- | -------------- |
-| Cross (X)                                       | vivid red 4    |
-| Circle (O)                                      | royal blue 70  |
-| Square                                          | grass green 47 |
-| Diamond                                         | ultramarine 73 |
-| Star                                            | WG8 (grey)     |
-| Plus                                            | vivid pink 6   |
-| Asterisk, a cross with a line (to be confirmed) | ice blue 65    |
+| Shape                         | Colour         |
+| ----------------------------- | -------------- |
+| Cross (X)                     | vivid red 4    |
+| Circle (O)                    | royal blue 70  |
+| Square                        | grass green 47 |
+| Diamond                       | ultramarine 73 |
+| Star                          | WG8 (grey)     |
+| Plus                          | vivid pink 6   |
+| Asterisk, a cross with a line | ice blue 65    |
 
 The SVGs follow the hand-drawn lines, so they keep a slightly wobbly, hand-made look. The colour belongs to the shape and becomes a design token (hex to be chosen from the photo). Seven shapes means the first set supports up to seven players.
 
@@ -42,5 +42,4 @@ The SVGs follow the hand-drawn lines, so they keep a slightly wobbly, hand-made 
 
 ## Open questions
 
-- The seventh shape (ice blue) is read as a cross with a line through it (an asterisk); the person who drew the shapes should confirm it when they are drawn as SVG. The shapes have no names yet.
 - The rules of the big field (how it grows, how many in a row) and more than seven shapes: for milestone 3, not needed yet.

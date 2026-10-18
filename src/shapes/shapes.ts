@@ -1,7 +1,7 @@
 /**
  * The shapes a player can have: the first set, drawn by hand (docs/reference/shapes.png). A
- * player is assigned one of these; the game engine only knows the player's id. The names are
- * provisional, until the person who drew them has seen them.
+ * player is assigned one of these; the game engine only knows the player's id. The Dutch names
+ * are confirmed by the person who drew the shapes.
  */
 export const SHAPES = [
   { id: 'cross', name: 'kruis', marker: 'vivid red 4' },
