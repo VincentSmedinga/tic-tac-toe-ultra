@@ -1,5 +1,6 @@
 import { gamesCursorSchema, storedGameSchema } from '../shared/protocol.ts'
 import type { GamesPage, GameSummary, StoredGame } from '../shared/protocol.ts'
+import type { RoomCounts } from '../shared/stats.ts'
 
 /** The part of Durable Object SQL storage the store uses, so it can run on any SQLite in tests. */
 export interface Sql {
@@ -10,6 +11,11 @@ export interface Sql {
 export type NewGame = Omit<StoredGame, 'finishedAt'> & {
   /** Who sat at the game: tokens from a room, hashes in the store, never sent back out. */
   owners: readonly string[]
+  /**
+   * Which room it was played in, to count the rounds of a room. Kept next to the game and not in
+   * it, so it is never sent back out; a game from before this has none.
+   */
+  roomId?: string
 }
 
 /**
@@ -27,6 +33,17 @@ export class ArchiveStore {
       finished_at INTEGER NOT NULL,
       data TEXT NOT NULL
     )`)
+    // A table from before rooms were counted has no column for the room: add it, once.
+    try {
+      sql.exec('ALTER TABLE games ADD COLUMN room_id TEXT')
+    } catch (error) {
+      if (!/duplicate column/i.test(String(error))) throw error
+    }
+    sql.exec(`CREATE TABLE IF NOT EXISTS rooms (
+      id TEXT PRIMARY KEY,
+      made_at INTEGER NOT NULL,
+      seats INTEGER NOT NULL
+    )`)
     sql.exec(`CREATE TABLE IF NOT EXISTS players (
       owner TEXT NOT NULL,
       game_id TEXT NOT NULL,
@@ -37,13 +54,15 @@ export class ArchiveStore {
   }
 
   /** Keeps a game. Keeping the same id again changes nothing, so a repeated call is harmless. */
-  save({ owners, ...game }: NewGame, finishedAt: number): void {
+  save({ owners, roomId, ...game }: NewGame, finishedAt: number): void {
     const stored: StoredGame = { ...game, finishedAt }
     this.sql.exec(
-      'INSERT OR IGNORE INTO games (id, finished_at, data) VALUES (?, ?, ?)',
-      stored.id,
-      finishedAt,
-      JSON.stringify(stored),
+      roomId === undefined
+        ? 'INSERT OR IGNORE INTO games (id, finished_at, data) VALUES (?, ?, ?)'
+        : 'INSERT OR IGNORE INTO games (id, finished_at, data, room_id) VALUES (?, ?, ?, ?)',
+      ...(roomId === undefined
+        ? [stored.id, finishedAt, JSON.stringify(stored)]
+        : [stored.id, finishedAt, JSON.stringify(stored), roomId]),
     )
     for (const owner of new Set(owners)) {
       this.sql.exec(
@@ -52,6 +71,28 @@ export class ArchiveStore {
         stored.id,
         finishedAt,
       )
+    }
+  }
+
+  /** Notes that a room was made. Noting the same room again changes nothing. */
+  roomMade(id: string, madeAt: number, seats: number): void {
+    this.sql.exec(
+      'INSERT OR IGNORE INTO rooms (id, made_at, seats) VALUES (?, ?, ?)',
+      id,
+      madeAt,
+      seats,
+    )
+  }
+
+  /** How many rooms were made and how many rounds each room with a finished game has. */
+  roomCounts(): RoomCounts {
+    const [made] = this.sql.exec('SELECT COUNT(*) AS n FROM rooms').toArray()
+    const rounds = this.sql
+      .exec('SELECT COUNT(*) AS n FROM games WHERE room_id IS NOT NULL GROUP BY room_id')
+      .toArray()
+    return {
+      made: Number(made?.n ?? 0),
+      rounds: rounds.map(({ n }) => Number(n)),
     }
   }
 

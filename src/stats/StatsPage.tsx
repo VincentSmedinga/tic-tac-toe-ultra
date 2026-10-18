@@ -93,6 +93,7 @@ function Numbers({ stats }: { stats: Stats }) {
       <Lengths stats={stats} />
       <Shapes stats={stats} />
       <Starter stats={stats} />
+      <Rooms stats={stats} />
       {stats.kinds.map((kind) => (
         <Kind
           key={`${kind.width.toString()}x${kind.height.toString()}x${kind.winLength.toString()}x${kind.players.toString()}`}
@@ -228,6 +229,40 @@ function Starter({ stats }: { stats: Stats }) {
         {lost} en speelde er {drawn} gelijk.
       </p>
       <StarterBar won={won} lost={lost} drawn={drawn} />
+    </section>
+  )
+}
+
+function Rooms({ stats }: { stats: Stats }) {
+  const { made, played, rematches, averageRounds, mostRounds, rounds } = stats.rooms
+  if (made === 0) return null
+  const plural = (count: number, one: string, many: string) =>
+    `${count.toString()} ${count === 1 ? one : many}`
+  return (
+    <section className="stats-card" aria-labelledby="stats-rooms">
+      <h3 id="stats-rooms">Kamers en herkansingen</h3>
+      <p>
+        Er {made === 1 ? 'is' : 'zijn'} {plural(made, 'kamer', 'kamers')} gemaakt.
+        {played > 0 &&
+          ` In ${played.toString()} daarvan is een spel uitgespeeld, en in ${rematches.toString()} (${percent(rematches, played)}) is daarna nog een keer gespeeld.`}
+      </p>
+      {played > 0 && (
+        <>
+          <p>
+            Gemiddeld {decimal(averageRounds)} {averageRounds === 1 ? 'ronde' : 'rondes'} per kamer,
+            de meeste {mostRounds}.
+          </p>
+          <h4>Kamers per aantal rondes</h4>
+          <Bars
+            title="Kamers per aantal rondes"
+            bars={rounds.map((value, index) => ({
+              label: index === 4 ? '5+' : (index + 1).toString(),
+              value,
+              description: `${index === 4 ? '5 of meer' : (index + 1).toString()} ${index === 0 ? 'ronde' : 'rondes'}: ${plural(value, 'kamer', 'kamers')}`,
+            }))}
+          />
+        </>
+      )}
     </section>
   )
 }

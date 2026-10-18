@@ -68,6 +68,30 @@ function tally(into: Outcomes, game: StoredGame): void {
   else into.drawn++
 }
 
+/** What is known of the rooms: how many were made, and how many rounds each room with a game has. */
+export interface RoomCounts {
+  made: number
+  rounds: readonly number[]
+}
+
+function roomsOf({ made, rounds }: RoomCounts): Stats['rooms'] {
+  const buckets = [0, 0, 0, 0, 0]
+  for (const count of rounds) {
+    const index = Math.min(count, 5) - 1
+    buckets[index] = (buckets[index] ?? 0) + 1
+  }
+  return {
+    // A room that was never noted as made but has games is a room that was made.
+    made: Math.max(made, rounds.length),
+    played: rounds.length,
+    rematches: rounds.filter((count) => count >= 2).length,
+    averageRounds:
+      rounds.length === 0 ? 0 : rounds.reduce((sum, count) => sum + count, 0) / rounds.length,
+    mostRounds: Math.max(0, ...rounds),
+    rounds: buckets,
+  }
+}
+
 /** The shapes that sat at a game, each once; a player that is no shape (never happens) is left out. */
 function shapesOf(game: StoredGame): ShapeId[] {
   const shapes = game.config.players.flatMap((player) => shapeOfPlayer(player) ?? [])
@@ -79,7 +103,11 @@ function shapesOf(game: StoredGame): ShapeId[] {
  * numbers, so it is tested on a made-up set and can always be rebuilt from the archive. `now` only
  * decides which weeks the weekly numbers show.
  */
-export function computeStats(games: readonly StoredGame[], now: number): Stats {
+export function computeStats(
+  games: readonly StoredGame[],
+  now: number,
+  rooms: RoomCounts = { made: 0, rounds: [] },
+): Stats {
   const ordered = [...games].sort(
     (a, b) => a.finishedAt - b.finishedAt || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
   )
@@ -182,6 +210,7 @@ export function computeStats(games: readonly StoredGame[], now: number): Stats {
         ...kind,
         averageMoves: kindMoves / kind.games,
       })),
+    rooms: roomsOf(rooms),
     weekdays,
     hours,
     fun: {

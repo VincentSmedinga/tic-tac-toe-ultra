@@ -34,12 +34,17 @@ export class Archive extends DurableObject<Env> {
     return this.store.get(id)
   }
 
+  /** Notes that a room was made, so that the statistics can say how many there were. */
+  roomMade(id: string, madeAt: number, seats: number): void {
+    this.store.roomMade(id, madeAt, seats)
+  }
+
   /**
    * The statistics of every game that is kept, worked out now: a family never plays enough games to
    * make this slow, and the numbers can always be rebuilt from the games (see shared/stats.ts).
    */
   stats(): Stats {
-    return computeStats(this.store.all(), Date.now())
+    return computeStats(this.store.all(), Date.now(), this.store.roomCounts())
   }
 
   /** The games of the browser with this token, newest first (see `ArchiveStore.list`). */
