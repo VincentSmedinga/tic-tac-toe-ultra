@@ -102,7 +102,7 @@ function ChooseShapes({ onStart }: { onStart: (shapes: Shapes, field: FieldSetti
 
   return (
     <section className="game choose-shapes" aria-label="Vormen kiezen">
-      <div className="field">
+      <div className="player-count-row">
         <label htmlFor="local-player-count">Aantal spelers</label>
         <select
           id="local-player-count"

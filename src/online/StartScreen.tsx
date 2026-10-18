@@ -160,7 +160,7 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
         <p>
           Je krijgt een code die je aan de anderen geeft. Jullie spelen elk op je eigen apparaat.
         </p>
-        <div className="field">
+        <div className="player-count-row">
           <label htmlFor="player-count">Aantal spelers</label>
           <select
             id="player-count"
@@ -179,10 +179,10 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
               </option>
             ))}
           </select>
-          {players > 2 && isClassic(field) && (
-            <p className="field-tip">Met meer dan twee spelers is een groter veld leuker.</p>
-          )}
         </div>
+        {players > 2 && isClassic(field) && (
+          <p className="field-tip">Met meer dan twee spelers is een groter veld leuker.</p>
+        )}
         <FieldPicker value={field} onChange={setField} />
         <button
           type="button"
