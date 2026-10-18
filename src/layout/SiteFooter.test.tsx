@@ -18,6 +18,10 @@ describe('SiteFooter', () => {
       'href',
       '/spellen',
     )
+    expect(links().getByRole('link', { name: 'Statistieken' })).toHaveAttribute(
+      'href',
+      '/statistieken',
+    )
     expect(screen.getByRole('region', { name: 'Uiterlijk' })).toBeVisible()
   })
 
@@ -29,6 +33,12 @@ describe('SiteFooter', () => {
     rerender(<SiteFooter route={{ name: 'games' }} />)
     expect(links().getByRole('link', { name: 'Terug naar het begin' })).toBeVisible()
     expect(links().queryByRole('link', { name: 'Gespeelde spellen' })).not.toBeInTheDocument()
+  })
+
+  it('leaves out the link to the statistics on the statistics', () => {
+    render(<SiteFooter route={{ name: 'stats' }} />)
+    expect(links().queryByRole('link', { name: 'Statistieken' })).not.toBeInTheDocument()
+    expect(links().getByRole('link', { name: 'Gespeelde spellen' })).toBeVisible()
   })
 
   it('takes you there without loading the page again', async () => {

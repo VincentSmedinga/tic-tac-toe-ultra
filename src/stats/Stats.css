@@ -1,0 +1,320 @@
+/*
+ * The page Statistieken. Like the page of played games it is a column of centred cards. A look
+ * paints the cards at the bottom of this file; the charts use only the text colour, the line colour
+ * and the shapes' own tokens, so they hold their contrast in every look, light and dark.
+ */
+.stats {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+  width: min(100%, 34rem);
+  margin: 1rem auto;
+}
+
+.stats h2,
+.stats h3,
+.stats h4,
+.stats p {
+  margin: 0;
+}
+
+.stats h3 {
+  font-family: var(--font-title);
+  font-size: 1.375rem;
+}
+
+.stats h4 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.stats-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 3px solid var(--line);
+  border-radius: 1rem;
+  font-size: 1.0625rem;
+}
+
+.stats-note {
+  font-size: 0.875rem;
+  opacity: 0.85;
+}
+
+/* Text for screen readers, which is there but not drawn. */
+.stats-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.stats-figures {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem 2rem;
+  margin: 0;
+}
+
+.stats-figures div {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+}
+
+.stats-figures dt {
+  font-size: 0.9375rem;
+}
+
+.stats-figures dd {
+  margin: 0;
+  font-family: var(--font-title);
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* Bars: a row of columns that all have the same width, however many there are. */
+.stats-bars {
+  margin: 0;
+}
+
+.stats-bars ul {
+  display: grid;
+  grid-template-columns: repeat(var(--bars), minmax(0, 1fr));
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stats-bars li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+
+.stats-bar-value,
+.stats-bar-label {
+  min-height: 1.25em;
+  font-size: 0.8125rem;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.stats-bar-label {
+  /* The label may be wider than its column; it is centred over it and the neighbours are empty. */
+  align-self: stretch;
+  overflow: visible;
+  text-align: center;
+}
+
+.stats-bar-track {
+  display: flex;
+  align-items: flex-end;
+  align-self: stretch;
+  height: 5rem;
+  border-bottom: 2px solid var(--line);
+}
+
+.stats-bar {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: color-mix(in srgb, var(--text) 75%, var(--page));
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+}
+
+.stats-table th[scope='row'] {
+  text-align: start;
+  font-weight: 600;
+}
+
+.stats-table thead th {
+  font-weight: 600;
+}
+
+.stats-shapes,
+.stats-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: start;
+}
+
+.stats-shapes li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.stats-shape-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+  font-size: 1rem;
+}
+
+.stats-bar-line {
+  display: block;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 12%, var(--page));
+}
+
+.stats-bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 0.25rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 75%, var(--page));
+}
+
+.stats-facts li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-facts svg {
+  flex: none;
+}
+
+/* Won, equal, lost: three parts of one bar, told apart by the words in them and by their edges. */
+.stats-split {
+  display: flex;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.stats-split-part {
+  flex-basis: auto;
+  min-width: fit-content;
+  padding: 0.25rem 0.75rem;
+  white-space: nowrap;
+}
+
+.stats-split-won {
+  background: color-mix(in srgb, var(--text) 80%, var(--page));
+  color: var(--page);
+}
+
+.stats-split-drawn {
+  background: color-mix(in srgb, var(--text) 25%, var(--page));
+  border-inline: 2px solid var(--line);
+}
+
+.stats-split-lost {
+  background: var(--page);
+}
+
+.stats-heats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem 1.5rem;
+}
+
+.stats-heat {
+  flex: 1 1 11rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0;
+}
+
+.stats-heat figcaption {
+  font-weight: 600;
+}
+
+.stats-heat svg {
+  width: 100%;
+  height: auto;
+  /* A field of 3 × 3 is not drawn as big as one of 19 × 19, but never bigger than a thumb per cell. */
+  max-width: calc(var(--columns) * 2.75rem);
+}
+
+.stats-heat-cell {
+  fill: var(--text);
+  stroke: var(--line);
+  stroke-width: 0.4;
+}
+
+/* The looks: the same cards as the rest of the game, each in its own paint. */
+html[data-look='drawn'] .stats-card {
+  background: var(--page);
+  border: 3px solid var(--ink);
+  border-radius: 14px 30px 16px 28px / 28px 14px 30px 16px;
+  box-shadow: 4px 5px 0 var(--ink);
+}
+
+html[data-look='drawn'] .stats-card:nth-of-type(odd) {
+  transform: rotate(-0.4deg);
+}
+
+html[data-look='drawn'] .stats-card:nth-of-type(even) {
+  transform: rotate(0.3deg);
+}
+
+html[data-look='playful'] .stats-card {
+  background: var(--page);
+  border: 4px solid var(--edge);
+  border-radius: 1.5rem;
+  box-shadow: 0 7px 0 var(--edge);
+}
+
+/* The title and the first words are loose text: a card of their own, as the other pages. */
+html[data-look='playful'] .stats > h2 {
+  align-self: center;
+  padding: 0.25rem 1.25rem;
+  border: 4px solid var(--edge);
+  border-radius: 999px;
+  background: var(--page);
+  box-shadow: 0 4px 0 var(--edge);
+}
+
+html[data-look='calm'] .stats {
+  gap: clamp(1.5rem, 5vw, 2.5rem);
+  width: 100%;
+}
+
+html[data-look='calm'] .stats-card {
+  border: 0;
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--text) 7%, var(--page));
+}
+
+html[data-look='calm'] .stats-split {
+  border-color: var(--text);
+}

@@ -14,6 +14,12 @@ describe('parseRoute', () => {
     expect(parseRoute('/samen/')).toEqual({ name: 'local' })
   })
 
+  it('knows the statistics', () => {
+    expect(parseRoute('/statistieken')).toEqual({ name: 'stats' })
+    expect(parseRoute('/statistieken/')).toEqual({ name: 'stats' })
+    expect(parseRoute('/statistieken/meer')).toEqual({ name: 'start' })
+  })
+
   it('knows a room, also when the code was typed in lower case', () => {
     expect(parseRoute('/kamer/BCDF')).toEqual({ name: 'room', code: 'BCDF' })
     expect(parseRoute('/kamer/bcdf')).toEqual({ name: 'room', code: 'BCDF' })
