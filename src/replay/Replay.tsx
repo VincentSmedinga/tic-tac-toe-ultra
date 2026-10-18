@@ -24,12 +24,14 @@ type SpeedId = (typeof SPEEDS)[number]['id']
 
 /** Looks at a game again, move by move: with buttons, a slider, the arrow keys, or on its own. */
 export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
-  const [step, setStep] = useState(0)
+  const [requested, setStep] = useState(0)
   const [autoplay, setAutoplay] = useState(false)
   const [speed, setSpeed] = useState<SpeedId>('normal')
 
   const replayed = replayGame(config, moves)
   const total = moves.length
+  // The game may get shorter under the replay (other moves are passed in): never go past the end.
+  const step = Math.min(requested, total)
   // Autoplay stops by itself at the end, without anything having to switch it off.
   const playing = autoplay && step < total
   const delay = SPEEDS.find(({ id }) => id === speed)?.delay ?? 800
