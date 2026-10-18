@@ -7,8 +7,8 @@ import type { Random } from './random.ts'
  * never draws the same line twice. Nothing here knows about React or the browser: it picks, and
  * `play.ts` plays what was picked.
  *
- * Everything is a function of (seed, number of the move, number of strokes): the same seed gives
- * the same plan, which is what lets a test fix it and, later, lets a replay write a game the way it
+ * Everything is a function of (seed, number of the move, the strokes and whether they go round): the
+ * same seed gives the same plan, which is what lets a test fix it and, later, lets a replay write a game the way it
  * was written live.
  */
 
@@ -84,17 +84,45 @@ export function arrivalVariant(seed: number, move: number): ArrivalVariant {
 }
 
 /**
- * The plan for writing the shape of the move with this number, whose strokes are this long (only
- * their lengths relative to each other matter; see `strokeLengths`).
+ * Strokes that follow each other round a shape (the square) are written going round: from a stroke
+ * at random, one way or the other, every stroke in that direction. That is four sides and two
+ * directions, eight ways to start. It has a generator of its own, so it never changes the rhythm or
+ * the jitter of the plan.
  */
-export function arrivalPlan(seed: number, move: number, lengths: readonly number[]): ArrivalPlan {
+function ringOrder(random: Random, strokes: number) {
+  const first = Math.floor(random() * strokes)
+  const reverse = random() < 0.5
+  const step = reverse ? strokes - 1 : 1
+  return {
+    order: Array.from({ length: strokes }, (_, i) => (first + i * step) % strokes),
+    reverse,
+  }
+}
+
+/**
+ * The plan for writing the shape of the move with this number, whose strokes are this long (only
+ * their lengths relative to each other matter; see `strokeLengths`). With `ring`, the strokes follow
+ * each other round the shape (`isRing`) and are written in that order.
+ */
+export function arrivalPlan(
+  seed: number,
+  move: number,
+  lengths: readonly number[],
+  ring = false,
+): ArrivalPlan {
   const variant = arrivalVariant(seed, move)
   const rhythm = RHYTHMS[variant]
   const random = createRandom(seedFrom(seed, move, 2))
-  const order = shuffled(
-    random,
-    lengths.map((_, path) => path),
-  )
+  const round =
+    ring && lengths.length > 1
+      ? ringOrder(createRandom(seedFrom(seed, move, 3)), lengths.length)
+      : undefined
+  const order =
+    round?.order ??
+    shuffled(
+      random,
+      lengths.map((_, path) => path),
+    )
   const total = between(random, ...rhythm.total)
 
   // What each stroke weighs in the time: its length, a little off, since a hand is never even.
@@ -115,9 +143,10 @@ export function arrivalPlan(seed: number, move: number, lengths: readonly number
   let delay = 0
   const strokes = order.map((path, i): StrokePlan => {
     const duration = (weights[i] ?? 0) * speed
-    const stroke = {
+    const reverse = random() < 0.5
+    const stroke: StrokePlan = {
       path,
-      reverse: random() < 0.5,
+      reverse: round?.reverse ?? reverse,
       delay: Math.round(delay),
       duration: Math.round(duration),
     }
