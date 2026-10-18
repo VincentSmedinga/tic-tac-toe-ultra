@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RoomApi } from './api.ts'
-import { setName } from './identity.ts'
+import { getLastRoom, setLastRoom, setName } from './identity.ts'
 import { StartScreen } from './StartScreen.tsx'
 
 function fakeApi(overrides: Partial<RoomApi> = {}): RoomApi {
@@ -22,6 +22,51 @@ afterEach(() => {
 })
 
 describe('StartScreen', () => {
+  describe('a room this browser is still in', () => {
+    it('offers the way back to it, first of all', async () => {
+      setLastRoom('BCDF')
+      render(<StartScreen api={fakeApi()} />)
+      const card = await screen.findByRole('region', { name: 'Je speelt nog mee' })
+      const link = within(card).getByRole('link', { name: 'Terug naar kamer BCDF' })
+      expect(link).toHaveAttribute('href', '/kamer/BCDF')
+    })
+
+    it('goes back to the room when it is followed', async () => {
+      setLastRoom('BCDF')
+      render(<StartScreen api={fakeApi()} />)
+      await userEvent
+        .setup()
+        .click(await screen.findByRole('link', { name: 'Terug naar kamer BCDF' }))
+      expect(window.location.pathname).toBe('/kamer/BCDF')
+    })
+
+    it('offers nothing when there is no room to go back to', () => {
+      render(<StartScreen api={fakeApi()} />)
+      expect(screen.queryByRole('region', { name: 'Je speelt nog mee' })).not.toBeInTheDocument()
+    })
+
+    it('offers nothing, and forgets the room, when it no longer exists', async () => {
+      setLastRoom('BCDF')
+      const api = fakeApi({ roomExists: vi.fn(() => Promise.resolve(false)) })
+      render(<StartScreen api={api} />)
+      await vi.waitFor(() => {
+        expect(getLastRoom()).toBeNull()
+      })
+      expect(screen.queryByRole('region', { name: 'Je speelt nog mee' })).not.toBeInTheDocument()
+    })
+
+    it('offers nothing, but keeps the room, when the server cannot be asked', async () => {
+      setLastRoom('BCDF')
+      const roomExists = vi.fn(() => Promise.reject(new Error('offline')))
+      render(<StartScreen api={fakeApi({ roomExists })} />)
+      await vi.waitFor(() => {
+        expect(roomExists).toHaveBeenCalledWith('BCDF')
+      })
+      expect(screen.queryByRole('region', { name: 'Je speelt nog mee' })).not.toBeInTheDocument()
+      expect(getLastRoom()).toBe('BCDF')
+    })
+  })
+
   it('shows the three ways to play as choices of their own, each with its action', () => {
     render(<StartScreen api={fakeApi()} />)
     const choices = [

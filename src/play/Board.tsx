@@ -6,17 +6,19 @@ import { shapeOf } from './players.ts'
 interface BoardProps {
   game: GameState
   onPlay: (cell: Cell) => void
+  /** False when it is not for this player to move (online): no cell can be played. */
+  interactive?: boolean
 }
 
 /** The field as a grid of buttons: one tap or key press on an empty cell plays it. */
-export function Board({ game, onPlay }: BoardProps) {
+export function Board({ game, onPlay, interactive = true }: BoardProps) {
   const { width } = game.config
   const winning = new Set(
     game.status.kind === 'won'
       ? game.status.line.map(({ x, y }) => `${x.toString()},${y.toString()}`)
       : [],
   )
-  const playing = game.status.kind === 'playing'
+  const playing = game.status.kind === 'playing' && interactive
 
   return (
     <div

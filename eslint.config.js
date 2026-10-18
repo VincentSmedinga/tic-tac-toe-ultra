@@ -8,7 +8,14 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default defineConfig([
-  globalIgnores(['.claude/worktrees', 'dist', 'coverage', 'docs/reference']),
+  globalIgnores([
+    '.claude/worktrees',
+    'dist',
+    'coverage',
+    'docs/reference',
+    'playwright-report',
+    'test-results',
+  ]),
 
   {
     name: 'tic-tac-toe-ultra/typescript',

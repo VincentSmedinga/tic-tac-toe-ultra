@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { tokenSchema } from '../../shared/protocol.ts'
-import { getName, getToken, sanitizeName, setName } from './identity.ts'
+import {
+  clearLastRoom,
+  getLastRoom,
+  getName,
+  getToken,
+  sanitizeName,
+  setLastRoom,
+  setName,
+} from './identity.ts'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -90,5 +98,40 @@ describe('sanitizeName', () => {
       expect(clean.length).toBeLessThanOrEqual(20)
       expect(/^[^\p{C}]*$/u.test(clean)).toBe(true)
     }
+  })
+})
+
+describe('the room this browser last sat in', () => {
+  afterEach(() => {
+    clearLastRoom()
+  })
+
+  it('is none until a room is remembered, and then it is that room', () => {
+    expect(getLastRoom()).toBeNull()
+    setLastRoom('BCDF')
+    expect(getLastRoom()).toBe('BCDF')
+    expect(window.localStorage.getItem('tic-tac-toe-ultra.room')).toBe('BCDF')
+  })
+
+  it('can be forgotten', () => {
+    setLastRoom('BCDF')
+    clearLastRoom()
+    expect(getLastRoom()).toBeNull()
+    expect(window.localStorage.getItem('tic-tac-toe-ultra.room')).toBeNull()
+  })
+
+  it('is none when what is in storage is no room code', () => {
+    window.localStorage.setItem('tic-tac-toe-ultra.room', 'nonsense')
+    expect(getLastRoom()).toBeNull()
+  })
+
+  it('still works for this visit when localStorage is off', () => {
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError')
+    })
+    setLastRoom('GHJK')
+    expect(getLastRoom()).toBe('GHJK')
+    clearLastRoom()
+    expect(getLastRoom()).toBeNull()
   })
 })

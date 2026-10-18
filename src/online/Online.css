@@ -193,3 +193,22 @@
   margin: 0;
   font-weight: 600;
 }
+
+.players-row {
+  flex-direction: row;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.players-row .player {
+  font-size: 1rem;
+}
+
+.players-row .player[data-you] {
+  font-weight: 700;
+}
+
+.resume-code {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.2em;
+}

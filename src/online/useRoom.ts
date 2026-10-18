@@ -53,10 +53,18 @@ interface HookState {
 
 type HookAction =
   | { type: 'reset' }
+  /** Another try after the connection was lost: what is on screen stays. */
+  | { type: 'reconnecting' }
   | { type: 'open' }
   | { type: 'closed'; problem?: RoomProblem }
   | { type: 'state'; state: StateMessage }
   | { type: 'problem'; problem: RoomProblem }
+
+/** How long to wait before the next try after a lost connection: quick at first, then calmer. */
+export const RECONNECT_DELAYS_MS = [500, 1000, 2000, 4000, 8000]
+
+/** Problems that trying again won't solve: the room is gone or full, or this player is elsewhere. */
+const FINAL_PROBLEMS: readonly RoomProblem[] = ['unknown-room', 'room-full', 'replaced']
 
 const START: HookState = { connection: 'connecting', state: null, problem: null }
 
@@ -64,6 +72,8 @@ function reduce(previous: HookState, action: HookAction): HookState {
   switch (action.type) {
     case 'reset':
       return { ...START, state: previous.state }
+    case 'reconnecting':
+      return { ...previous, connection: 'connecting', problem: null }
     case 'open':
       return { ...previous, connection: 'open' }
     case 'closed':
@@ -88,6 +98,8 @@ export function useRoom(
   const [view, dispatch] = useReducer(reduce, START)
   const [attempt, setAttempt] = useState(0)
   const socketRef = useRef<WebSocket | null>(null)
+  // How many tries in a row failed; it starts again from nothing when a connection opens.
+  const failuresRef = useRef(0)
 
   useEffect(() => {
     // What the callbacks below check, so that a socket that is already replaced stays quiet.
@@ -112,6 +124,7 @@ export function useRoom(
       socketRef.current = socket
       socket.onopen = () => {
         if (!session.active) return
+        failuresRef.current = 0
         dispatch({ type: 'open' })
         const { token, name } = identity
         const join: ClientMessage =
@@ -143,9 +156,40 @@ export function useRoom(
   }, [code, deps, attempt, identity])
 
   const retry = useCallback(() => {
+    failuresRef.current = 0
     dispatch({ type: 'reset' })
     setAttempt((value) => value + 1)
   }, [])
+
+  // A lost connection comes back by itself: after a short wait that grows with every failed try,
+  // and at once when the phone is awake again or the network is back.
+  const { connection, problem } = view
+  useEffect(() => {
+    const lost = connection === 'closed' && (problem === null || !FINAL_PROBLEMS.includes(problem))
+    if (!lost || problem === 'invalid-message') return
+
+    const tryAgain = () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', tryAgain)
+      dispatch({ type: 'reconnecting' })
+      setAttempt((value) => value + 1)
+    }
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') tryAgain()
+    }
+    const delay =
+      RECONNECT_DELAYS_MS[Math.min(failuresRef.current, RECONNECT_DELAYS_MS.length - 1)] ?? 8000
+    failuresRef.current += 1
+    const timer = window.setTimeout(tryAgain, delay)
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', tryAgain)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', tryAgain)
+    }
+  }, [connection, problem])
 
   const send = useCallback((message: ClientMessage) => {
     const socket = socketRef.current
