@@ -57,13 +57,14 @@
   outline-offset: 2px;
 }
 
-/* The move just played: a tint and a thin dark ring inside the cell, so it doesn't depend on colour
-   alone. A winning ring (thicker, in the colour of winning) goes over it. */
-.cell[data-last] {
+/* The move just played: a thin dark ring round the patch inside the cell, and a tint where nothing
+   else is behind the shape, so it doesn't depend on colour alone. In a won game the patch keeps
+   its win colour and the ring says which move won. */
+.cell[data-last]::before {
   background: color-mix(in srgb, var(--text) 10%, transparent);
   box-shadow: inset 0 0 0 2px var(--text);
 }
 
-.cell[data-last][data-winning] {
-  box-shadow: inset 0 0 0 var(--ring-width, 4px) var(--win);
+.cell[data-last][data-winning]::before {
+  background: color-mix(in srgb, var(--win) 50%, var(--page));
 }

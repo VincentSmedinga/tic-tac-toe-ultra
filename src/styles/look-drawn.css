@@ -143,7 +143,6 @@ html[data-look='drawn'] .board-frame {
   --line-width: clamp(2px, calc(28px / var(--columns)), 4px);
   --line-color: var(--ink);
   --cell-radius: 0.6rem;
-  --ring-width: 5px;
 }
 
 /* The ring round a winning cell, like the pen drew it: the corners are not the same twice. */

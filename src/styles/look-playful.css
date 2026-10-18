@@ -152,7 +152,6 @@ html[data-look='playful'] .board-frame {
   --line-width: clamp(3px, calc(42px / var(--columns)), 6px);
   --line-color: var(--edge);
   --cell-radius: 1rem;
-  --ring-width: 5px;
 }
 
 html[data-look='playful'][data-scheme='dark'] .board-frame {

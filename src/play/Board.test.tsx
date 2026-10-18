@@ -104,7 +104,7 @@ describe('Board', () => {
       return game
     }
 
-    it('marks every cell of a winning line, a corner once, by a ring and not by colour alone', () => {
+    it('marks every cell of a winning line, a corner once, by a patch behind the shape', () => {
       // Cross wins the top row and the left column at once with the corner.
       const game = tapped([1, 0], [1, 1], [2, 0], [2, 1], [0, 1], [2, 2], [0, 2], [1, 2], [0, 0])
       expect(game.status.kind).toBe('won')
@@ -113,7 +113,11 @@ describe('Board', () => {
         .getAllByRole('button', { name: /^Rij / })
         .filter((cell) => cell.hasAttribute('data-winning'))
       expect(winning).toHaveLength(5)
-      expect(gameCss).toMatch(/\.cell\[data-winning\] \{[^}]*box-shadow: inset 0 0 0/)
+      expect(gameCss).toMatch(
+        /\.cell\[data-winning\]::before \{[^}]*background: color-mix\([^}]*var\(--win\)/,
+      )
+      // The patch of a cell keeps away from the lines: it is smaller than the cell.
+      expect(gameCss).toMatch(/\.cell::before \{[^}]*inset: calc\(var\(--line-width\) \/ 2 \+ /)
     })
 
     it('tells the last move, a taken cell and an empty one apart by more than colour', () => {

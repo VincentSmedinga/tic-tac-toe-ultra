@@ -114,7 +114,6 @@ html[data-look='calm'] .board-frame {
   --line-width: 2px;
   --line-color: var(--line);
   --cell-radius: 0.5rem;
-  --ring-width: 4px;
 }
 
 html[data-look='calm'] .shape-choice {
