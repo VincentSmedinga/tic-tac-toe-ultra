@@ -8,6 +8,7 @@ A game where many players play noughts and crosses together on one big field, ea
 
 - **Online, live.** Players join a room and see each other's moves immediately.
 - **Version 1 is classic 3×3 with two players**, but the engine is already written for N players, any field size and any winning length.
+- **Games can be watched again.** A game is its config plus its moves, which the engine keeps; `replayGame` reads a stored game back and `stateAfter` steps through it. Saving the games and the replay screen are milestone 4; where games are kept and who may see them is decided in its first issue.
 - **TypeScript, React and Vite on Cloudflare.** The same set-up as [Blokhut](https://github.com/VincentSmedinga/blokhut): pnpm, Node 24, Vitest, Playwright, Storybook, Cloudflare Pages, Conventional Commits, pull requests only. Realtime through Durable Objects.
 
 ## Architecture
@@ -39,6 +40,7 @@ The SVGs follow the hand-drawn lines, so they keep a slightly wobbly, hand-made 
 - **1 · Playable 3×3:** the engine with tests, board and shapes, two players locally on one screen (to prove the engine and the UI).
 - **2 · Online:** room server, create and join a room with a code, live moves, reconnecting.
 - **3 · Big field:** configurable size and winning length, three or more players, choosing a shape, a field that grows with the game.
+- **4 · History:** finished games are saved and can be watched again move by move, from a list of played games or a link. The engine already keeps the moves (milestone 1), so this builds on that.
 
 ## Open questions
 
