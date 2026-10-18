@@ -46,6 +46,26 @@ describe('GamesPage', () => {
     expect(api.listGames).toHaveBeenCalledWith(getToken())
   })
 
+  it('shows a few lines about the games of this browser above its list', async () => {
+    const ownStats = {
+      getOwnStats: vi.fn(() =>
+        Promise.resolve({ games: 1, won: 1, lost: 0, drawn: 0, unknown: 0, favourite: null }),
+      ),
+    }
+    render(<GamesPage api={fakeApi([{ games: [summary(1)] }])} ownStats={ownStats} />)
+    const own = await screen.findByRole('region', { name: 'Jouw statistieken' })
+    expect(own).toHaveTextContent('Je hebt 1 spel gespeeld: 1 gewonnen, 0 verloren en 0 gelijk.')
+    expect(ownStats.getOwnStats).toHaveBeenCalledWith(getToken())
+  })
+
+  it('shows no lines about the games of this browser when it has no games', async () => {
+    const ownStats = { getOwnStats: vi.fn(() => Promise.reject(new Error('never asked for'))) }
+    render(<GamesPage api={fakeApi([{ games: [] }])} ownStats={ownStats} />)
+    await screen.findByText(/nog geen spel online gespeeld/)
+    expect(screen.queryByRole('region', { name: 'Jouw statistieken' })).not.toBeInTheDocument()
+    expect(ownStats.getOwnStats).not.toHaveBeenCalled()
+  })
+
   it('says so when there are none, and that a game on one screen is not kept', async () => {
     render(<GamesPage api={fakeApi([{ games: [] }])} />)
     expect(await screen.findByText(/nog geen spel online gespeeld/)).toBeVisible()

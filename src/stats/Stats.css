@@ -318,3 +318,21 @@ html[data-look='calm'] .stats-card {
 html[data-look='calm'] .stats-split {
   border-color: var(--text);
 }
+
+/* "Your statistics", a few lines above the list of played games: loose text, in no look's card. */
+.own-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.own-stats p {
+  margin: 0;
+}
+
+.own-stats-favourite {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
