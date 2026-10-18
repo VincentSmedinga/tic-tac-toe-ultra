@@ -11,7 +11,7 @@ export type Message = string | Partial<Record<Intl.LDMLPluralRule, string>>
 export type MessageKey = keyof typeof nl
 
 /** All the texts of one language. Missing or extra keys are a type error, and a test. */
-export type Dictionary = { readonly [K in MessageKey]: Message }
+export type Dictionary = Readonly<Record<MessageKey, Message>>
 
 type Source = typeof nl
 
@@ -27,9 +27,9 @@ type Forms<K extends MessageKey> = Source[K] extends string
 type PluralName<K extends MessageKey> = Source[K] extends string ? never : 'count'
 
 /** What a text needs to be filled in: a value for every placeholder, and `count` for a plural. */
-export type Values<K extends MessageKey> = {
-  readonly [Name in Names<Forms<K> & string> | PluralName<K>]: string | number
-}
+export type Values<K extends MessageKey> = Readonly<
+  Record<Names<Forms<K> & string> | PluralName<K>, string | number>
+>
 
 /** The arguments of `t(key, …)`: none for a text without placeholders, otherwise the values. */
 export type Args<K extends MessageKey> = [Names<Forms<K> & string> | PluralName<K>] extends [never]

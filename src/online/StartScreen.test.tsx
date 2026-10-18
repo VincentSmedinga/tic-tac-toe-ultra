@@ -1,6 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setLanguage } from '../i18n/store.ts'
+import { dutchLeaks } from '../i18n/testing.ts'
 import type { RoomApi } from './api.ts'
 import { getLastRoom, setLastRoom, setName } from './identity.ts'
 import { StartScreen } from './StartScreen.tsx'
@@ -266,3 +268,52 @@ describe('StartScreen', () => {
     })
   })
 })
+
+describe.each([
+  {
+    language: 'en',
+    heading: 'Start a new room',
+    create: 'New room',
+    join: 'Join',
+    local: 'Play together',
+    code: 'That is not a valid code. Ask the person who made the room for the code again.',
+    resume: 'Back to room BCDF',
+  },
+  {
+    language: 'fy',
+    heading: 'In nije keamer starte',
+    create: 'Nije keamer',
+    join: 'Meidwaan',
+    local: 'Tegearre spylje',
+    code: 'Dat is gjin jildige koade. Freegje de koade opnij oan wa’t de keamer makke hat.',
+    resume: 'Werom nei keamer BCDF',
+  },
+] as const)(
+  'the start screen in $language',
+  ({ language, heading, create, join, local, code, resume }) => {
+    it('says everything in the language, also what went wrong and the way back to a room', async () => {
+      setLanguage(language)
+      setLastRoom('BCDF')
+      render(<StartScreen notice="bad-code" api={fakeApi()} />)
+      expect(await screen.findByRole('link', { name: resume })).toBeVisible()
+      expect(screen.getByRole('heading', { name: heading })).toBeVisible()
+      expect(screen.getByRole('button', { name: create })).toBeVisible()
+      expect(screen.getByRole('button', { name: join })).toBeVisible()
+      expect(screen.getByRole('link', { name: local })).toBeVisible()
+      expect(screen.getByRole('alert')).toHaveTextContent(code)
+      expect(dutchLeaks(language)).toEqual([])
+    })
+
+    it('says why a code is no good, in the language', async () => {
+      setLanguage(language)
+      render(<StartScreen api={fakeApi()} />)
+      await userEvent.setup().click(screen.getByRole('button', { name: join }))
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        language === 'en'
+          ? 'A code has 4 letters, without vowels.'
+          : 'In koade hat 4 letters, sûnder klinkers.',
+      )
+      expect(dutchLeaks(language)).toEqual([])
+    })
+  },
+)

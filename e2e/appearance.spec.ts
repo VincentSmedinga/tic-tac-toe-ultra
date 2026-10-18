@@ -12,6 +12,7 @@ test('the first look is Getekend, and light or dark is what the system says', as
   ] as const) {
     const context = await browser.newContext({
       baseURL: test.info().project.use.baseURL,
+      locale: 'nl-NL',
       colorScheme,
     })
     const page = await context.newPage()

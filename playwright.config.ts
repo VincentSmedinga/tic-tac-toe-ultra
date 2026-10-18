@@ -16,6 +16,8 @@ export default defineConfig({
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: `http://localhost:${PORT.toString()}`,
+    // The tests find things by their Dutch text, so a browser is Dutch unless a test says otherwise.
+    locale: 'nl-NL',
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'phone', use: { ...devices['Pixel 7'] } }],
