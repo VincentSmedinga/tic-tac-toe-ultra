@@ -1,0 +1,29 @@
+# Pull requests are squash-merged with their title as the commit message, so the title follows
+# Conventional Commits too: "feat(app): add the board". The CI workflow's Checks job checks it on
+# every push, as a step of its own; this one only runs when someone edits the title, and isn't a
+# required check. Keep the pattern in sync with that step.
+name: Pull request title
+
+on:
+  pull_request:
+    types: [edited]
+
+permissions: {}
+
+jobs:
+  title:
+    name: Conventional Commits title
+    # An edit of the description or the base branch sends the same event.
+    if: github.event.changes.title != null
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check the title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|refactor|perf|test|docs|style|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: [^ ].*$'
+          if ! printf '%s' "$TITLE" | grep -Eq "$pattern"; then
+            echo "::error title=Pull request title::\"$TITLE\" isn't a Conventional Commits title, like \"feat(app): add the board\"."
+            exit 1
+          fi
