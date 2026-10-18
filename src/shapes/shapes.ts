@@ -28,7 +28,8 @@ export const PATHS: Record<ShapeId, readonly string[]> = {
   circle: ['M40 8 C24 4 8 15 9 33 C10 51 30 59 46 52 C59 46 60 27 51 17 C46 12 41 11 34 17'],
   // Four lines that each go a little past the corner, round and round: the corners stay visible.
   square: ['M6 14 L54 11', 'M53 5 L55 53', 'M59 52 L9 54', 'M12 59 L11 9'],
-  diamond: ['M28 8 L56 30 L36 56 L8 31 L32 4'],
+  // Turned a quarter to the right: the end that sticks out is on the right now.
+  diamond: ['M56 28 L34 56 L8 36 L33 8 L60 32'],
   // The line closes by crossing the first one a little below the top tip.
   star: ['M30 6 L40 25 L58 23 L44 36 L49 54 L32 44 L15 55 L20 36 L6 24 L24 25 L35 12'],
   plus: ['M33 6 L35 58', 'M8 26 L56 27'],
