@@ -8,6 +8,8 @@
   "include": [
     "*.config.ts",
     "scripts",
+    "service-worker/build.ts",
+    "service-worker/*.test.ts",
     "e2e",
     "shared/**/*.test.ts",
     "server/archive-store.test.ts"

@@ -16,3 +16,10 @@
   Cache-Control: public, max-age=86400
 /*.png
   Cache-Control: public, max-age=86400
+
+# The service worker is looked up again every time, so that a new version is found the day it is
+# deployed; the offline page is the worker's own copy and may be old for a moment.
+/sw.js
+  Cache-Control: no-cache
+/offline.html
+  Cache-Control: no-cache

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1b1b1f" />
+    <title>Geen verbinding</title>
+    <style>
+      /* The page of the service worker for a screen opened without a network: it stands alone, so
+         it holds its own few styles, the dark of the icon and the system's font. */
+      html {
+        background: #1b1b1f;
+        color: #f2f2f4;
+        font-family: system-ui, sans-serif;
+      }
+      body {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        min-height: 100dvh;
+        margin: 0;
+        padding: max(1.5rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right))
+          max(1.5rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
+        text-align: center;
+        font-size: 1.25rem;
+        line-height: 1.5;
+      }
+      img {
+        width: 6rem;
+        height: 6rem;
+        border-radius: 1.25rem;
+      }
+      h1 {
+        margin: 0;
+        font-size: 2rem;
+      }
+      p {
+        max-width: 28rem;
+        margin: 0;
+      }
+      /* An empty address is this page's own: trying again opens the screen that was asked for. */
+      a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 3rem;
+        padding: 0 1.5rem;
+        border-radius: 0.75rem;
+        background: #8ab4ff;
+        color: #1b1b1f;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      a:focus-visible {
+        outline: 3px solid #f2f2f4;
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <img src="/icon.svg" alt="" width="96" height="96" />
+    <h1>Geen verbinding</h1>
+    <p>Je bent niet online. Zodra je weer internet hebt, kun je verder met spelen.</p>
+    <a href="">Probeer opnieuw</a>
+  </body>
+</html>
