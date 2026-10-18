@@ -20,8 +20,10 @@ export interface RoomState {
   round: number
   seats: Seat[]
   moves: Move[]
-  /** The stored game of this round, set when the round is over and cleared by a rematch. */
+  /** The id the game of this round is kept under, set when the round is over; a rematch clears it. */
   gameId?: string
+  /** The archive has confirmed it has the game: only then are the players told the id. */
+  archived?: boolean
 }
 
 export type Change = { ok: true; room: RoomState } | { ok: false; error: ErrorCode }
@@ -140,6 +142,7 @@ export function stateFor(
     config: { ...config, players: [...config.players] },
     // A damaged room shows an empty board until someone starts a rematch.
     moves: current.kind === 'game' ? [...current.game.moves] : [],
-    ...(room.gameId === undefined ? {} : { gameId: room.gameId }),
+    // Telling the id before the archive has the game would send people to a link that isn't there yet.
+    ...(room.gameId === undefined || room.archived !== true ? {} : { gameId: room.gameId }),
   }
 }

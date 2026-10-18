@@ -276,11 +276,16 @@ describe('a finished game', () => {
     ])
   })
 
-  it('is told to the players as the id of the game, until a rematch', () => {
+  it('is told to the players as the id of the game once the archive has it, until a rematch', () => {
     const over = { ...playCells(twoPlayers(), xWins), gameId: 'abcdefghijklmnop' }
-    expect(stateFor(over, TOKEN_X, 'BCDF', new Set())?.gameId).toBe('abcdefghijklmnop')
-    const again = room(rematch(over, TOKEN_O))
+    // Not before: the link would lead to a game that isn't there yet.
+    expect(stateFor(over, TOKEN_X, 'BCDF', new Set())).not.toHaveProperty('gameId')
+
+    const kept = { ...over, archived: true }
+    expect(stateFor(kept, TOKEN_X, 'BCDF', new Set())?.gameId).toBe('abcdefghijklmnop')
+    const again = room(rematch(kept, TOKEN_O))
     expect(again.gameId).toBeUndefined()
+    expect(again.archived).toBeUndefined()
     expect(stateFor(again, TOKEN_X, 'BCDF', new Set())).not.toHaveProperty('gameId')
   })
 })

@@ -1,5 +1,7 @@
 import { DurableObject } from 'cloudflare:workers'
 import { ARCHIVE_NAME } from './archive.ts'
+import { ArchiveQueue } from './archive-queue.ts'
+import type { Pending } from './archive-queue.ts'
 import type { Env } from './env.ts'
 import { newGameId } from './game-id.ts'
 import { newRoom } from './room-logic.ts'
@@ -9,8 +11,12 @@ import type { Host } from './room-session.ts'
 
 const ROOM_KEY = 'room'
 const CODE_KEY = 'code'
+const TOUCHED_KEY = 'touched'
+const PENDING_KEY = 'pending-archive'
 /** A room that nobody has touched for this long is deleted, with everything in it. */
 const EXPIRES_AFTER_MS = 24 * 60 * 60 * 1000
+/** A game the archive couldn't keep is tried again after this long. */
+const RETRY_AFTER_MS = 30 * 1000
 
 /** What a socket remembers about itself while the room sleeps. */
 interface Attachment {
@@ -24,6 +30,20 @@ interface Attachment {
  * and what happens on a message in room-session.ts; this class only connects them to Cloudflare.
  */
 export class Room extends DurableObject<Env> {
+  /** The finished games the archive hasn't confirmed yet; they live in this room's storage. */
+  private readonly queue = new ArchiveQueue({
+    read: () => this.ctx.storage.kv.get<Pending[]>(PENDING_KEY) ?? [],
+    write: (pending) => {
+      if (pending.length > 0) this.ctx.storage.kv.put(PENDING_KEY, pending)
+      else this.ctx.storage.kv.delete(PENDING_KEY)
+    },
+    save: ({ id, finishedAt, game }) =>
+      this.env.ARCHIVE.getByName(ARCHIVE_NAME).save({ id, ...game }, finishedAt),
+    saved: (id) => {
+      this.session().archived(id)
+    },
+  })
+
   /** Makes the room with this code; false when it already exists. Called by the Worker. */
   create(code: string): boolean {
     if (this.exists()) return false
@@ -64,17 +84,44 @@ export class Room extends DurableObject<Env> {
     this.session().closed()
   }
 
+  /**
+   * Runs for two reasons: a game the archive couldn't keep is tried again, and a room that nobody
+   * has touched for a day is deleted. The room is kept for as long as a game is waiting for the
+   * archive, so that a game is never lost with the room.
+   */
   override async alarm(): Promise<void> {
+    await this.queue.flush()
+    if (this.queue.size() > 0) {
+      this.schedule()
+      return
+    }
     const connected = this.ctx.getWebSockets().some((ws) => ws.readyState === WebSocket.OPEN)
     if (connected) {
       this.touch()
       return
     }
-    await this.ctx.storage.deleteAll()
+    const touched = this.ctx.storage.kv.get<number>(TOUCHED_KEY) ?? 0
+    if (Date.now() - touched >= EXPIRES_AFTER_MS) await this.ctx.storage.deleteAll()
+    else this.schedule()
   }
 
   private touch(): void {
-    void this.ctx.storage.setAlarm(Date.now() + EXPIRES_AFTER_MS)
+    this.ctx.storage.kv.put(TOUCHED_KEY, Date.now())
+    this.schedule()
+  }
+
+  /** The next alarm: soon when a game is waiting for the archive, else when the room expires. */
+  private schedule(): void {
+    const at =
+      this.queue.size() > 0
+        ? Date.now() + RETRY_AFTER_MS
+        : (this.ctx.storage.kv.get<number>(TOUCHED_KEY) ?? Date.now()) + EXPIRES_AFTER_MS
+    void this.ctx.storage.setAlarm(at)
+  }
+
+  private async keepGames(): Promise<void> {
+    await this.queue.flush()
+    this.schedule()
   }
 
   private session(): RoomSession {
@@ -107,14 +154,10 @@ export class Room extends DurableObject<Env> {
       },
       newGameId,
       archive: (id, game) => {
-        // After the answer to the players has gone out; a failure is logged and never reaches them.
-        this.ctx.waitUntil(
-          this.env.ARCHIVE.getByName(ARCHIVE_NAME)
-            .save({ id, ...game })
-            .catch((error: unknown) => {
-              console.error('Keeping a finished game failed', error)
-            }),
-        )
+        // Written to storage first, so the game survives a failed call, a sleep and a rematch; the
+        // players hear the id once the archive has it (see `archived` in room-session.ts).
+        this.queue.add(id, game, Date.now())
+        this.ctx.waitUntil(this.keepGames())
       },
     }
     return new RoomSession(host)
