@@ -23,6 +23,11 @@ export function nameOf(player: PlayerId): string {
   return name.charAt(0).toUpperCase() + name.slice(1)
 }
 
+/** What to call a player: the name they typed with their shape, or just the shape ("Anna (kruis)"). */
+export function labelOf(player: PlayerId, typed?: string): string {
+  return typed === undefined ? nameOf(player) : `${typed} (${nameOf(player).toLowerCase()})`
+}
+
 /** The players in turn order for a round: every round the other player starts. */
 export function playersForRound(round: number): readonly PlayerId[] {
   const ids = PLAYERS.map(({ id }) => id)

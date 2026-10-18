@@ -201,6 +201,12 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
         </Link>
       </section>
 
+      <p className="start-more">
+        <Link to="/spellen" className="button button-quiet">
+          Gespeelde spellen
+        </Link>
+      </p>
+
       <details>
         <summary>Alle vormen</summary>
         <ShapeGallery />

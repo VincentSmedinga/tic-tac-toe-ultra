@@ -35,7 +35,8 @@ function statusText(state: StateMessage, game: GameState): string {
 
 /** The game of a room: both players, whose turn it is, the board, and a rematch at the end. */
 export function OnlineGame({ state, send }: OnlineGameProps) {
-  const [replaying, setReplaying] = useState(false)
+  // The round whose replay is open, so a rematch can't leave it open for the next round.
+  const [replayRound, setReplayRound] = useState<number | null>(null)
   const replayed = replayGame(state.config, state.moves)
   if (!replayed.ok) {
     // The room only sends moves that replay, so this is a message that came out wrong.
@@ -47,14 +48,14 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
   }
   const game = replayed.state
   // A rematch started by the other player ends the replay: there is a new game to play.
-  if (replaying && game.status.kind !== 'playing') {
+  if (replayRound === state.round && game.status.kind !== 'playing') {
     return (
       <Replay
         config={state.config}
         moves={state.moves}
         players={state.players}
         onClose={() => {
-          setReplaying(false)
+          setReplayRound(null)
         }}
       />
     )
@@ -117,7 +118,7 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
             type="button"
             className="rematch rematch-quiet"
             onClick={() => {
-              setReplaying(true)
+              setReplayRound(state.round)
             }}
           >
             Kijk terug

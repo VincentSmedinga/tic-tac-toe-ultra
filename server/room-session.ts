@@ -20,7 +20,10 @@ export interface Host {
   touch(): void
   /** A fresh, unguessable id for a game that is about to be kept. */
   newGameId(): string
-  /** Keep a finished game, under this id, for good: it outlives the room. Must not throw. */
+  /**
+   * Keep a finished game, under this id, for good: it outlives the room. Must not throw. When the
+   * archive has it, the host tells the session with `archived`; until then the id stays secret.
+   */
   archive(id: string, game: Finished): void
 }
 
@@ -96,6 +99,14 @@ export class RoomSession {
       return
     }
     this.commit(change.room)
+  }
+
+  /** The archive has the game with this id: from now on the players are told where it is kept. */
+  archived(gameId: string): void {
+    const room = this.host.load()
+    // A rematch may have started in the meantime: then the id belongs to a round that is over.
+    if (room?.gameId !== gameId || room.archived === true) return
+    this.commit({ ...room, archived: true })
   }
 
   /** A socket went away: whoever is left sees that their opponent is no longer connected. */

@@ -169,6 +169,13 @@ describe('OnlineGame', () => {
       rerender(<OnlineGame state={stateOf([], 'O', both, 1)} send={vi.fn()} />)
       expect(screen.queryByRole('region', { name: 'Spel terugkijken' })).not.toBeInTheDocument()
       expect(screen.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+
+      // And the next round, when it is over, shows its result: the old replay does not come back.
+      const oWins = [o(0, 0), x(0, 1), o(1, 0), x(1, 1), o(2, 0)]
+      rerender(<OnlineGame state={stateOf(oWins, 'O', both, 1)} send={vi.fn()} />)
+      expect(screen.queryByRole('region', { name: 'Spel terugkijken' })).not.toBeInTheDocument()
+      expect(screen.getByText('Je hebt gewonnen!')).toBeVisible()
+      expect(screen.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
     })
   })
 })

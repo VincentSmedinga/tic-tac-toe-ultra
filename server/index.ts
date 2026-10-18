@@ -1,4 +1,11 @@
-import { gameIdSchema, roomCodeSchema } from '../shared/protocol.ts'
+import {
+  GAMES_PAGE_SIZE,
+  MAX_GAMES_PAGE_SIZE,
+  gameIdSchema,
+  gamesCursorSchema,
+  roomCodeSchema,
+  tokenSchema,
+} from '../shared/protocol.ts'
 import { ARCHIVE_NAME } from './archive.ts'
 import type { Env } from './env.ts'
 import { newRoomCode } from './room-code.ts'
@@ -15,6 +22,8 @@ const CREATE_ATTEMPTS = 10
  *   GET  /api/rooms/:code    answers { exists }
  *   GET  /api/rooms/:code/ws the WebSocket of the room, which is a Durable Object
  *   GET  /api/games/:id      a finished game as it was kept, for anyone who has the id
+ *   GET  /api/games          the games of the browser whose token is in the X-Player-Token header
+ *                            (never in the address), newest first, ?before=<next> and ?limit=<n>
  */
 export default {
   async fetch(request, env): Promise<Response> {
@@ -56,11 +65,33 @@ export default {
 } satisfies ExportedHandler<Env>
 
 async function getGame(parts: string[], request: Request, env: Env): Promise<Response> {
+  if (parts.length === 2) return listGames(request, env)
   const id = gameIdSchema.safeParse(parts[2])
   if (parts.length !== 3 || !id.success) return notFound()
   if (request.method !== 'GET') return methodNotAllowed('GET')
   const game = await env.ARCHIVE.getByName(ARCHIVE_NAME).get(id.data)
   return game ? Response.json(game) : notFound()
+}
+
+async function listGames(request: Request, env: Env): Promise<Response> {
+  if (request.method !== 'GET') return methodNotAllowed('GET')
+  const token = tokenSchema.safeParse(request.headers.get('X-Player-Token'))
+  if (!token.success) return Response.json({ error: 'no-token' }, { status: 401 })
+
+  const { searchParams } = new URL(request.url)
+  const before = searchParams.get('before') ?? undefined
+  if (before !== undefined && !gamesCursorSchema.safeParse(before).success) return badRequest()
+  const asked = searchParams.get('limit')
+  const limit = asked === null ? GAMES_PAGE_SIZE : Number(asked)
+  if (!Number.isInteger(limit) || limit < 1 || limit > MAX_GAMES_PAGE_SIZE) return badRequest()
+
+  const page = await env.ARCHIVE.getByName(ARCHIVE_NAME).list(token.data, limit, before)
+  // What one browser played is for that browser only: no cache may keep it for someone else.
+  return Response.json(page, { headers: { 'Cache-Control': 'private, no-store' } })
+}
+
+function badRequest(): Response {
+  return Response.json({ error: 'bad-request' }, { status: 400 })
 }
 
 async function createRoom(env: Env): Promise<Response> {

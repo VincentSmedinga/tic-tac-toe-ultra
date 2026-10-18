@@ -3,8 +3,10 @@ import type { StateMessage } from '../../shared/protocol.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { nameOf, shapeOf } from '../play/players.ts'
 import { clearLastRoom, getName, getToken, sanitizeName, setLastRoom } from './identity.ts'
+import { CopyLink } from './CopyLink.tsx'
 import { Link } from './Link.tsx'
 import { OnlineGame } from './OnlineGame.tsx'
+import { roomPath } from './route.ts'
 import { browserDeps, useRoom } from './useRoom.ts'
 import type { RoomDeps, RoomProblem } from './useRoom.ts'
 import './Online.css'
@@ -141,35 +143,10 @@ function Players({ state }: { state: StateMessage }) {
 
 /** The address of the room, to copy and send to the other player. */
 function ShareLink({ code }: { code: string }) {
-  const link = `${window.location.origin}/kamer/${code}`
-  const [copied, setCopied] = useState<'yes' | 'no' | null>(null)
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(link)
-      setCopied('yes')
-    } catch {
-      setCopied('no')
-    }
-  }
-
   return (
-    <div className="share">
-      <p>Geef deze code of deze link aan je tegenspeler:</p>
-      <p className="share-link">{link}</p>
-      <button
-        type="button"
-        className="button"
-        onClick={() => {
-          void copy()
-        }}
-      >
-        Kopieer link
-      </button>
-      {copied === 'yes' && <p role="status">Link gekopieerd.</p>}
-      {copied === 'no' && (
-        <p role="status">Kopiëren lukt niet. Selecteer de link hierboven en kopieer hem zelf.</p>
-      )}
-    </div>
+    <CopyLink
+      link={`${window.location.origin}${roomPath(code)}`}
+      lead="Geef deze code of deze link aan je tegenspeler:"
+    />
   )
 }

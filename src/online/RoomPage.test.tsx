@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ServerMessage, StateMessage } from '../../shared/protocol.ts'
@@ -150,7 +150,10 @@ describe('RoomPage', () => {
       setLastRoom('BCDF')
       await arrange()
       await screen.findByRole('alert')
-      expect(getLastRoom()).toBeNull()
+      // Forgetting it is an effect, which runs a moment after the message is on screen.
+      await waitFor(() => {
+        expect(getLastRoom()).toBeNull()
+      })
     })
 
     it('is kept when the connection is only lost', async () => {

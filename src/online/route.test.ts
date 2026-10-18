@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseRoute, roomPath } from './route.ts'
+import { gamePath, parseRoute, roomPath } from './route.ts'
 
 describe('parseRoute', () => {
   it('knows the start screen, and takes anything it does not know for it', () => {
@@ -27,5 +27,17 @@ describe('parseRoute', () => {
 
   it('makes the address of a room', () => {
     expect(roomPath('BCDF')).toBe('/kamer/BCDF')
+  })
+
+  it('knows the list of played games and one game', () => {
+    expect(parseRoute('/spellen')).toEqual({ name: 'games' })
+    expect(parseRoute('/spel/abcdefghijklmnop')).toEqual({ name: 'game', id: 'abcdefghijklmnop' })
+    expect(parseRoute('/spel')).toEqual({ name: 'start' })
+    expect(parseRoute('/spel/a/b')).toEqual({ name: 'start' })
+  })
+
+  it('makes the address of a game', () => {
+    expect(gamePath('abcdefghijklmnop')).toBe('/spel/abcdefghijklmnop')
+    expect(gamePath('a/b')).toBe('/spel/a%2Fb')
   })
 })

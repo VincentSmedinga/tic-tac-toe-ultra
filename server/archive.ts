@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers'
-import type { StoredGame } from '../shared/protocol.ts'
+import type { GamesPage, StoredGame } from '../shared/protocol.ts'
 import { ArchiveStore } from './archive-store.ts'
 import type { NewGame } from './archive-store.ts'
 import type { Env } from './env.ts'
@@ -20,14 +20,22 @@ export class Archive extends DurableObject<Env> {
     this.store = new ArchiveStore(ctx.storage.sql)
   }
 
-  /** Keeps a finished game; `owners` are the tokens of its players, which are stored as hashes. */
-  async save(game: NewGame): Promise<void> {
+  /**
+   * Keeps a finished game, as it ended at `finishedAt` (not when it got here: a save can be tried
+   * again later); `owners` are the tokens of its players, which are stored as hashes.
+   */
+  async save(game: NewGame, finishedAt: number): Promise<void> {
     const owners = await Promise.all(game.owners.map(hashToken))
-    this.store.save({ ...game, owners }, Date.now())
+    this.store.save({ ...game, owners }, finishedAt)
   }
 
   get(id: string): StoredGame | null {
     return this.store.get(id)
+  }
+
+  /** The games of the browser with this token, newest first (see `ArchiveStore.list`). */
+  async list(token: string, limit: number, before?: string): Promise<GamesPage> {
+    return this.store.list(await hashToken(token), limit, before)
   }
 }
 

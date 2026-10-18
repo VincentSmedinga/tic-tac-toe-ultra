@@ -207,6 +207,13 @@ describe('Replay', () => {
     })
   })
 
+  it('stays at the end when the game it shows gets shorter', async () => {
+    const { rerender } = render(<Replay config={CLASSIC} moves={X_WINS} />)
+    await userEvent.click(screen.getByRole('button', { name: 'Naar het einde' }))
+    rerender(<Replay config={CLASSIC} moves={X_WINS.slice(0, 3)} />)
+    expect(screen.getByText('Zet 3 van 3')).toBeInTheDocument()
+  })
+
   it('has nothing to play when no move was made', () => {
     render(<Replay config={CLASSIC} moves={[]} />)
     expect(screen.getByRole('button', { name: 'Afspelen' })).toBeDisabled()

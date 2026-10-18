@@ -257,9 +257,35 @@ describe('keeping a finished game', () => {
     })
     const replayed = replayGame(game.config, game.moves)
     expect(replayed.ok && replayed.state.status.kind).toBe('won')
-    // Both players are told where the game is kept.
+    // The players are told where the game is kept only when the archive says it has it.
+    expect(setup.host.lastState('a').gameId).toBeUndefined()
+    setup.session.archived(id)
     expect(setup.host.lastState('a').gameId).toBe(id)
     expect(setup.host.lastState('b').gameId).toBe(id)
+    expect(setup.host.archived).toHaveLength(1)
+  })
+
+  it('does not tell a game that is archived after a rematch, or one it does not know', () => {
+    const setup = started()
+    play(setup, WIN_FOR_X)
+    const [{ id }] = setup.host.archived as [{ id: string; game: Finished }]
+    say(setup.session, 'b', { type: 'rematch' })
+    setup.host.sent.length = 0
+
+    setup.session.archived(id)
+    setup.session.archived('some-other-game')
+    expect(setup.host.sent).toEqual([])
+    expect(setup.host.room?.archived).toBeUndefined()
+  })
+
+  it('tells nobody twice that the archive has the game', () => {
+    const setup = started()
+    play(setup, WIN_FOR_X)
+    const [{ id }] = setup.host.archived as [{ id: string; game: Finished }]
+    setup.session.archived(id)
+    setup.host.sent.length = 0
+    setup.session.archived(id)
+    expect(setup.host.sent).toEqual([])
   })
 
   it('keeps a drawn game', () => {
