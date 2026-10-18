@@ -29,7 +29,12 @@ const BACKGROUND = '#1b1b1f'
 const INK = '#f2f2f4'
 
 /** The four shapes, row by row: left to right, top to bottom. */
-export const ICON_SHAPES = ['cross', 'circle', 'fort', 'star'] as const satisfies readonly ShapeId[]
+export const ICON_SHAPES = [
+  'cross',
+  'circle',
+  'fort',
+  'square',
+] as const satisfies readonly ShapeId[]
 
 /** The colour of each shape in the dark scheme, read from tokens.css (the one that has the contrast on a dark page). */
 export function darkShapeColours(tokens: string): Record<string, string> {

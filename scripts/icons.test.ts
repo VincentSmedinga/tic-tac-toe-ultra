@@ -31,7 +31,7 @@ describe('the icon', () => {
   it('is made from the paths of the shapes, in the colours of the dark scheme', () => {
     const svg = read('public/icon.svg')
     const colours = darkShapeColours(tokens)
-    expect(ICON_SHAPES).toEqual(['cross', 'circle', 'fort', 'star'])
+    expect(ICON_SHAPES).toEqual(['cross', 'circle', 'fort', 'square'])
     for (const shape of ICON_SHAPES) {
       for (const d of PATHS[shape]) expect(svg).toContain(`d="${d}"`)
       expect(svg).toContain(`stroke="${colours[shape] ?? ''}"`)
