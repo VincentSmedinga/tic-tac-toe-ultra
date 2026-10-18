@@ -1,0 +1,33 @@
+/*
+ * Design tokens. Each shape has its own marker colour, from the hand-drawn set in
+ * docs/reference/shapes.png; the colour belongs to the shape, so the tokens are named after the
+ * shape. The dark theme has lighter versions, so that every shape keeps at least 3:1 against the
+ * page (checked in src/shapes/shapes.test.tsx).
+ */
+:root {
+  --page: #ffffff;
+  --text: #1b1b1f;
+
+  --shape-cross: #d93a44; /* vivid red 4 */
+  --shape-circle: #3a86c8; /* royal blue 70 */
+  --shape-square: #2f9e44; /* grass green 47 */
+  --shape-diamond: #6a33a8; /* ultramarine 73 */
+  --shape-star: #5c625f; /* WG8 */
+  --shape-plus: #e0357f; /* vivid pink 6 */
+  --shape-asterisk: #1a8fa8; /* ice blue 65 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page: #1b1b1f;
+    --text: #f2f2f4;
+
+    --shape-cross: #ff6b72;
+    --shape-circle: #6bb3f0;
+    --shape-square: #62cc76;
+    --shape-diamond: #a06be0;
+    --shape-star: #a2a8a5;
+    --shape-plus: #ff6aa8;
+    --shape-asterisk: #3fb5ce;
+  }
+}
