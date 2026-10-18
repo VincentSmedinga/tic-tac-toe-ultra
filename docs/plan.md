@@ -9,7 +9,9 @@ A game where many players play noughts and crosses together on one big field, ea
 - **Online, live.** Players join a room and see each other's moves immediately.
 - **Version 1 is classic 3×3 with two players**, but the engine is already written for N players, any field size and any winning length.
 - **Games can be watched again.** A game is its config plus its moves, which the engine keeps; `replayGame` reads a stored game back and `stateAfter` steps through it. Saving the games and the replay screen are milestone 4; where games are kept and who may see them is decided in its first issue.
-- **TypeScript, React and Vite on Cloudflare.** The same set-up as [Blokhut](https://github.com/VincentSmedinga/blokhut): pnpm, Node 24, Vitest, Playwright, Storybook, Cloudflare Pages, Conventional Commits, pull requests only. Realtime through Durable Objects.
+- **TypeScript, React and Vite on Cloudflare.** The same set-up as [Blokhut](https://github.com/VincentSmedinga/blokhut): pnpm, Node 24, Vitest, Playwright, Storybook, Cloudflare, Conventional Commits, pull requests only. Realtime through Durable Objects.
+- **One Cloudflare Worker for the site and the rooms.** A Durable Object can't live in a Pages project, so the app is a Worker with static assets (`wrangler.jsonc`, `@cloudflare/vite-plugin`) and the rooms are Durable Objects in the same Worker; `pnpm dev` runs all of it in one Vite server. A pull request's preview is a Worker of its own (`tic-tac-toe-ultra-pr-<number>`, with its own rooms), deleted when the pull request closes, because Workers with Durable Objects get no version-URL previews. SQLite-backed Durable Objects run on the Workers Free plan; the WebSocket Hibernation API keeps an idle room free of duration charges.
+- **Players can type an optional name.** It is kept in the room, not in an account; the shape is what identifies a player.
 
 ## Architecture
 
