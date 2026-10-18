@@ -128,6 +128,64 @@ describe('the archive store', () => {
     expect(again.get(WON.id)?.id).toBe(WON.id)
   })
 
+  describe("one browser's games", () => {
+    const TWO: NewGame = {
+      ...WON,
+      players: [{ id: 'cross' }, { id: 'circle' }],
+      config: { ...WON.config, players: ['cross', 'circle'] },
+      result: { kind: 'won', winner: 'circle' },
+    }
+
+    it('knows which player each owner was, in the order of the players', () => {
+      store.save({ ...TWO, owners: ['hash-x', 'hash-o'] }, 1)
+      expect(store.ownGames('hash-x').map(({ player }) => player)).toEqual(['cross'])
+      expect(store.ownGames('hash-o').map(({ player }) => player)).toEqual(['circle'])
+      expect(store.ownGames('hash-x')[0]?.game.id).toBe(WON.id)
+      expect(store.ownGames('hash-nobody')).toEqual([])
+    })
+
+    it('does not guess when the owners and the players do not line up', () => {
+      store.save({ ...TWO, owners: ['hash-x'] }, 1)
+      expect(store.ownGames('hash-x').map(({ player }) => player)).toEqual([null])
+    })
+
+    it('lists a game once for a browser that sat twice, as the first seat', () => {
+      store.save({ ...TWO, owners: ['hash-x', 'hash-x'] }, 1)
+      expect(store.ownGames('hash-x').map(({ player }) => player)).toEqual(['cross'])
+    })
+
+    it('gives the games oldest first and skips one that was damaged', () => {
+      store.save({ ...TWO, id: 'second-second-se', owners: ['hash-x', 'hash-o'] }, 20)
+      store.save({ ...TWO, id: 'first-first-firs', owners: ['hash-x', 'hash-o'] }, 10)
+      store.save({ ...TWO, id: 'broken-broken-br', owners: ['hash-x', 'hash-o'] }, 30)
+      database.prepare("UPDATE games SET data = 'not json' WHERE id = 'broken-broken-br'").run()
+      expect(store.ownGames('hash-x').map(({ game }) => game.id)).toEqual([
+        'first-first-firs',
+        'second-second-se',
+      ])
+    })
+
+    it('takes over players kept before the player was noted, who count as unknown', () => {
+      const old = new DatabaseSync(':memory:')
+      old.exec(
+        'CREATE TABLE games (id TEXT PRIMARY KEY, finished_at INTEGER NOT NULL, data TEXT NOT NULL)',
+      )
+      old.exec(
+        'CREATE TABLE players (owner TEXT NOT NULL, game_id TEXT NOT NULL, finished_at INTEGER NOT NULL, PRIMARY KEY (owner, game_id))',
+      )
+      old
+        .prepare('INSERT INTO games (id, finished_at, data) VALUES (?, ?, ?)')
+        .run(WON.id, 5, JSON.stringify({ ...WON, finishedAt: 5, owners: undefined }))
+      old.prepare('INSERT INTO players VALUES (?, ?, ?)').run('hash-x', WON.id, 5)
+      const upgraded = new ArchiveStore(sqlOver(old))
+      expect(upgraded.ownGames('hash-x').map(({ player }) => player)).toEqual([null])
+      upgraded.save({ ...TWO, id: 'newer-newer-newe', owners: ['hash-x', 'hash-o'] }, 6)
+      expect(new ArchiveStore(sqlOver(old)).ownGames('hash-x').map(({ player }) => player)).toEqual(
+        [null, 'cross'],
+      )
+    })
+  })
+
   describe('counting rooms and rounds', () => {
     it('counts the rooms that were made, each once', () => {
       store.roomMade('room-one', 1, 2)

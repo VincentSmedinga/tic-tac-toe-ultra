@@ -217,7 +217,10 @@ export function isOver(room: RoomState): boolean {
 
 /** What a room hands over to be kept when a round ends: a game without the id and the time. */
 export type Finished = Omit<StoredGame, 'id' | 'finishedAt'> & {
-  /** The tokens of everyone who sat at the game: how the server finds "your games" again. */
+  /**
+   * The tokens of everyone who sat at the game, in the order of `players`: how the server finds
+   * "your games" again, and which player each of them was.
+   */
   owners: string[]
 }
 

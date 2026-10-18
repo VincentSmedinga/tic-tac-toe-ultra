@@ -41,6 +41,8 @@ export default {
     if (parts[1] === 'health' && parts.length === 2) return Response.json({ status: 'ok' })
     if (parts[1] === 'games') return getGame(parts, request, env)
     if (parts[1] === 'stats' && parts.length === 2) return getStats(request, env)
+    if (parts[1] === 'stats' && parts[2] === 'mine' && parts.length === 3)
+      return getOwnStats(request, env)
     if (parts[1] !== 'rooms') return notFound()
 
     if (parts.length === 2) {
@@ -88,6 +90,15 @@ async function getStats(request: Request, env: Env): Promise<Response> {
   return Response.json(stats, {
     headers: { 'Cache-Control': `public, max-age=${STATS_MAX_AGE.toString()}` },
   })
+}
+
+async function getOwnStats(request: Request, env: Env): Promise<Response> {
+  if (request.method !== 'GET') return methodNotAllowed('GET')
+  const token = tokenSchema.safeParse(request.headers.get('X-Player-Token'))
+  if (!token.success) return Response.json({ error: 'no-token' }, { status: 401 })
+  const stats = await env.ARCHIVE.getByName(ARCHIVE_NAME).ownStats(token.data)
+  // What one browser played is for that browser only: no cache may keep it for someone else.
+  return Response.json(stats, { headers: { 'Cache-Control': 'private, no-store' } })
 }
 
 async function listGames(request: Request, env: Env): Promise<Response> {

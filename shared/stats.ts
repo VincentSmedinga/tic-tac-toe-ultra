@@ -1,5 +1,5 @@
 import { replayGame } from './game/index.ts'
-import type { Stats, StoredGame } from './protocol.ts'
+import type { OwnStats, Stats, StoredGame } from './protocol.ts'
 import { shapeOfPlayer } from './shapes.ts'
 import type { ShapeId } from './shapes.ts'
 
@@ -278,4 +278,37 @@ function countWinningCells(kind: KindTally, game: StoredGame): void {
     replayed.state.status.lines.flatMap((line) => line.map(({ x, y }) => y * kind.width + x)),
   )
   for (const index of cells) kind.winningCells[index] = (kind.winningCells[index] ?? 0) + 1
+}
+
+/** A game of one browser, and which player of it that browser was (null when that isn't known). */
+export interface OwnGame {
+  game: StoredGame
+  player: string | null
+}
+
+/** Counts the games of one browser: how many it played, won, lost and drew, and its favourite shape. */
+export function computeOwnStats(own: readonly OwnGame[]): OwnStats {
+  const stats: OwnStats = {
+    games: own.length,
+    won: 0,
+    lost: 0,
+    drawn: 0,
+    unknown: 0,
+    favourite: null,
+  }
+  const shapes = new Map<ShapeId, number>()
+  for (const { game, player } of own) {
+    if (player === null) {
+      stats.unknown++
+      continue
+    }
+    if (game.result.kind === 'draw') stats.drawn++
+    else if (game.result.winner === player) stats.won++
+    else stats.lost++
+    const shape = shapeOfPlayer(player)
+    if (shape) shapes.set(shape, (shapes.get(shape) ?? 0) + 1)
+  }
+  const [favourite] = [...shapes].sort(([a, one], [b, two]) => two - one || (a < b ? -1 : 1))
+  if (favourite) stats.favourite = { shape: favourite[0], games: favourite[1] }
+  return stats
 }

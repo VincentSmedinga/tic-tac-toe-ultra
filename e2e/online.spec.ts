@@ -194,12 +194,19 @@ test('a played game is in the list of both players and opens for anyone with its
   await expect(bo.getByText('Anna heeft gewonnen!')).toBeVisible()
 
   // Both players find it by going to the start screen and the list.
-  for (const player of [anna, bo]) {
+  for (const [player, result, shape] of [
+    [anna, '1 gewonnen, 0 verloren en 0 gelijk', 'kruis'],
+    [bo, '0 gewonnen, 1 verloren en 0 gelijk', 'cirkel'],
+  ] as const) {
     await player.getByRole('link', { name: 'Terug naar het begin' }).click()
     await player.getByRole('link', { name: 'Gespeelde spellen' }).click()
     await expect(player.getByRole('heading', { name: 'Gespeelde spellen' })).toBeVisible()
     await expect(player.getByRole('listitem')).toHaveCount(1)
     await expect(player.getByRole('listitem')).toContainText('Anna (kruis) heeft gewonnen')
+    // A few lines about the games of this browser, worked out from the same list.
+    const own = player.getByRole('region', { name: 'Jouw statistieken' })
+    await expect(own).toContainText(`Je hebt 1 spel gespeeld: ${result}`)
+    await expect(own).toContainText(`vaakst met het ${shape}`)
   }
 
   // The link of the game is the right to see it: a browser that never played gets the replay.
@@ -219,6 +226,7 @@ test('a played game is in the list of both players and opens for anyone with its
   // The guest's own list has nothing: what a browser played is for that browser.
   await guest.getByRole('link', { name: 'Gespeelde spellen' }).click()
   await expect(guest.getByText(/nog geen spel online gespeeld/)).toBeVisible()
+  await expect(guest.getByRole('region', { name: 'Jouw statistieken' })).toHaveCount(0)
 
   // A link that is no game says so, and playing again from a game makes a room.
   await guest.goto('/spel/zzzzzzzzzzzzzzzz')

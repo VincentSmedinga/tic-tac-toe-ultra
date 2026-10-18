@@ -5,6 +5,8 @@ import { Link } from '../online/Link.tsx'
 import { gamePath } from '../online/route.ts'
 import { labelOf, shapeOf } from '../play/players.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
+import { OwnStats } from '../stats/OwnStats.tsx'
+import type { OwnStatsApi } from '../stats/api.ts'
 import { gamesApi } from './api.ts'
 import type { GamesApi } from './api.ts'
 import '../online/Online.css'
@@ -12,12 +14,14 @@ import './Games.css'
 
 interface GamesPageProps {
   api?: GamesApi
+  /** Where "your statistics" come from, when it isn't the server. */
+  ownStats?: OwnStatsApi
 }
 
 const WHEN = new Intl.DateTimeFormat('nl-NL', { dateStyle: 'medium', timeStyle: 'short' })
 
 /** "Gespeelde spellen": the finished games of this browser, newest first, a page at a time. */
-export function GamesPage({ api = gamesApi }: GamesPageProps) {
+export function GamesPage({ api = gamesApi, ownStats }: GamesPageProps) {
   const [token] = useState(getToken)
   const [games, setGames] = useState<GameSummary[]>([])
   const [next, setNext] = useState<string | undefined>()
@@ -96,6 +100,7 @@ export function GamesPage({ api = gamesApi }: GamesPageProps) {
       {games.length > 0 && (
         <>
           <p>Dit zijn de spellen die je op dit apparaat hebt gespeeld, de nieuwste eerst.</p>
+          <OwnStats token={token} {...(ownStats ? { api: ownStats } : {})} />
           <ol className="game-list">
             {games.map((game) => (
               <li key={game.id}>

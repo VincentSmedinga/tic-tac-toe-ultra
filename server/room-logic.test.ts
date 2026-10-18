@@ -281,6 +281,13 @@ describe('a finished game', () => {
     expect(finished?.moves).toHaveLength(5)
   })
 
+  it('lists the owners in the order of the players, so that the archive knows who was who', () => {
+    const finished = finishedGame(playCells(twoPlayers(), xWins))
+    expect(finished?.owners).toHaveLength(finished?.players.length ?? -1)
+    expect(finished?.owners).toEqual([TOKEN_X, TOKEN_O])
+    expect(finished?.players.map(({ id }) => id)).toEqual(['cross', 'circle'])
+  })
+
   it('holds the names that were typed', () => {
     const named = room(
       join(room(join(newRoom(), TOKEN_X, 'Anna', 'cross')), TOKEN_O, undefined, 'circle'),
