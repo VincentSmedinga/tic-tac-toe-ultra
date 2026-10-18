@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { StoredGame } from '../../shared/protocol.ts'
+import type { FieldSettings } from '../../shared/room.ts'
 import { CopyLink } from '../online/CopyLink.tsx'
 import { roomApi } from '../online/api.ts'
 import type { RoomApi } from '../online/api.ts'
@@ -41,12 +42,12 @@ export function GamePage({ id, api = gamesApi, rooms = roomApi }: GamePageProps)
     }
   }, [api, id, attempt])
 
-  // A new room for a new game. Every game is still the classic one, so the same players and the
-  // same field is simply another room; a field and shapes of their own come with the big field.
-  async function playAgain() {
+  // A new room for a new game, on the same field: the players choose their shapes again, which
+  // they do in every room.
+  async function playAgain(field: FieldSettings) {
     setAgain('busy')
     try {
-      navigate(roomPath(await rooms.createRoom()))
+      navigate(roomPath(await rooms.createRoom(field)))
     } catch {
       setAgain('failed')
     }
@@ -94,7 +95,8 @@ export function GamePage({ id, api = gamesApi, rooms = roomApi }: GamePageProps)
             className="button button-primary"
             disabled={again === 'busy'}
             onClick={() => {
-              void playAgain()
+              const { width, height, winLength } = loaded.game.config
+              void playAgain({ width, height, winLength })
             }}
           >
             Speel opnieuw

@@ -11,8 +11,9 @@ async function newPlayer(browser: Browser, name: string): Promise<Page> {
 }
 
 /** Anna makes a room, Bo joins it with the code: both end up on the board. */
-async function startGame(browser: Browser) {
+async function startGame(browser: Browser, preset?: RegExp) {
   const anna = await newPlayer(browser, 'Anna')
+  if (preset) await anna.getByRole('button', { name: preset }).click()
   await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
   await expect(anna.getByText('Wachten op een tweede speler…')).toBeVisible()
   const code = (await anna.locator('.room-code').textContent()) ?? ''
@@ -258,4 +259,55 @@ test('players choose their own shapes, which are kept for the evening and the ne
   await anna.getByRole('link', { name: 'Terug naar het begin' }).click()
   await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
   await expect(anna.getByText('Anna (ster) – jij')).toBeVisible()
+})
+
+test('a room on a bigger field: both see it, and five in a row win', async ({ browser }) => {
+  const { anna, bo } = await startGame(browser, /Groter/)
+  for (const page of [anna, bo]) {
+    await expect(page.getByText('7 × 7, vijf op een rij')).toBeVisible()
+    await expect(page.getByRole('button', { name: /^Rij / })).toHaveCount(49)
+  }
+
+  // Anna (the cross) plays the top row, Bo the second: four in a row is no win, five is.
+  for (const col of [1, 2, 3, 4]) {
+    await cell(anna, 1, col).click()
+    await expect(cell(bo, 1, col)).toHaveAccessibleName(`Rij 1, kolom ${col.toString()}: kruis`)
+    await cell(bo, 2, col).click()
+    await expect(cell(anna, 2, col)).toHaveAccessibleName(`Rij 2, kolom ${col.toString()}: cirkel`)
+  }
+  await expect(anna.getByText('Jij bent aan de beurt')).toBeVisible()
+  await cell(anna, 1, 5).click()
+  await expect(anna.getByText('Je hebt gewonnen!')).toBeVisible()
+  await expect(bo.getByText('Anna heeft gewonnen!')).toBeVisible()
+  for (const col of [1, 2, 3, 4, 5]) await expect(cell(bo, 1, col)).toHaveAttribute('data-winning')
+
+  // A rematch is on the same field.
+  await bo.getByRole('button', { name: 'Nog een keer' }).click()
+  await expect(anna.getByRole('button', { name: /^Rij / })).toHaveCount(49)
+})
+
+test('a field that is too big for the screen is scrolled inside its frame, with cells that stay big enough to tap', async ({
+  browser,
+}) => {
+  const { anna } = await startGame(browser, /^Groot /)
+  await expect(anna.getByRole('button', { name: /^Rij / })).toHaveCount(225)
+  const frame = anna.locator('.board-frame')
+  const sizes = await frame.evaluate(`(() => {
+    const frame = document.querySelector('.board-frame')
+    const cell = document.querySelector('.cell').getBoundingClientRect()
+    return {
+      scrolls: frame.scrollWidth > frame.clientWidth,
+      cell: Math.min(cell.width, cell.height),
+      page: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    }
+  })()`)
+  expect(sizes).toMatchObject({ scrolls: true, page: false })
+  expect((sizes as { cell: number }).cell).toBeGreaterThanOrEqual(40)
+
+  // The keyboard goes over the field with the arrow keys, and plays with Enter.
+  await cell(anna, 1, 1).focus()
+  await anna.keyboard.press('ArrowDown')
+  await anna.keyboard.press('ArrowRight')
+  await anna.keyboard.press('Enter')
+  await expect(cell(anna, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: kruis')
 })

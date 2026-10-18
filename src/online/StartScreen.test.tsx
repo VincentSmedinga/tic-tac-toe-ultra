@@ -117,6 +117,36 @@ describe('StartScreen', () => {
       expect(window.localStorage.getItem('tic-tac-toe-ultra.name')).toBe('Anna')
     })
 
+    it('is a classic room unless another field is chosen', async () => {
+      const api = fakeApi()
+      render(<StartScreen api={api} />)
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Nieuwe kamer' }))
+      expect(api.createRoom).toHaveBeenCalledWith({ width: 3, height: 3, winLength: 3 })
+    })
+
+    it('has the field to choose in the card of the new room, and makes the room with it', async () => {
+      const api = fakeApi()
+      const user = userEvent.setup()
+      render(<StartScreen api={api} />)
+      const card = within(screen.getByRole('region', { name: 'Een nieuwe kamer starten' }))
+      expect(card.getByRole('group', { name: 'Veld' })).toBeVisible()
+
+      await user.click(card.getByRole('button', { name: /Groter/ }))
+      await user.click(card.getByRole('button', { name: 'Nieuwe kamer' }))
+      expect(api.createRoom).toHaveBeenCalledWith({ width: 7, height: 7, winLength: 5 })
+    })
+
+    it('makes a room on a field of your own', async () => {
+      const api = fakeApi()
+      const user = userEvent.setup()
+      render(<StartScreen api={api} />)
+      await user.click(screen.getByRole('button', { name: /Eigen veld/ }))
+      await user.selectOptions(screen.getByLabelText('Breedte'), '11')
+      await user.selectOptions(screen.getByLabelText('Hoogte'), '9')
+      await user.click(screen.getByRole('button', { name: 'Nieuwe kamer' }))
+      expect(api.createRoom).toHaveBeenCalledWith({ width: 11, height: 9, winLength: 5 })
+    })
+
     it('says so when it does not work, and stays on the start screen', async () => {
       const api = fakeApi({ createRoom: vi.fn(() => Promise.reject(new Error('down'))) })
       const user = userEvent.setup()

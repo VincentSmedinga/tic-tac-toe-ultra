@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { MAX_NAME_LENGTH, roomCodeSchema } from '../../shared/protocol.ts'
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from '../../shared/room.ts'
+import { CLASSIC_FIELD, ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from '../../shared/room.ts'
+import type { FieldSettings } from '../../shared/room.ts'
+import { FieldPicker } from '../play/FieldPicker.tsx'
 import type { RoomApi } from './api.ts'
 import { roomApi } from './api.ts'
 import { clearLastRoom, getLastRoom, getName, setName } from './identity.ts'
@@ -35,6 +37,7 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
       : null,
   )
   const [busy, setBusy] = useState(false)
+  const [field, setField] = useState<FieldSettings>(CLASSIC_FIELD)
   // The room this browser last sat in, when it is still there: a way back after going to the start.
   const [resume, setResume] = useState<string | null>(null)
 
@@ -62,7 +65,7 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
     setMessage(null)
     setName(name)
     try {
-      navigate(roomPath(await api.createRoom()))
+      navigate(roomPath(await api.createRoom(field)))
     } catch {
       setMessage({
         card: 'create',
@@ -150,6 +153,7 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
           Je krijgt een code die je aan je tegenspeler geeft. Jullie spelen elk op je eigen
           apparaat.
         </p>
+        <FieldPicker value={field} onChange={setField} />
         <button
           type="button"
           className="button button-primary"

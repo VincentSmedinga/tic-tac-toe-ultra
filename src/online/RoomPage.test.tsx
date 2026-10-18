@@ -64,17 +64,27 @@ function setup(exists: boolean | Error = true) {
 }
 
 /** The room as a player sees it; the game is there once both seats have a shape. */
-function state(players: StateMessage['players'], you = 'X'): StateMessage {
+function state(
+  players: StateMessage['players'],
+  you = 'X',
+  field = { width: 3, height: 3, winLength: 3 },
+): StateMessage {
   const shapes = players.flatMap(({ shape }) => (shape ? [shape] : []))
   const started = players.length >= 2 && shapes.length === players.length
   return {
     type: 'state',
     code: 'BCDF',
     you,
+    field,
     round: 0,
     players,
     ...(started
-      ? { config: { ...roomConfig(0, shapes), players: [...roomConfig(0, shapes).players] } }
+      ? {
+          config: {
+            ...roomConfig(0, shapes, field),
+            players: [...roomConfig(0, shapes, field).players],
+          },
+        }
       : {}),
     moves: [],
   }
@@ -244,6 +254,46 @@ describe('RoomPage', () => {
         ]),
       )
       expect(await screen.findByText(/Cirkel is even weg/)).toBeVisible()
+    })
+  })
+
+  describe('the field of the room', () => {
+    it('is said in the waiting room, with how many in a row win', async () => {
+      const { socket } = await connected()
+      socket.receive(
+        state([{ id: 'X', connected: true }], 'X', { width: 7, height: 7, winLength: 5 }),
+      )
+      expect(await screen.findByText('Veld: 7 × 7, vijf op een rij')).toBeVisible()
+    })
+
+    it('is said while choosing shapes too, and the board has the size of the field', async () => {
+      const { socket } = await connected()
+      const field = { width: 5, height: 7, winLength: 5 }
+      socket.receive(
+        state(
+          [
+            { id: 'X', shape: 'cross', connected: true },
+            { id: 'O', connected: true },
+          ],
+          'X',
+          field,
+        ),
+      )
+      expect(await screen.findByText('Veld: 5 × 7, vijf op een rij')).toBeVisible()
+
+      socket.receive(
+        state(
+          [
+            { id: 'X', shape: 'cross', connected: true },
+            { id: 'O', shape: 'circle', connected: true },
+          ],
+          'X',
+          field,
+        ),
+      )
+      expect(await screen.findByRole('group', { name: 'Speelveld' })).toBeVisible()
+      expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(35)
+      expect(screen.getByText('5 × 7, vijf op een rij')).toBeVisible()
     })
   })
 

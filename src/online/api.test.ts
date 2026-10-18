@@ -16,6 +16,16 @@ describe('making a room', () => {
     expect(fetch).toHaveBeenCalledWith('/api/rooms', { method: 'POST' })
   })
 
+  it('posts the field that is asked for as JSON', async () => {
+    const fetch = answer({ code: 'BCDF' }, 201)
+    await roomApi.createRoom({ width: 7, height: 5, winLength: 5 })
+    expect(fetch).toHaveBeenCalledWith('/api/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ width: 7, height: 5, winLength: 5 }),
+    })
+  })
+
   it('fails when the server says it could not', async () => {
     answer({ error: 'no-free-code' }, 503)
     await expect(roomApi.createRoom()).rejects.toThrow('503')

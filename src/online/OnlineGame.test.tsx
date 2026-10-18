@@ -22,6 +22,7 @@ function stateOf(moves: Move[], you: string, players: Players = both, round = 0)
     type: 'state',
     code: 'BCDF',
     you,
+    field: { width: 3, height: 3, winLength: 3 },
     round,
     players,
     config: { ...config, players: [...config.players] },
@@ -46,6 +47,19 @@ describe('OnlineGame', () => {
     render(<OnlineGame state={stateOf([], 'O')} send={vi.fn()} />)
     expect(screen.getByText('Anna')).toBeVisible()
     expect(screen.getByText('Cirkel (jij)')).toBeVisible()
+  })
+
+  it('says how big the field is and how many in a row win, with the board of that size', () => {
+    const state = stateOf([], 'X')
+    const field = { width: 7, height: 5, winLength: 5 }
+    render(
+      <OnlineGame
+        state={{ ...state, field, config: { ...state.config, ...field } }}
+        send={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('7 × 5, vijf op een rij')).toBeVisible()
+    expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(35)
   })
 
   describe('whose turn it is', () => {
