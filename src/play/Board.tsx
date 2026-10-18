@@ -13,9 +13,10 @@ interface BoardProps {
 /** The field as a grid of buttons: one tap or key press on an empty cell plays it. */
 export function Board({ game, onPlay, interactive = true }: BoardProps) {
   const { width } = game.config
+  // A cell on two lines (a corner, the middle) is marked once: the set holds each cell once.
   const winning = new Set(
     game.status.kind === 'won'
-      ? game.status.line.map(({ x, y }) => `${x.toString()},${y.toString()}`)
+      ? game.status.lines.flat().map(({ x, y }) => `${x.toString()},${y.toString()}`)
       : [],
   )
   const playing = game.status.kind === 'playing' && interactive

@@ -70,6 +70,24 @@ describe('Game', () => {
       expect(cell(2, 1)).not.toHaveAttribute('data-winning')
     })
 
+    it('marks every line the last move completes, each cell once: five cells for a row and a column', async () => {
+      render(<Game />)
+      // X takes the top row and the right column, and the corner (row 1, column 3) completes both.
+      await tap([1, 1], [2, 1], [1, 2], [2, 2], [2, 3], [3, 1], [3, 3], [3, 2], [1, 3])
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis heeft gewonnen!')
+
+      const marked = screen
+        .getAllByRole('button', { name: /^Rij/ })
+        .filter((button) => button.hasAttribute('data-winning'))
+      expect(marked.map((button) => button.getAttribute('aria-label'))).toEqual([
+        'Rij 1, kolom 1: kruis',
+        'Rij 1, kolom 2: kruis',
+        'Rij 1, kolom 3: kruis',
+        'Rij 2, kolom 3: kruis',
+        'Rij 3, kolom 3: kruis',
+      ])
+    })
+
     it('takes no more moves', async () => {
       render(<Game />)
       await tap(...crossWins, [3, 3])
