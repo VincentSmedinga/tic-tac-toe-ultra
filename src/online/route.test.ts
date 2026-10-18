@@ -1,0 +1,31 @@
+import { describe, expect, it } from 'vitest'
+import { parseRoute, roomPath } from './route.ts'
+
+describe('parseRoute', () => {
+  it('knows the start screen, and takes anything it does not know for it', () => {
+    expect(parseRoute('/')).toEqual({ name: 'start' })
+    expect(parseRoute('/nope')).toEqual({ name: 'start' })
+    expect(parseRoute('/kamer')).toEqual({ name: 'start' })
+    expect(parseRoute('/kamer/BCDF/extra')).toEqual({ name: 'start' })
+  })
+
+  it('knows the game on one screen', () => {
+    expect(parseRoute('/samen')).toEqual({ name: 'local' })
+    expect(parseRoute('/samen/')).toEqual({ name: 'local' })
+  })
+
+  it('knows a room, also when the code was typed in lower case', () => {
+    expect(parseRoute('/kamer/BCDF')).toEqual({ name: 'room', code: 'BCDF' })
+    expect(parseRoute('/kamer/bcdf')).toEqual({ name: 'room', code: 'BCDF' })
+  })
+
+  it('says so when the address of a room is no code', () => {
+    for (const path of ['/kamer/ABCD', '/kamer/BCD', '/kamer/BCDFG', '/kamer/12ab']) {
+      expect(parseRoute(path)).toEqual({ name: 'start', notice: 'bad-code' })
+    }
+  })
+
+  it('makes the address of a room', () => {
+    expect(roomPath('BCDF')).toBe('/kamer/BCDF')
+  })
+})
