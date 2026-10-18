@@ -78,8 +78,8 @@ const say = (session: RoomSession, id: string, message: unknown) => {
   session.message(id, JSON.stringify(message))
 }
 
-/** A room with two players on sockets "a" (X) and "b" (O). */
-function started() {
+/** A room with two players on sockets "a" (seat X) and "b" (seat O), who have not chosen yet. */
+function seated() {
   const host = new FakeHost()
   const session = new RoomSession(host)
   host.connect('a')
@@ -88,6 +88,15 @@ function started() {
   say(session, 'b', { type: 'join', token: TOKEN_O })
   host.sent.length = 0
   return { host, session }
+}
+
+/** The same room once "a" has chosen the cross and "b" the circle: the game is on. */
+function started() {
+  const setup = seated()
+  say(setup.session, 'a', { type: 'choose', shape: 'cross' })
+  say(setup.session, 'b', { type: 'choose', shape: 'circle' })
+  setup.host.sent.length = 0
+  return setup
 }
 
 describe('a message that is no good', () => {
@@ -165,12 +174,79 @@ describe('joining', () => {
   })
 })
 
+describe('choosing a shape', () => {
+  it('shows the choice to both players, and starts the game when the last one has chosen', () => {
+    const { host, session } = seated()
+    say(session, 'a', { type: 'choose', shape: 'star' })
+    for (const id of ['a', 'b']) {
+      expect(host.lastState(id).players[0]).toMatchObject({ id: 'X', shape: 'star' })
+      expect(host.lastState(id)).not.toHaveProperty('config')
+    }
+
+    say(session, 'b', { type: 'choose', shape: 'heart' })
+    for (const id of ['a', 'b']) {
+      expect(host.lastState(id).config?.players).toEqual(['star', 'heart'])
+    }
+  })
+
+  it('is refused for a shape that is taken, and the sender alone hears about it', () => {
+    const { host, session } = seated()
+    say(session, 'a', { type: 'choose', shape: 'star' })
+    host.sent.length = 0
+    say(session, 'b', { type: 'choose', shape: 'star' })
+    expect(host.received('b')).toEqual([{ type: 'error', error: 'shape-taken' }])
+    expect(host.received('a')).toEqual([])
+  })
+
+  it('is refused for a shape that does not exist', () => {
+    const { host, session } = seated()
+    say(session, 'a', { type: 'choose', shape: 'banana' })
+    expect(host.received('a')).toEqual([{ type: 'error', error: 'invalid-message' }])
+  })
+
+  it('is refused once the game has started', () => {
+    const { host, session } = started()
+    say(session, 'a', { type: 'choose', shape: 'star' })
+    expect(host.received('a')).toEqual([{ type: 'error', error: 'shape-locked' }])
+  })
+
+  it('does not let a move or a rematch happen before everybody has chosen', () => {
+    const { host, session } = seated()
+    say(session, 'a', { type: 'move', x: 0, y: 0 })
+    say(session, 'a', { type: 'rematch' })
+    expect(host.received('a')).toEqual([
+      { type: 'error', error: 'shape-needed' },
+      { type: 'error', error: 'shape-needed' },
+    ])
+  })
+
+  it('takes the shape a browser had last time when it joins, if it is free', () => {
+    const host = new FakeHost()
+    const session = new RoomSession(host)
+    host.connect('a')
+    host.connect('b')
+    say(session, 'a', { type: 'join', token: TOKEN_X, shape: 'heart' })
+    say(session, 'b', { type: 'join', token: TOKEN_O, shape: 'heart' })
+    expect(host.lastState('b').players).toMatchObject([{ shape: 'heart' }, {}])
+    expect(host.lastState('b').players[1]).not.toHaveProperty('shape')
+  })
+
+  it('is kept when a player goes away and comes back', () => {
+    const { host, session } = seated()
+    say(session, 'a', { type: 'choose', shape: 'star' })
+    host.drop('a')
+    host.connect('a2')
+    say(session, 'a2', { type: 'join', token: TOKEN_X })
+    expect(host.lastState('a2').players[0]).toMatchObject({ id: 'X', shape: 'star' })
+  })
+})
+
 describe('playing', () => {
   it('shows a valid move to both players', () => {
     const { host, session } = started()
     say(session, 'a', { type: 'move', x: 1, y: 1 })
     for (const id of ['a', 'b']) {
-      expect(host.lastState(id).moves).toEqual([{ player: 'X', x: 1, y: 1 }])
+      expect(host.lastState(id).moves).toEqual([{ player: 'cross', x: 1, y: 1 }])
     }
   })
 
@@ -195,8 +271,9 @@ describe('playing', () => {
 
     for (const id of ['a', 'b']) {
       const state = host.lastState(id)
+      if (!state.config) throw new Error('the game has not started')
       const replayed = replayGame(state.config, state.moves)
-      expect(replayed.ok && replayed.state.status).toMatchObject({ kind: 'won', winner: 'X' })
+      expect(replayed.ok && replayed.state.status).toMatchObject({ kind: 'won', winner: 'cross' })
     }
     say(session, 'b', { type: 'move', x: 2, y: 2 })
     expect(host.received('b').at(-1)).toEqual({ type: 'error', error: 'game-over' })
@@ -205,7 +282,7 @@ describe('playing', () => {
   it('saves every change, so a room that went to sleep knows the game', () => {
     const { host, session } = started()
     say(session, 'a', { type: 'move', x: 2, y: 2 })
-    expect(host.room?.moves).toEqual([{ player: 'X', x: 2, y: 2 }])
+    expect(host.room?.moves).toEqual([{ player: 'cross', x: 2, y: 2 }])
   })
 })
 
@@ -251,8 +328,8 @@ describe('keeping a finished game', () => {
     expect(setup.host.archived).toHaveLength(1)
     const [{ id, game }] = setup.host.archived as [{ id: string; game: Finished }]
     expect(game).toMatchObject({
-      players: [{ id: 'X', name: 'Anna' }, { id: 'O' }],
-      result: { kind: 'won', winner: 'X' },
+      players: [{ id: 'cross', name: 'Anna' }, { id: 'circle' }],
+      result: { kind: 'won', winner: 'cross' },
       owners: [TOKEN_X, TOKEN_O],
     })
     const replayed = replayGame(game.config, game.moves)
@@ -330,7 +407,7 @@ describe('keeping a finished game', () => {
       ['b', 2, 0],
     ])
     expect(setup.host.archived.map(({ id }) => id)).toEqual(['game-1', 'game-2'])
-    expect(setup.host.archived[1]?.game.result).toEqual({ kind: 'won', winner: 'O' })
+    expect(setup.host.archived[1]?.game.result).toEqual({ kind: 'won', winner: 'circle' })
   })
 
   it('drops a game that nobody finishes', () => {
@@ -371,7 +448,7 @@ describe('a rematch', () => {
       const state = host.lastState(id)
       expect(state.round).toBe(1)
       expect(state.moves).toEqual([])
-      expect(state.config.players).toEqual(['O', 'X'])
+      expect(state.config?.players).toEqual(['circle', 'cross'])
     }
   })
 })
@@ -382,13 +459,13 @@ describe('a player who goes away and comes back', () => {
     host.drop('b')
     session.closed()
     expect(host.lastState('a').players).toEqual([
-      { id: 'X', name: 'Anna', connected: true },
-      { id: 'O', connected: false },
+      { id: 'X', name: 'Anna', shape: 'cross', connected: true },
+      { id: 'O', shape: 'circle', connected: false },
     ])
 
     host.connect('b2')
     say(session, 'b2', { type: 'join', token: TOKEN_O })
-    expect(host.lastState('a').players[1]).toEqual({ id: 'O', connected: true })
+    expect(host.lastState('a').players[1]).toEqual({ id: 'O', shape: 'circle', connected: true })
     expect(host.lastState('b2')).toMatchObject({ you: 'O' })
   })
 
@@ -399,7 +476,7 @@ describe('a player who goes away and comes back', () => {
     say(session, 'b2', { type: 'join', token: TOKEN_O })
 
     expect(host.closes).toEqual([{ id: 'b', code: CLOSE_REPLACED, reason: 'replaced' }])
-    expect(host.lastState('b2').moves).toEqual([{ player: 'X', x: 1, y: 1 }])
+    expect(host.lastState('b2').moves).toEqual([{ player: 'cross', x: 1, y: 1 }])
     say(session, 'b2', { type: 'move', x: 0, y: 0 })
     expect(host.room?.moves).toHaveLength(2)
   })

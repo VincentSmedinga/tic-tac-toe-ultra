@@ -21,6 +21,21 @@ describe('a message from a player', () => {
     })
   })
 
+  it('can choose a shape, and join with one', () => {
+    expect(parse({ type: 'choose', shape: 'heart' })).toEqual({ type: 'choose', shape: 'heart' })
+    expect(parse({ type: 'join', token, shape: 'star' })).toEqual({
+      type: 'join',
+      token,
+      shape: 'star',
+    })
+  })
+
+  it('refuses a shape that does not exist, or none at all', () => {
+    expect(parse({ type: 'choose', shape: 'banana' })).toBeNull()
+    expect(parse({ type: 'choose' })).toBeNull()
+    expect(parse({ type: 'join', token, shape: 'X' })).toBeNull()
+  })
+
   it('gets the spaces around its name taken off, and an empty name counts as none', () => {
     expect(parse({ type: 'join', token, name: '  Anna  ' })).toMatchObject({ name: 'Anna' })
     expect(parse({ type: 'join', token, name: '   ' })).toEqual({ type: 'join', token })

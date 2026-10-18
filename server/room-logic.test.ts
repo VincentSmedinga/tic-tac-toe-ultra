@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { roomConfig } from '../shared/room.ts'
 import {
+  choose,
   finishedGame,
   gameOf,
   isOver,
@@ -9,6 +10,7 @@ import {
   play,
   rematch,
   stateFor,
+  upgradeRoom,
 } from './room-logic.ts'
 import type { Change, RoomState } from './room-logic.ts'
 
@@ -22,7 +24,15 @@ function room(change: Change): RoomState {
   return change.room
 }
 
+/** Two players who have chosen: the first seat has the cross, the second the circle. */
 function twoPlayers(): RoomState {
+  return room(
+    join(room(join(newRoom(), TOKEN_X, undefined, 'cross')), TOKEN_O, undefined, 'circle'),
+  )
+}
+
+/** Two players who are both here and have chosen nothing yet. */
+function undecided(): RoomState {
   return room(join(room(join(newRoom(), TOKEN_X, undefined)), TOKEN_O, undefined))
 }
 
@@ -33,12 +43,12 @@ function playCells(start: RoomState, cells: readonly (readonly [number, number])
     if (game.kind !== 'game') throw new Error('no game to play')
     const { status } = game.game
     if (status.kind !== 'playing') throw new Error('the game is over')
-    const seat = current.seats.find((candidate) => candidate.id === status.next)
+    const seat = current.seats.find((candidate) => candidate.shape === status.next)
     return room(play(current, seat?.token ?? '', { x, y }))
   }, start)
 }
 
-// X wins on the top row; O has two marks on the middle row.
+// The cross wins on the top row; the circle has two marks on the middle row.
 const xWins = [
   [0, 0],
   [0, 1],
@@ -94,7 +104,7 @@ describe('joining', () => {
 describe('the game of a room', () => {
   it('waits until there are two players', () => {
     expect(gameOf(newRoom()).kind).toBe('waiting')
-    expect(gameOf(room(join(newRoom(), TOKEN_X, undefined))).kind).toBe('waiting')
+    expect(gameOf(room(join(newRoom(), TOKEN_X, undefined, 'cross'))).kind).toBe('waiting')
     expect(gameOf(twoPlayers()).kind).toBe('game')
   })
 
@@ -102,8 +112,8 @@ describe('the game of a room', () => {
     const broken: RoomState = {
       ...twoPlayers(),
       moves: [
-        { player: 'X', x: 0, y: 0 },
-        { player: 'X', x: 1, y: 0 },
+        { player: 'cross', x: 0, y: 0 },
+        { player: 'cross', x: 1, y: 0 },
       ],
     }
     expect(gameOf(broken).kind).toBe('damaged')
@@ -113,7 +123,7 @@ describe('the game of a room', () => {
 describe('playing', () => {
   it('takes a valid move and keeps it', () => {
     const played = room(play(twoPlayers(), TOKEN_X, { x: 1, y: 1 }))
-    expect(played.moves).toEqual([{ player: 'X', x: 1, y: 1 }])
+    expect(played.moves).toEqual([{ player: 'cross', x: 1, y: 1 }])
   })
 
   it('refuses a move from someone who has no seat', () => {
@@ -143,7 +153,7 @@ describe('playing', () => {
   it('plays a whole game to a win, and then takes no more moves', () => {
     const won = playCells(twoPlayers(), xWins)
     const game = gameOf(won)
-    expect(game.kind === 'game' && game.game.status).toMatchObject({ kind: 'won', winner: 'X' })
+    expect(game.kind === 'game' && game.game.status).toMatchObject({ kind: 'won', winner: 'cross' })
     expect(play(won, TOKEN_O, { x: 2, y: 2 })).toEqual({ ok: false, error: 'game-over' })
   })
 
@@ -154,7 +164,7 @@ describe('playing', () => {
   })
 
   it('refuses moves in a damaged room', () => {
-    const broken: RoomState = { ...twoPlayers(), moves: [{ player: 'O', x: 0, y: 0 }] }
+    const broken: RoomState = { ...twoPlayers(), moves: [{ player: 'circle', x: 0, y: 0 }] }
     expect(play(broken, TOKEN_X, { x: 1, y: 1 })).toEqual({ ok: false, error: 'room-damaged' })
   })
 })
@@ -176,7 +186,7 @@ describe('a rematch', () => {
     const next = room(rematch(playCells(twoPlayers(), xWins), TOKEN_X))
     expect(next.round).toBe(1)
     expect(next.moves).toEqual([])
-    expect(roomConfig(next.round).players).toEqual(['O', 'X'])
+    expect(roomConfig(next.round, ['cross', 'circle']).players).toEqual(['circle', 'cross'])
     expect(play(next, TOKEN_X, { x: 0, y: 0 })).toEqual({ ok: false, error: 'not-your-turn' })
     expect(play(next, TOKEN_O, { x: 0, y: 0 }).ok).toBe(true)
   })
@@ -192,11 +202,11 @@ describe('a rematch', () => {
         TOKEN_X,
       ),
     )
-    expect(roomConfig(third.round).players).toEqual(['X', 'O'])
+    expect(roomConfig(third.round, ['cross', 'circle']).players).toEqual(['cross', 'circle'])
   })
 
   it('gets a damaged room going again', () => {
-    const broken: RoomState = { ...twoPlayers(), moves: [{ player: 'O', x: 0, y: 0 }] }
+    const broken: RoomState = { ...twoPlayers(), moves: [{ player: 'circle', x: 0, y: 0 }] }
     const fixed = room(rematch(broken, TOKEN_X))
     expect(gameOf(fixed).kind).toBe('game')
     expect(fixed.moves).toEqual([])
@@ -216,10 +226,10 @@ describe('the state for a player', () => {
       you: 'O',
       round: 0,
       players: [
-        { id: 'X', connected: false },
-        { id: 'O', connected: true },
+        { id: 'X', shape: 'cross', connected: false },
+        { id: 'O', shape: 'circle', connected: true },
       ],
-      config: { width: 3, height: 3, winLength: 3, players: ['X', 'O'] },
+      config: { width: 3, height: 3, winLength: 3, players: ['cross', 'circle'] },
       moves: [],
     })
   })
@@ -242,9 +252,9 @@ describe('the state for a player', () => {
   it('shows the moves, and an empty field when the room is damaged', () => {
     const played = room(play(twoPlayers(), TOKEN_X, { x: 2, y: 2 }))
     expect(stateFor(played, TOKEN_O, 'BCDF', new Set())?.moves).toEqual([
-      { player: 'X', x: 2, y: 2 },
+      { player: 'cross', x: 2, y: 2 },
     ])
-    const broken: RoomState = { ...twoPlayers(), moves: [{ player: 'O', x: 0, y: 0 }] }
+    const broken: RoomState = { ...twoPlayers(), moves: [{ player: 'circle', x: 0, y: 0 }] }
     expect(stateFor(broken, TOKEN_O, 'BCDF', new Set())?.moves).toEqual([])
   })
 })
@@ -260,19 +270,21 @@ describe('a finished game', () => {
   it('holds the config, the moves, the players and who won', () => {
     const finished = finishedGame(playCells(twoPlayers(), xWins))
     expect(finished).toMatchObject({
-      config: roomConfig(0),
-      players: [{ id: 'X' }, { id: 'O' }],
-      result: { kind: 'won', winner: 'X' },
+      config: roomConfig(0, ['cross', 'circle']),
+      players: [{ id: 'cross' }, { id: 'circle' }],
+      result: { kind: 'won', winner: 'cross' },
       owners: [TOKEN_X, TOKEN_O],
     })
     expect(finished?.moves).toHaveLength(5)
   })
 
   it('holds the names that were typed', () => {
-    const named = room(join(room(join(newRoom(), TOKEN_X, 'Anna')), TOKEN_O, undefined))
+    const named = room(
+      join(room(join(newRoom(), TOKEN_X, 'Anna', 'cross')), TOKEN_O, undefined, 'circle'),
+    )
     expect(finishedGame(playCells(named, xWins))?.players).toEqual([
-      { id: 'X', name: 'Anna' },
-      { id: 'O' },
+      { id: 'cross', name: 'Anna' },
+      { id: 'circle' },
     ])
   })
 
@@ -287,5 +299,130 @@ describe('a finished game', () => {
     expect(again.gameId).toBeUndefined()
     expect(again.archived).toBeUndefined()
     expect(stateFor(again, TOKEN_X, 'BCDF', new Set())).not.toHaveProperty('gameId')
+  })
+})
+
+describe('choosing a shape', () => {
+  it('is possible from the first moment, also alone in the room', () => {
+    const alone = room(join(newRoom(), TOKEN_X, undefined))
+    expect(room(choose(alone, TOKEN_X, 'heart')).seats[0]?.shape).toBe('heart')
+  })
+
+  it('can be changed until the game starts', () => {
+    let current = room(join(newRoom(), TOKEN_X, undefined, 'cross'))
+    current = room(choose(current, TOKEN_X, 'star'))
+    expect(current.seats[0]?.shape).toBe('star')
+    current = room(join(current, TOKEN_O, undefined))
+    current = room(choose(current, TOKEN_X, 'plus'))
+    expect(current.seats[0]?.shape).toBe('plus')
+  })
+
+  it('is refused for a shape somebody else has, and for someone without a seat', () => {
+    expect(choose(twoPlayers(), TOKEN_Z, 'star')).toEqual({ ok: false, error: 'not-joined' })
+    expect(choose(undecided(), TOKEN_X, 'cross').ok).toBe(true)
+    const one = room(choose(undecided(), TOKEN_X, 'cross'))
+    expect(choose(one, TOKEN_O, 'cross')).toEqual({ ok: false, error: 'shape-taken' })
+  })
+
+  it('is fine for the shape you already have', () => {
+    expect(choose(room(choose(undecided(), TOKEN_X, 'cross')), TOKEN_X, 'cross').ok).toBe(true)
+  })
+
+  it('is too late once the game has started, also in later rounds', () => {
+    expect(choose(twoPlayers(), TOKEN_X, 'star')).toEqual({ ok: false, error: 'shape-locked' })
+    const later = room(rematch(playCells(twoPlayers(), xWins), TOKEN_X))
+    expect(choose(later, TOKEN_O, 'star')).toEqual({ ok: false, error: 'shape-locked' })
+  })
+
+  it('starts the game when the last seat has chosen', () => {
+    const one = room(choose(undecided(), TOKEN_X, 'star'))
+    expect(gameOf(one).kind).toBe('choosing')
+    const both = room(choose(one, TOKEN_O, 'heart'))
+    const game = gameOf(both)
+    expect(game.kind === 'game' && game.game.config.players).toEqual(['star', 'heart'])
+  })
+
+  it('makes the shapes the players, in the order of the seats and the round', () => {
+    const both = room(choose(room(choose(undecided(), TOKEN_X, 'star')), TOKEN_O, 'heart'))
+    const first = room(play(both, TOKEN_X, { x: 0, y: 0 }))
+    expect(first.moves).toEqual([{ player: 'star', x: 0, y: 0 }])
+    expect(play(both, TOKEN_O, { x: 0, y: 0 })).toEqual({ ok: false, error: 'not-your-turn' })
+  })
+})
+
+describe('joining with a shape', () => {
+  it('takes the shape that was asked for, when it is free', () => {
+    expect(room(join(newRoom(), TOKEN_X, undefined, 'heart')).seats[0]?.shape).toBe('heart')
+  })
+
+  it('leaves the choice to the player when the shape is taken', () => {
+    const first = room(join(newRoom(), TOKEN_X, undefined, 'heart'))
+    expect(room(join(first, TOKEN_O, undefined, 'heart')).seats[1]?.shape).toBeUndefined()
+  })
+
+  it('does not change the shape of a player who comes back with another one', () => {
+    const chosen = room(join(newRoom(), TOKEN_X, undefined, 'heart'))
+    expect(room(join(chosen, TOKEN_X, undefined, 'star')).seats[0]?.shape).toBe('heart')
+  })
+
+  it('gives a player who comes back without a shape the one that was asked for, if free', () => {
+    const noShape = room(join(newRoom(), TOKEN_X, undefined))
+    expect(room(join(noShape, TOKEN_X, undefined, 'star')).seats[0]?.shape).toBe('star')
+  })
+})
+
+describe('a room where somebody has not chosen yet', () => {
+  it('is choosing: no moves, no rematch, and no game in the state', () => {
+    expect(gameOf(undecided()).kind).toBe('choosing')
+    expect(play(undecided(), TOKEN_X, { x: 0, y: 0 })).toEqual({ ok: false, error: 'shape-needed' })
+    expect(rematch(undecided(), TOKEN_X)).toEqual({ ok: false, error: 'shape-needed' })
+    const state = stateFor(undecided(), TOKEN_X, 'BCDF', new Set())
+    expect(state).not.toHaveProperty('config')
+    expect(state?.moves).toEqual([])
+  })
+
+  it('tells everybody which shape each player has so far', () => {
+    const one = room(choose(undecided(), TOKEN_X, 'star'))
+    expect(stateFor(one, TOKEN_O, 'BCDF', new Set())?.players).toEqual([
+      { id: 'X', shape: 'star', connected: false },
+      { id: 'O', connected: false },
+    ])
+  })
+
+  it('is not over, and keeps no game', () => {
+    expect(isOver(undecided())).toBe(false)
+    expect(finishedGame(undecided())).toBeNull()
+  })
+})
+
+describe('a room stored before the shapes were chosen', () => {
+  const legacy: RoomState = {
+    round: 1,
+    seats: [
+      { token: TOKEN_X, id: 'X', name: 'Anna' },
+      { token: TOKEN_O, id: 'O' },
+    ],
+    moves: [
+      { player: 'O', x: 0, y: 0 },
+      { player: 'X', x: 1, y: 1 },
+    ],
+  }
+
+  it('goes on with the cross for the first seat and the circle for the second', () => {
+    const upgraded = upgradeRoom(legacy)
+    expect(upgraded.seats.map(({ shape }) => shape)).toEqual(['cross', 'circle'])
+    expect(upgraded.moves).toEqual([
+      { player: 'circle', x: 0, y: 0 },
+      { player: 'cross', x: 1, y: 1 },
+    ])
+    expect(gameOf(upgraded).kind).toBe('game')
+    expect(play(upgraded, TOKEN_O, { x: 2, y: 2 }).ok).toBe(true)
+  })
+
+  it('leaves a room in the new form as it is', () => {
+    const current = room(play(twoPlayers(), TOKEN_X, { x: 1, y: 1 }))
+    expect(upgradeRoom(current)).toBe(current)
+    const fresh = undecided()
+    expect(upgradeRoom(fresh)).toBe(fresh)
   })
 })
