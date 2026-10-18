@@ -20,21 +20,26 @@ A game where many players play noughts and crosses together on one big field, ea
 
 ## Shapes and colours
 
-The first set is drawn by hand: [docs/reference/shapes.png](reference/shapes.png). Seven shapes, each with its own marker colour (name and number are on the photo):
+The shapes are drawn by hand: [docs/reference/shapes.png](reference/shapes.png) has the first seven and [docs/reference/shapes-2.png](reference/shapes-2.png) repeats them and adds five more. Twelve shapes, each with its own marker colour (name and number are on the photos):
 
-| Shape                         | Colour         |
-| ----------------------------- | -------------- |
-| Cross (X)                     | vivid red 4    |
-| Circle (O)                    | royal blue 70  |
-| Square                        | grass green 47 |
-| Diamond                       | ultramarine 73 |
-| Star                          | WG8 (grey)     |
-| Plus                          | vivid pink 6   |
-| Asterisk, a cross with a line | ice blue 65    |
+| Shape                         | Colour           |
+| ----------------------------- | ---------------- |
+| Cross (X)                     | vivid red 4      |
+| Circle (O)                    | royal blue 70    |
+| Square                        | grass green 47   |
+| Diamond                       | ultramarine 73   |
+| Star                          | WG8 (grey)       |
+| Plus                          | vivid pink 6     |
+| Asterisk, a cross with a line | ice blue 65      |
+| Oval (ovaal)                  | viridian 54      |
+| Heart (hart)                  | wine red 1       |
+| Fort                          | prussian blue 69 |
+| Waves (golven)                | orange 23        |
+| Gold bar (goudstaaf)          | lemon yellow 35  |
 
-The SVGs follow the hand-drawn lines, so they keep a slightly wobbly, hand-made look. The colour belongs to the shape and becomes a design token (hex to be chosen from the photo). Seven shapes means the first set supports up to seven players.
+The SVGs follow the hand-drawn lines, so they keep a slightly wobbly, hand-made look. The colour belongs to the shape and is a design token (`src/styles/tokens.css`), tuned for screens rather than copied from the photo. Orange and lemon yellow are too light for a white page, so the light theme has a darker orange and a gold. Twelve shapes means a game can have up to twelve players.
 
-A second drawing, [docs/reference/shapes-2.png](reference/shapes-2.png), repeats these seven and adds five more: an ellipse (viridian 54), a heart (wine red 1), a castle (prussian blue 69), waves (orange 23) and a block (lemon yellow 35, to be confirmed). They are for more than seven players. Photos from a phone hold the place where they were taken, so only a copy without metadata goes in the repository (`.gitignore` keeps the original HEIC files out).
+The second drawing adds the oval, heart, fort, waves and gold bar; the person who drew them chose the Dutch names. Photos from a phone hold the place where they were taken, so only a copy without metadata goes in the repository (`.gitignore` keeps the original HEIC files out).
 
 ## Milestones
 
@@ -46,4 +51,4 @@ A second drawing, [docs/reference/shapes-2.png](reference/shapes-2.png), repeats
 
 ## Open questions
 
-- The rules of the big field (how it grows, how many in a row) and more than seven shapes: for milestone 3, not needed yet.
+- The rules of the big field (how it grows, how many in a row) and more than twelve shapes: for milestone 3, not needed yet.
