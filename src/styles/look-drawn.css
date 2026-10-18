@@ -29,14 +29,19 @@ html[data-look='drawn'] body {
 html[data-look='drawn'] .wordmark-text {
   padding-bottom: 0.2em;
   font-size: clamp(2.4rem, 11vw, 4rem);
+  /* Patrick Hand has one weight only: the titles get a stroke of their own colour to be heavier. */
+  -webkit-text-stroke: 0.05em currentColor;
+  paint-order: stroke fill;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 12' preserveAspectRatio='none'%3E%3Cpath d='M3 7 C40 2 82 11 122 6 S200 3 240 8 S285 5 297 6' stroke='%23b87900' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")
     bottom / 100% 0.28em no-repeat;
 }
 
 html[data-look='drawn'] h2,
 html[data-look='drawn'] legend {
-  font-size: 1.5rem;
+  font-size: 1.625rem;
   font-weight: 400;
+  -webkit-text-stroke: 0.045em currentColor;
+  paint-order: stroke fill;
   /* A highlighter pen over the lower half of the words. */
   background: linear-gradient(
     transparent 58%,
@@ -196,20 +201,13 @@ html[data-look='drawn'] .players {
   }
 }
 
-html[data-look='drawn'] .appearance-toggle {
-  border-radius: 12px 22px 14px 20px / 20px 12px 22px 14px;
-  font-size: 1.25rem;
-  font-weight: 400;
-  box-shadow: 3px 4px 0 var(--ink);
-}
-
-html[data-look='drawn'] .appearance-toggle[aria-expanded='true'] {
-  box-shadow: 1px 1px 0 var(--ink);
-  transform: translate(2px, 3px);
-}
-
-html[data-look='drawn'] .appearance-panel {
+html[data-look='drawn'] .site-footer-card {
+  background: var(--page);
+  border: 3px solid var(--ink);
   border-radius: 14px 30px 16px 28px / 28px 14px 30px 16px;
-  font-size: 1.25rem;
   box-shadow: 4px 5px 0 var(--ink);
+}
+
+html[data-look='drawn'] .footer-links a {
+  font-size: 1.375rem;
 }

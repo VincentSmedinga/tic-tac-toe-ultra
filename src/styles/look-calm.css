@@ -8,7 +8,7 @@ html[data-look='calm'] {
   --wallpaper-opacity: 0.06;
 }
 
-html[data-look='calm'] main {
+html[data-look='calm'] .app {
   gap: clamp(1rem, 4vw, 2rem);
   width: min(100%, 36rem);
 }
@@ -55,8 +55,8 @@ html[data-look='calm'] .share {
 
 html[data-look='calm'] .button,
 html[data-look='calm'] .rematch {
-  width: 100%;
   min-height: 4.25rem;
+  padding-inline: 2.5rem;
   border: 3px solid var(--text);
   border-radius: 999px;
   font-size: clamp(1.25rem, 5vw, 1.5rem);
@@ -75,7 +75,6 @@ html[data-look='calm'] .rematch-quiet {
 }
 
 html[data-look='calm'] .button-quiet {
-  width: auto;
   border-color: transparent;
   text-decoration: underline;
 }
@@ -83,7 +82,7 @@ html[data-look='calm'] .button-quiet {
 html[data-look='calm'] .game-actions,
 html[data-look='calm'] .actions {
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   width: 100%;
 }
 
@@ -158,6 +157,11 @@ html[data-look='calm'] .replay-speed button {
   }
 }
 
-html[data-look='calm'] .appearance-toggle {
+html[data-look='calm'] .site-footer-card {
+  padding-inline: 0;
+  border-top: 2px solid var(--line);
+}
+
+html[data-look='calm'] .footer-links a {
   font-weight: 700;
 }
