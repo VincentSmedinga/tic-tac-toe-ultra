@@ -19,7 +19,7 @@ export default defineConfig({
         test: {
           name: 'node',
           environment: 'node',
-          include: ['{server,shared,scripts}/**/*.test.ts'],
+          include: ['{server,shared,scripts,service-worker}/**/*.test.ts'],
         },
       },
       {
