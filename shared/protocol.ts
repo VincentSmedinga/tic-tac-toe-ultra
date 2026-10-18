@@ -64,6 +64,8 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
     x: z.number().int().min(0).max(99),
     y: z.number().int().min(0).max(99),
   }),
+  /** Takes back the player's own last move, as long as the next player has not moved. */
+  z.object({ type: z.literal('undo') }),
   z.object({ type: z.literal('rematch') }),
 ])
 export type ClientMessage = z.infer<typeof clientMessageSchema>
@@ -84,6 +86,7 @@ export const errorCodeSchema = z.enum([
   'game-over',
   'game-not-over',
   'not-your-turn',
+  'cannot-undo',
   'out-of-bounds',
   'cell-taken',
 ])

@@ -191,6 +191,23 @@ export function play(room: RoomState, token: string, cell: Cell): Change {
   return result.ok ? ok({ ...room, moves: [...result.state.moves] }) : fail(result.error)
 }
 
+/**
+ * Takes back the last move, when it is this player's own and the game is still on: the next player
+ * hasn't moved yet, or it would be theirs. A game that is over was already kept, so it stays as it was.
+ */
+export function undo(room: RoomState, token: string): Change {
+  const seat = room.seats.find((candidate) => candidate.token === token)
+  if (!seat) return fail('not-joined')
+  const current = gameOf(room)
+  if (current.kind === 'waiting') return fail('waiting-for-opponent')
+  if (current.kind === 'choosing') return fail('shape-needed')
+  if (current.kind === 'damaged') return fail('room-damaged')
+  if (current.game.status.kind !== 'playing') return fail('game-over')
+  const last = room.moves.at(-1)
+  if (last?.player !== seat.shape) return fail('cannot-undo')
+  return ok({ ...room, moves: room.moves.slice(0, -1) })
+}
+
 /** A new round once the game is over (or damaged): the other player starts. */
 export function rematch(room: RoomState, token: string): Change {
   if (!room.seats.some((seat) => seat.token === token)) return fail('not-joined')

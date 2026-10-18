@@ -10,6 +10,7 @@ import {
   play,
   rematch,
   stateFor,
+  undo,
   upgradeRoom,
   fieldOf,
   seatCountOf,
@@ -169,6 +170,57 @@ describe('playing', () => {
   it('refuses moves in a damaged room', () => {
     const broken: RoomState = { ...twoPlayers(), moves: [{ player: 'circle', x: 0, y: 0 }] }
     expect(play(broken, TOKEN_X, { x: 1, y: 1 })).toEqual({ ok: false, error: 'room-damaged' })
+  })
+})
+
+describe('taking a move back', () => {
+  it('takes back the last move of the one who played it, who then moves again', () => {
+    const played = playCells(twoPlayers(), [[0, 0]])
+    const back = room(undo(played, TOKEN_X))
+    expect(back.moves).toEqual([])
+    expect(play(back, TOKEN_O, { x: 0, y: 0 })).toEqual({ ok: false, error: 'not-your-turn' })
+    expect(room(play(back, TOKEN_X, { x: 1, y: 1 })).moves).toEqual([
+      { player: 'cross', x: 1, y: 1 },
+    ])
+  })
+
+  it('takes back one move at a time, in the order they were played', () => {
+    const played = playCells(twoPlayers(), [
+      [0, 0],
+      [1, 1],
+    ])
+    const back = room(undo(played, TOKEN_O))
+    expect(back.moves).toEqual([{ player: 'cross', x: 0, y: 0 }])
+    expect(room(undo(back, TOKEN_X)).moves).toEqual([])
+  })
+
+  it('is refused when the last move is not yours, once the next player has moved', () => {
+    const played = playCells(twoPlayers(), [[0, 0]])
+    expect(undo(played, TOKEN_O)).toEqual({ ok: false, error: 'cannot-undo' })
+    const later = playCells(played, [[1, 1]])
+    expect(undo(later, TOKEN_X)).toEqual({ ok: false, error: 'cannot-undo' })
+  })
+
+  it('is refused without a move, for a stranger, while waiting or choosing, and once the game is over', () => {
+    expect(undo(twoPlayers(), TOKEN_X)).toEqual({ ok: false, error: 'cannot-undo' })
+    expect(undo(playCells(twoPlayers(), [[0, 0]]), TOKEN_Z)).toEqual({
+      ok: false,
+      error: 'not-joined',
+    })
+    expect(undo(room(join(newRoom(), TOKEN_X, undefined)), TOKEN_X)).toEqual({
+      ok: false,
+      error: 'waiting-for-opponent',
+    })
+    expect(undo(undecided(), TOKEN_X)).toEqual({ ok: false, error: 'shape-needed' })
+    expect(undo(playCells(twoPlayers(), xWins), TOKEN_X)).toEqual({
+      ok: false,
+      error: 'game-over',
+    })
+  })
+
+  it('is refused in a damaged room', () => {
+    const broken: RoomState = { ...twoPlayers(), moves: [{ player: 'circle', x: 0, y: 0 }] }
+    expect(undo(broken, TOKEN_O)).toEqual({ ok: false, error: 'room-damaged' })
   })
 })
 

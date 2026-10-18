@@ -47,6 +47,7 @@ const PROBLEMS: Record<RoomProblem, string> = {
   'game-over': 'Er ging iets mis. Probeer het opnieuw.',
   'game-not-over': 'Er ging iets mis. Probeer het opnieuw.',
   'not-your-turn': 'Er ging iets mis. Probeer het opnieuw.',
+  'cannot-undo': 'Er ging iets mis. Probeer het opnieuw.',
   'out-of-bounds': 'Er ging iets mis. Probeer het opnieuw.',
   'cell-taken': 'Er ging iets mis. Probeer het opnieuw.',
 }

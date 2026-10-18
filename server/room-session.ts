@@ -9,6 +9,7 @@ import {
   rematch,
   startGame,
   stateFor,
+  undo,
 } from './room-logic.ts'
 import type { Change, Finished, RoomState } from './room-logic.ts'
 
@@ -102,6 +103,9 @@ export class RoomSession {
         break
       case 'start':
         change = startGame(room, token)
+        break
+      case 'undo':
+        change = undo(room, token)
         break
       case 'rematch':
         change = rematch(room, token)

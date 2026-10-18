@@ -569,6 +569,57 @@ describe('a room with more seats than people', () => {
   })
 })
 
+describe('taking a move back', () => {
+  it('shows both players the board without the move, and the player to move again', () => {
+    const { host, session } = started()
+    say(session, 'a', { type: 'move', x: 0, y: 0 })
+    say(session, 'a', { type: 'undo' })
+    for (const id of ['a', 'b']) expect(host.lastState(id).moves).toEqual([])
+    say(session, 'b', { type: 'move', x: 1, y: 1 })
+    expect(host.received('b').at(-1)).toEqual({ type: 'error', error: 'not-your-turn' })
+    say(session, 'a', { type: 'move', x: 1, y: 1 })
+    expect(host.lastState('b').moves).toEqual([{ player: 'cross', x: 1, y: 1 }])
+  })
+
+  it('is refused once the next player has moved, and the sender alone hears about it', () => {
+    const { host, session } = started()
+    say(session, 'a', { type: 'move', x: 0, y: 0 })
+    say(session, 'b', { type: 'move', x: 1, y: 1 })
+    host.sent.length = 0
+    say(session, 'a', { type: 'undo' })
+    expect(host.received('a')).toEqual([{ type: 'error', error: 'cannot-undo' }])
+    expect(host.received('b')).toEqual([])
+    expect(host.room?.moves).toHaveLength(2)
+  })
+
+  it('dates the round from the first move that is kept', () => {
+    const { host, session } = started()
+    host.time = 5_000
+    say(session, 'a', { type: 'move', x: 0, y: 0 })
+    say(session, 'a', { type: 'undo' })
+    host.time = 9_000
+    say(session, 'a', { type: 'move', x: 2, y: 2 })
+    expect(host.room?.startedAt).toBe(9_000)
+  })
+
+  it('does not undo a move that ended the game, which is already kept', () => {
+    const { host, session } = started()
+    for (const [id, x, y] of [
+      ['a', 0, 0],
+      ['b', 0, 1],
+      ['a', 1, 0],
+      ['b', 1, 1],
+      ['a', 2, 0],
+    ] as const) {
+      say(session, id, { type: 'move', x, y })
+    }
+    say(session, 'a', { type: 'undo' })
+    expect(host.received('a').at(-1)).toEqual({ type: 'error', error: 'game-over' })
+    expect(host.room?.moves).toHaveLength(5)
+    expect(host.archived).toHaveLength(1)
+  })
+})
+
 describe('a rematch', () => {
   function wonByX() {
     const setup = started()
