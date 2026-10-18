@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "tic-tac-toe-ultra",
+  "main": "server/index.ts",
+  "compatibility_date": "2026-10-01",
+  // The app is the static files of `pnpm build`; the Worker only answers /api/*, the rest goes
+  // to the files, with the page itself for any address the app handles in the browser.
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+}
