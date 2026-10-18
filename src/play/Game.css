@@ -17,9 +17,11 @@
 }
 
 .board-frame {
-  /* How big a cell is at the very least, so that it stays big enough to tap, and the gap between. */
+  /* How big a cell is at the very least, so that it stays big enough to tap. */
   --cell-min: 2.75rem;
-  --gap: 0.5rem;
+  /* The lines between the cells: how thick, and in which colour. A look draws them in its own hand. */
+  --line-width: 2px;
+  --line-color: var(--line);
   /* What the field would get if it were scaled to the room that is left: not wider than the screen
      or the look allows, nor higher than the screen. */
   --fit: min(
@@ -35,20 +37,52 @@
   /* A field that doesn't fit is scrolled inside here, with a finger, and the page stays where it is. */
   overflow: auto;
   overscroll-behavior: contain;
-  /* The cells' focus ring and the winning ring are drawn outside them: room for it. */
+  /* The lines of a look that draws by hand stray a little past the field: room for them. */
   padding: 0.5rem;
 }
 
+/* The cells touch each other and the lines are drawn on top of the places where they meet, so
+   there is no gap between two cells to tap beside: the whole cell up to the line is the target.
+   The shapes are always on the page colour, whatever is behind the field (a wallpaper, a sky), so
+   the field is a surface of that colour, a little way round the grid (the room the frame keeps
+   for the focus ring and for the pen of a look that draws by hand). It has no edge: the lines
+   are the grid. */
 .board {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(var(--columns), 1fr);
-  gap: var(--gap);
-  /* Never narrower than the cells and the gaps between them need to stay as big as --cell-min. */
-  width: max(
-    var(--fit),
-    calc(var(--columns) * var(--cell-min) + (var(--columns) - 1) * var(--gap))
-  );
+  /* Never narrower than the cells need to stay as big as --cell-min. */
+  width: max(var(--fit), calc(var(--columns) * var(--cell-min)));
   margin-inline: auto;
+  border-radius: 0.5rem;
+  background: var(--page);
+  box-shadow: 0 0 0 0.5rem var(--page);
+}
+
+/* The lines are one picture behind the cells, in units of a cell (see lines.ts): they sit between
+   the cells and not around the field, and as it is out of the flow nothing moves when a cell gets
+   a shape. A line is drawn twice, straight and by hand; a look shows the one it draws with. */
+.board-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.board-line path {
+  fill: none;
+  stroke: var(--line-color);
+  stroke-width: calc(var(--line-width) * var(--weight, 1));
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+  /* One width on any size of board: the picture is stretched to the field, the pen is not. */
+  vector-effect: non-scaling-stroke;
+}
+
+.board-line-hand {
+  display: none;
 }
 
 .sr-only {
@@ -60,25 +94,16 @@
   white-space: nowrap;
 }
 
-.board-frame[data-dense] {
-  --gap: 0.125rem;
-}
-
-.board-frame[data-dense] .cell {
-  border-width: 1px;
-  border-radius: 0.25rem;
-}
-
 .cell {
   /* The cell is square by itself and its icon sits on top of it, out of the flow, so what is in a
      cell can't change its size. An icon in the flow with a percentage height made a cell with a
-     shape taller than an empty one in Safari. */
+     shape taller than an empty one in Safari. A cell has no border: it is a place between lines. */
   position: relative;
   aspect-ratio: 1;
   min-width: 0;
   padding: 0;
-  border: 3px solid var(--line);
-  border-radius: 0.75rem;
+  border: 0;
+  border-radius: var(--cell-radius, 0.5rem);
   background: transparent;
   cursor: pointer;
   /* No tap highlight and no double-tap zoom: a fast second tap is a move, not a zoom. */
@@ -98,21 +123,28 @@
   cursor: default;
 }
 
-.cell:not([aria-disabled='true']):hover {
-  border-color: var(--text);
+/* A cell you can play shows it under a finger or the pointer: a tint, which a taken cell never gets. */
+.cell:not([aria-disabled='true']):hover,
+.cell:not([aria-disabled='true']):active {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
 }
 
-/* The winning line gets a thick ring as well as a colour, so it doesn't depend on colour alone.
-   The ring is a shadow, so marking it doesn't move anything. */
+/* The winning line gets a thick ring as well as a colour, so it doesn't depend on colour alone, and
+   the ring is drawn inside the cell, so marking it doesn't move anything. Cells in a row side by
+   side form one band; several lines at once mark every cell on any of them. */
 .cell[data-winning] {
-  border-color: var(--win);
-  box-shadow: 0 0 0 3px var(--win);
+  box-shadow: inset 0 0 0 var(--ring-width, 4px) var(--win);
 }
 
 .cell:focus-visible,
 .rematch:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* The ring of the cell the keyboard is on is drawn inside the cell, over the lines around it. */
+.cell:focus-visible {
+  outline-offset: calc(-3px - var(--line-width));
 }
 
 .rematch {

@@ -136,12 +136,19 @@ html[data-look='drawn'] .game-status {
   justify-content: center;
 }
 
-/* Every cell is a little different: the corners are not the same twice. */
-html[data-look='drawn'] .cell,
-html[data-look='drawn'] .shape-choice {
-  border: 3px solid var(--ink);
+/* The lines of the field are drawn with a marker: a little crooked, the pen leaving the paper
+   a bit past the field, and each line heavier or lighter than the next (see lines.ts). */
+html[data-look='drawn'] .board-frame {
+  /* Heavy on a small field, lighter as the field gets more cells to tell apart. */
+  --line-width: clamp(2px, calc(28px / var(--columns)), 4px);
+  --line-color: var(--ink);
+  --cell-radius: 0.6rem;
+  --ring-width: 5px;
+}
+
+/* The ring round a winning cell, like the pen drew it: the corners are not the same twice. */
+html[data-look='drawn'] .cell {
   border-radius: 14px 9px 16px 8px / 9px 15px 8px 14px;
-  background: var(--page);
 }
 
 html[data-look='drawn'] .cell:nth-child(2n) {
@@ -156,12 +163,19 @@ html[data-look='drawn'] .cell:nth-child(5n) {
   border-radius: 9px 16px 13px 8px / 15px 9px 8px 13px;
 }
 
-html[data-look='drawn'] .board-frame:not([data-dense]) {
-  --gap: 0.6rem;
+html[data-look='drawn'] .board-line-straight {
+  display: none;
 }
 
-html[data-look='drawn'] .cell[data-winning] {
-  border-color: var(--win);
+html[data-look='drawn'] .board-line-hand {
+  display: inline;
+  stroke-linecap: round;
+}
+
+html[data-look='drawn'] .shape-choice {
+  border: 3px solid var(--ink);
+  border-radius: 14px 9px 16px 8px / 9px 15px 8px 14px;
+  background: var(--page);
 }
 
 html[data-look='drawn'] .shape-choice {

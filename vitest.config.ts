@@ -29,8 +29,8 @@ export default defineConfig({
           environment: 'jsdom',
           include: ['src/**/*.test.{ts,tsx}'],
           setupFiles: ['src/test/setup.ts'],
-          // Vitest imports CSS as an empty string; the tokens are read as text, to check them.
-          css: { include: [/tokens\.css/] },
+          // Vitest imports CSS as an empty string; the tokens and the styles of the board and the looks are read as text, to check them.
+          css: { include: [/(tokens|Game|look-\w+)\.css/] },
         },
       },
     ],

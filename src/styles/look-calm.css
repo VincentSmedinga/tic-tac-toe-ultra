@@ -108,22 +108,18 @@ html[data-look='calm'] .game-status {
   letter-spacing: -0.02em;
 }
 
+/* Thin, straight lines in the colour of the line token. */
 html[data-look='calm'] .board-frame {
   --board-max: 38rem;
+  --line-width: 2px;
+  --line-color: var(--line);
+  --cell-radius: 0.5rem;
+  --ring-width: 4px;
 }
 
-html[data-look='calm'] .board-frame:not([data-dense]) {
-  --gap: 0.75rem;
-}
-
-html[data-look='calm'] .cell,
 html[data-look='calm'] .shape-choice {
   border: 2px solid var(--line);
   border-radius: 1.25rem;
-}
-
-html[data-look='calm'] .cell[data-winning] {
-  border-color: var(--win);
 }
 
 html[data-look='calm'] .shape-choice {

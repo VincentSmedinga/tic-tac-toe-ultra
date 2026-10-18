@@ -2,13 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { Cell, GameState } from '../../shared/game/index.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { shapeById } from '../shapes/shapes.ts'
+import { boardLines } from './lines.ts'
 import { shapeOf } from './players.ts'
-
-/**
- * A field wider than this gets thin lines and small gaps, so that its cells stay big enough to tap
- * and the shapes keep room to be seen: seven columns of 44 px and six small gaps fit on a phone.
- */
-const DENSE_FROM = 5
 
 interface BoardProps {
   game: GameState
@@ -22,7 +17,8 @@ interface BoardProps {
 }
 
 /**
- * The field as a grid of buttons: one tap or key press on an empty cell plays it. A field that is
+ * The field as a grid of buttons, marked off by lines between the cells (none around it): one tap or
+ * key press on an empty cell plays it. A field that is
  * too big for the screen keeps cells that are big enough to tap and is scrolled inside its frame;
  * one that fits fills the room that is left. For the keyboard the board is one stop, as in a grid:
  * Tab goes in and out, the arrow keys, Home and End move over the cells (a field of 19 × 19 would
@@ -47,6 +43,7 @@ export function Board({
       : [],
   )
   const playing = game.status.kind === 'playing' && interactive
+  const lines = boardLines(width, height)
 
   const moveTo = (x: number, y: number) => {
     const index = Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))
@@ -93,7 +90,6 @@ export function Board({
     <div
       ref={frame}
       className="board-frame"
-      data-dense={width > DENSE_FROM || undefined}
       style={{ '--columns': width, '--rows': height } as React.CSSProperties}
     >
       <div
@@ -106,6 +102,28 @@ export function Board({
         <span id="board-hint" className="sr-only">
           Ga met de pijltjestoetsen over het veld.
         </span>
+        {/* The lines between the cells, behind them: a picture, not part of the field. Each line
+            comes straight and as a hand draws it; the look shows the one it draws with. */}
+        <svg
+          className="board-lines"
+          viewBox={`0 0 ${width.toString()} ${height.toString()}`}
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          {lines.map(({ axis, after, straight, hand, weight }) => (
+            <g
+              key={`${axis}${after.toString()}`}
+              className="board-line"
+              data-axis={axis}
+              data-after={after}
+              style={{ '--weight': weight } as React.CSSProperties}
+            >
+              <path className="board-line-straight" d={straight} />
+              <path className="board-line-hand" d={hand} />
+            </g>
+          ))}
+        </svg>
         {game.cells.map((player, index) => {
           const x = index % width
           const y = Math.floor(index / width)
