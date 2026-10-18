@@ -37,7 +37,7 @@ Node 24 and pnpm 12 (`corepack enable` or a global pnpm).
 
 Tests sit next to the code as `*.test.ts(x)`: in `src/` they run in jsdom, in `shared/` and `server/` in Node.
 
-## Structure (planned)
+## Structure
 
 | Folder         | Holds                                                                                          |
 | -------------- | ---------------------------------------------------------------------------------------------- |
@@ -47,4 +47,4 @@ Tests sit next to the code as `*.test.ts(x)`: in `src/` they run in jsdom, in `s
 | `server/`      | The room as a Cloudflare Durable Object with WebSocket; the server is authoritative            |
 | `docs/`        | The plan and decisions; `docs/reference/` holds source material such as the drawn shapes       |
 
-`shared/` and `server/` are still empty; they fill up in the issues of milestones 1 and 2. The tooling follows [Blokhut](https://github.com/VincentSmedinga/blokhut). TypeScript stays on 6.0 until typescript-eslint supports 7.
+`shared/game/` exists: `createGame` and `applyMove` (`game.ts`, exported through `index.ts`) are the rules, immutable and without side effects, so import the engine from `shared/game/index.ts` and never reimplement a rule in the app or the server. The message protocol in `shared/` and the whole of `server/` come with milestone 2. The tooling follows [Blokhut](https://github.com/VincentSmedinga/blokhut). TypeScript stays on 6.0 until typescript-eslint supports 7.
