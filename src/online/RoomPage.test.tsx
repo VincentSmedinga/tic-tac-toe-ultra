@@ -68,14 +68,19 @@ function state(
   players: StateMessage['players'],
   you = 'X',
   field = { width: 3, height: 3, winLength: 3 },
+  seats = 2,
+  /** The one who made the room has said "start", with seats left over. */
+  startedEarly = false,
 ): StateMessage {
   const shapes = players.flatMap(({ shape }) => (shape ? [shape] : []))
-  const started = players.length >= 2 && shapes.length === players.length
+  const everybodyChose = players.length >= 2 && shapes.length === players.length
+  const started = everybodyChose && (startedEarly || players.length >= seats)
   return {
     type: 'state',
     code: 'BCDF',
     you,
     field,
+    seats,
     round: 0,
     players,
     ...(started
@@ -294,6 +299,81 @@ describe('RoomPage', () => {
       expect(await screen.findByRole('group', { name: 'Speelveld' })).toBeVisible()
       expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(35)
       expect(screen.getByText('5 × 7, vijf op een rij')).toBeVisible()
+    })
+  })
+
+  describe('a room with more seats than people', () => {
+    const anna = { id: 'X', name: 'Anna', shape: 'cross', connected: true } as const
+    const bo = { id: 'O', name: 'Bo', shape: 'circle', connected: true } as const
+    const cas = { id: '3', name: 'Cas', connected: true } as const
+    const field = { width: 7, height: 7, winLength: 5 }
+
+    it('shows the seats that are free, how many people play and the link to give them', async () => {
+      const { socket } = await connected()
+      socket.receive(state([anna], 'X', field, 4))
+      expect(await screen.findByText('Plek 2: nog vrij')).toBeVisible()
+      expect(screen.getByText('Plek 3: nog vrij')).toBeVisible()
+      expect(screen.getByText('Plek 4: nog vrij')).toBeVisible()
+      expect(screen.getByText(/Veld: 7 × 7, vijf op een rij · 4 spelers/)).toBeVisible()
+      expect(screen.getByText('Wachten op meer spelers…')).toBeVisible()
+      expect(screen.getByRole('button', { name: 'Kopieer link' })).toBeVisible()
+      expect(screen.queryByRole('button', { name: /^Start met/ })).not.toBeInTheDocument()
+    })
+
+    it('has a start button for the one who made the room, when two people have chosen', async () => {
+      const { socket } = await connected()
+      socket.receive(state([anna, bo], 'X', field, 4))
+      const start = await screen.findByRole('button', { name: 'Start met 2 spelers' })
+      expect(start).toBeEnabled()
+      expect(screen.getByText(/Er zijn nog 2 plekken vrij/)).toBeVisible()
+
+      await userEvent.setup().click(start)
+      expect(socket.sent.at(-1)).toEqual({ type: 'start' })
+    })
+
+    it('says it right when one seat is left', async () => {
+      const { socket } = await connected()
+      socket.receive(state([anna, bo, { ...cas, shape: 'star' }], 'X', field, 4))
+      expect(await screen.findByText(/Er is nog 1 plek vrij/)).toBeVisible()
+    })
+
+    it('waits with the button while somebody has not chosen a shape, and says who it waits for', async () => {
+      const { socket } = await connected()
+      socket.receive(state([anna, bo, cas], 'X', field, 4))
+      expect(await screen.findByText('Cas kiest nog een vorm…')).toBeVisible()
+      expect(screen.getByRole('button', { name: 'Start met 3 spelers' })).toBeDisabled()
+    })
+
+    it('has no start button for the others, who are told who they wait for', async () => {
+      const { socket } = await connected()
+      socket.receive(state([anna, bo], 'O', field, 4))
+      expect(await screen.findByText('Wachten tot Anna het spel start…')).toBeVisible()
+      expect(screen.queryByRole('button', { name: /^Start met/ })).not.toBeInTheDocument()
+    })
+
+    it('has no start button when every seat is taken: the game starts by itself', async () => {
+      const { socket } = await connected()
+      const chosen = { ...cas, shape: 'star' } as const
+      socket.receive(state([anna, bo, chosen], 'X', field, 3))
+      expect(await screen.findByRole('group', { name: 'Speelveld' })).toBeVisible()
+      expect(screen.queryByRole('button', { name: /^Start met/ })).not.toBeInTheDocument()
+    })
+
+    it('shows the board with three players when the game has started with a seat to spare', async () => {
+      const { socket } = await connected()
+      const chosen = { ...cas, shape: 'star' } as const
+      socket.receive(state([anna, bo, chosen], 'X', field, 4, true))
+      expect(await screen.findByRole('group', { name: 'Speelveld' })).toBeVisible()
+      expect(document.querySelectorAll('.players-row .player')).toHaveLength(3)
+      expect(screen.queryByRole('button', { name: /^Start met/ })).not.toBeInTheDocument()
+    })
+
+    it('says so, with no way to try again, when the game has started without you', async () => {
+      const { socket } = await connected()
+      socket.receive({ type: 'error', error: 'game-started' })
+      socket.closeFromServer(4409)
+      expect(await screen.findByRole('alert')).toHaveTextContent('al begonnen')
+      expect(screen.queryByRole('button', { name: 'Opnieuw proberen' })).not.toBeInTheDocument()
     })
   })
 

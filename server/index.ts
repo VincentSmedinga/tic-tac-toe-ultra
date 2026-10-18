@@ -1,13 +1,13 @@
 import {
   GAMES_PAGE_SIZE,
-  fieldSchema,
+  roomSettingsSchema,
   MAX_GAMES_PAGE_SIZE,
   gameIdSchema,
   gamesCursorSchema,
   roomCodeSchema,
   tokenSchema,
 } from '../shared/protocol.ts'
-import { CLASSIC_FIELD } from '../shared/room.ts'
+import { CLASSIC_FIELD, DEFAULT_PLAYERS } from '../shared/room.ts'
 import type { FieldSettings } from '../shared/room.ts'
 import { ARCHIVE_NAME } from './archive.ts'
 import type { Env } from './env.ts'
@@ -22,7 +22,8 @@ const CREATE_ATTEMPTS = 10
 /**
  * The Worker: answers /api/*; every other address is the app, which Cloudflare serves itself.
  *   POST /api/rooms          make a room, answers { code }; the body may say how big the field is
- *                            ({ width, height, winLength }), without one it is classic 3×3
+ *                            and how many people play ({ width, height, winLength, players }),
+ *                            without one it is classic 3×3 for two
  *   GET  /api/rooms/:code    answers { exists }
  *   GET  /api/rooms/:code/ws the WebSocket of the room, which is a Durable Object
  *   GET  /api/games/:id      a finished game as it was kept, for anyone who has the id
@@ -99,29 +100,33 @@ function badRequest(): Response {
 }
 
 async function createRoom(request: Request, env: Env): Promise<Response> {
-  const field = await fieldOfRequest(request)
-  if (!field) return Response.json({ error: 'bad-field' }, { status: 400 })
+  const settings = await settingsOfRequest(request)
+  if (!settings) return Response.json({ error: 'bad-field' }, { status: 400 })
   for (let attempt = 0; attempt < CREATE_ATTEMPTS; attempt++) {
     const code = newRoomCode()
-    if (await env.ROOM.getByName(code).create(code, field)) {
+    if (await env.ROOM.getByName(code).create(code, settings.field, settings.players)) {
       return Response.json({ code }, { status: 201 })
     }
   }
   return Response.json({ error: 'no-free-code' }, { status: 503 })
 }
 
-/** The field a request asks for: classic without a body; null when what is asked for is no field. */
-async function fieldOfRequest(request: Request): Promise<FieldSettings | null> {
+/** What a request asks for: a classic room for two without a body; null when it is no room. */
+async function settingsOfRequest(
+  request: Request,
+): Promise<{ field: FieldSettings; players: number } | null> {
   const text = await request.text()
-  if (text.trim() === '') return CLASSIC_FIELD
+  if (text.trim() === '') return { field: CLASSIC_FIELD, players: DEFAULT_PLAYERS }
   let json: unknown
   try {
     json = JSON.parse(text)
   } catch {
     return null
   }
-  const parsed = fieldSchema.safeParse(json)
-  return parsed.success ? parsed.data : null
+  const parsed = roomSettingsSchema.safeParse(json)
+  if (!parsed.success) return null
+  const { players, ...field } = parsed.data
+  return { field, players: players ?? DEFAULT_PLAYERS }
 }
 
 function notFound(): Response {

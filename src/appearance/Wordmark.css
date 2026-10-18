@@ -16,4 +16,6 @@
 
 .wordmark-text {
   font-size: clamp(2rem, 9vw, 3.5rem);
+  /* The title breaks into lines of about the same length, not one long line and a short one. */
+  text-wrap: balance;
 }

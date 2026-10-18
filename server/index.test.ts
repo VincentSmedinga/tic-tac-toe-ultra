@@ -16,6 +16,7 @@ function fakeEnv(existing: readonly string[] = []) {
   const rooms = new Set(existing)
   const forwarded: Request[] = []
   const fields: unknown[] = []
+  const seatCounts: number[] = []
   const listed: { token: string; limit: number; before?: string | undefined }[] = []
   const env = {
     ARCHIVE: {
@@ -29,10 +30,11 @@ function fakeEnv(existing: readonly string[] = []) {
     },
     ROOM: {
       getByName: (code: string) => ({
-        create: (newCode: string, field: unknown) => {
+        create: (newCode: string, field: unknown, seats: number) => {
           if (rooms.has(code)) return Promise.resolve(false)
           rooms.add(newCode)
           fields.push(field)
+          seatCounts.push(seats)
           return Promise.resolve(true)
         },
         exists: () => Promise.resolve(rooms.has(code)),
@@ -43,7 +45,7 @@ function fakeEnv(existing: readonly string[] = []) {
       }),
     },
   } as unknown as Env
-  return { env, rooms, forwarded, listed, fields }
+  return { env, rooms, forwarded, listed, fields, seatCounts }
 }
 
 const call = (path: string, init?: RequestInit, env = fakeEnv().env) =>
@@ -88,6 +90,39 @@ describe('making a room with a field of its own', () => {
     const { env, fields } = fakeEnv()
     expect((await post(undefined, env)).status).toBe(201)
     expect(fields).toEqual([{ width: 3, height: 3, winLength: 3 }])
+  })
+
+  it('makes the room for two when nothing is said about how many play', async () => {
+    const { env, seatCounts } = fakeEnv()
+    await post(undefined, env)
+    await post(JSON.stringify({ width: 7, height: 7, winLength: 5 }), env)
+    expect(seatCounts).toEqual([2, 2])
+  })
+
+  it('makes the room for as many people as was asked, up to twelve', async () => {
+    const { env, seatCounts, fields } = fakeEnv()
+    for (const players of [2, 5, 12]) {
+      const response = await post(
+        JSON.stringify({ width: 9, height: 9, winLength: 5, players }),
+        env,
+      )
+      expect(response.status).toBe(201)
+    }
+    expect(seatCounts).toEqual([2, 5, 12])
+    // The number of people is not part of the field.
+    expect(fields[0]).toEqual({ width: 9, height: 9, winLength: 5 })
+  })
+
+  it('refuses a room for one person, for thirteen, or for half a person', async () => {
+    const { env, rooms } = fakeEnv()
+    for (const players of [0, 1, 13, 2.5, 'many']) {
+      const response = await post(
+        JSON.stringify({ width: 7, height: 7, winLength: 5, players }),
+        env,
+      )
+      expect(response.status, String(players)).toBe(400)
+    }
+    expect(rooms.size).toBe(0)
   })
 
   it('makes the room with the field that was asked for', async () => {

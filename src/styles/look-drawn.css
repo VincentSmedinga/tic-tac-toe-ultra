@@ -29,19 +29,14 @@ html[data-look='drawn'] body {
 html[data-look='drawn'] .wordmark-text {
   padding-bottom: 0.2em;
   font-size: clamp(2.4rem, 11vw, 4rem);
-  /* Patrick Hand has one weight only: the titles get a stroke of their own colour to be heavier. */
-  -webkit-text-stroke: 0.05em currentColor;
-  paint-order: stroke fill;
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 12' preserveAspectRatio='none'%3E%3Cpath d='M3 7 C40 2 82 11 122 6 S200 3 240 8 S285 5 297 6' stroke='%23b87900' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")
     bottom / 100% 0.28em no-repeat;
 }
 
 html[data-look='drawn'] h2,
 html[data-look='drawn'] legend {
-  font-size: 1.625rem;
+  font-size: 1.5rem;
   font-weight: 400;
-  -webkit-text-stroke: 0.045em currentColor;
-  paint-order: stroke fill;
   /* A highlighter pen over the lower half of the words. */
   background: linear-gradient(
     transparent 58%,

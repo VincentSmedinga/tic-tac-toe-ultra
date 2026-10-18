@@ -311,3 +311,70 @@ test('a field that is too big for the screen is scrolled inside its frame, with 
   await anna.keyboard.press('Enter')
   await expect(cell(anna, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: kruis')
 })
+
+test('three people play in a room of four seats, started by the one who made it', async ({
+  browser,
+}) => {
+  const anna = await newPlayer(browser, 'Anna')
+  await anna.getByLabel('Aantal spelers').selectOption('4')
+  await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
+  await expect(anna.getByText('Wachten op meer spelers…')).toBeVisible()
+  await expect(anna.getByText('Plek 4: nog vrij')).toBeVisible()
+  const code = (await anna.locator('.room-code').textContent()) ?? ''
+  await anna.getByRole('button', { name: 'kruis', exact: true }).click()
+
+  const players = [anna]
+  for (const [name, shape] of [
+    ['Bo', 'cirkel'],
+    ['Cas', 'ster'],
+  ] as const) {
+    const page = await newPlayer(browser, name)
+    await page.getByLabel('Code van de kamer').fill(code)
+    await page.getByRole('button', { name: 'Meedoen' }).click()
+    await page.getByRole('button', { name: shape, exact: true }).click()
+    players.push(page)
+  }
+  const [, bo, cas] = players as [(typeof players)[0], (typeof players)[0], (typeof players)[0]]
+
+  // The game does not start by itself while a seat is free; only the one who made the room can start it.
+  await expect(anna.getByRole('button', { name: 'Start met 3 spelers' })).toBeEnabled()
+  await expect(bo.getByText('Wachten tot Anna het spel start…')).toBeVisible()
+  await expect(bo.getByRole('button', { name: /^Start met/ })).toHaveCount(0)
+  await anna.getByRole('button', { name: 'Start met 3 spelers' }).click()
+
+  for (const page of players) {
+    await expect(page.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+    await expect(page.locator('.players-row .player')).toHaveCount(3)
+  }
+  await expect(anna.getByText('Jij begint')).toBeVisible()
+
+  // A fourth person who comes now is told that the game has started.
+  const late = await newPlayer(browser, 'Dirk')
+  await late.getByLabel('Code van de kamer').fill(code)
+  await late.getByRole('button', { name: 'Meedoen' }).click()
+  await expect(late.getByRole('alert')).toContainText('al begonnen')
+
+  // They take turns in the order of the seats: the cross, the circle, the star.
+  await cell(anna, 2, 2).click()
+  await cell(bo, 1, 1).click()
+  await cell(cas, 1, 2).click()
+  await expect(cell(anna, 1, 1)).toHaveAccessibleName('Rij 1, kolom 1: cirkel')
+  await expect(cell(anna, 1, 2)).toHaveAccessibleName('Rij 1, kolom 2: ster')
+  await expect(anna.getByText('Jij bent aan de beurt')).toBeVisible()
+  await expect(cas.getByText('Anna is aan de beurt')).toBeVisible()
+
+  // The cross wins with the others playing elsewhere; a rematch starts with the circle.
+  for (const [page, row, col] of [
+    [anna, 2, 1],
+    [bo, 3, 1],
+    [cas, 3, 2],
+    [anna, 2, 3],
+  ] as const) {
+    await cell(page, row, col).click()
+  }
+  await expect(anna.getByText('Je hebt gewonnen!')).toBeVisible()
+  await expect(bo.getByText('Anna heeft gewonnen!')).toBeVisible()
+  await cas.getByRole('button', { name: 'Nog een keer' }).click()
+  await expect(bo.getByText('Jij begint')).toBeVisible()
+  await expect(anna.locator('.players-row .player')).toHaveCount(3)
+})

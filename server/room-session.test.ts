@@ -9,6 +9,7 @@ import type { Host } from './room-session.ts'
 const TOKEN_X = 'x'.repeat(20)
 const TOKEN_O = 'o'.repeat(20)
 const TOKEN_Z = 'z'.repeat(20)
+const TOKEN_W = 'w'.repeat(20)
 
 /** A room's host in memory: the sockets are a list, what a player is sent is written down. */
 class FakeHost implements Host {
@@ -478,6 +479,93 @@ describe('how long a game takes', () => {
     host.time = 70_000
     say(session, 'b', { type: 'move', x: 1, y: 1 })
     expect(host.room?.startedAt).toBe(70_000)
+  })
+})
+
+describe('a room with more seats than people', () => {
+  /** A room of four seats in which Anna (a, who made it), Bo (b) and Cas (c) have sat down. */
+  function room4() {
+    const host = new FakeHost()
+    host.room = newRoom({ width: 7, height: 7, winLength: 5 }, 4)
+    const session = new RoomSession(host)
+    for (const [id, token] of [
+      ['a', TOKEN_X],
+      ['b', TOKEN_O],
+      ['c', TOKEN_Z],
+    ] as const) {
+      host.connect(id)
+      say(session, id, { type: 'join', token })
+    }
+    host.sent.length = 0
+    return { host, session }
+  }
+
+  it('does not start by itself while a seat is free, and tells everybody how many there are', () => {
+    const { host, session } = room4()
+    for (const [id, shape] of [
+      ['a', 'cross'],
+      ['b', 'circle'],
+      ['c', 'star'],
+    ] as const) {
+      say(session, id, { type: 'choose', shape })
+    }
+    for (const id of ['a', 'b', 'c']) {
+      expect(host.lastState(id).seats).toBe(4)
+      expect(host.lastState(id)).not.toHaveProperty('config')
+    }
+  })
+
+  it('starts when the one who made it says so, and all the people who are there play', () => {
+    const { host, session } = room4()
+    for (const [id, shape] of [
+      ['a', 'cross'],
+      ['b', 'circle'],
+      ['c', 'star'],
+    ] as const) {
+      say(session, id, { type: 'choose', shape })
+    }
+    say(session, 'a', { type: 'start' })
+    for (const id of ['a', 'b', 'c']) {
+      expect(host.lastState(id).config?.players).toEqual(['cross', 'circle', 'star'])
+    }
+    say(session, 'c', { type: 'move', x: 0, y: 0 })
+    expect(host.received('c').at(-1)).toEqual({ type: 'error', error: 'not-your-turn' })
+  })
+
+  it('does not start for somebody else, with somebody still choosing, or alone', () => {
+    const { host, session } = room4()
+    say(session, 'a', { type: 'choose', shape: 'cross' })
+    say(session, 'b', { type: 'choose', shape: 'circle' })
+    host.sent.length = 0
+    say(session, 'b', { type: 'start' })
+    say(session, 'a', { type: 'start' })
+    expect(host.received('b')).toEqual([{ type: 'error', error: 'not-host' }])
+    expect(host.received('a')).toEqual([{ type: 'error', error: 'shape-needed' }])
+    expect(host.room?.started).toBeUndefined()
+  })
+
+  it('tells a fourth person who comes after the start that it has started, and closes their socket', () => {
+    const { host, session } = room4()
+    for (const [id, shape] of [
+      ['a', 'cross'],
+      ['b', 'circle'],
+      ['c', 'star'],
+    ] as const) {
+      say(session, id, { type: 'choose', shape })
+    }
+    say(session, 'a', { type: 'start' })
+    host.connect('w')
+    say(session, 'w', { type: 'join', token: TOKEN_W })
+    expect(host.received('w')).toEqual([{ type: 'error', error: 'game-started' }])
+    expect(host.closes.at(-1)).toMatchObject({ id: 'w', code: CLOSE_ROOM_FULL })
+  })
+
+  it('lets a fourth person sit down while the game has not started', () => {
+    const { host, session } = room4()
+    host.connect('w')
+    say(session, 'w', { type: 'join', token: TOKEN_W })
+    expect(host.lastState('w')).toMatchObject({ you: '4', seats: 4 })
+    expect(host.lastState('a').players).toHaveLength(4)
   })
 })
 
