@@ -235,12 +235,3 @@ html[data-look='playful'] .site-footer-card {
   border-radius: 1.5rem;
   box-shadow: 0 7px 0 var(--edge);
 }
-
-html[data-look='playful'] .wordmark-ultra {
-  padding: 0.05em 0.7em 0.05em 0.9em;
-  border: 3px solid var(--edge);
-  border-radius: 999px;
-  background: var(--accent);
-  color: var(--on-accent);
-  box-shadow: 0 3px 0 var(--edge);
-}

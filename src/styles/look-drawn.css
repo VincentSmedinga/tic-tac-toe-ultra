@@ -211,14 +211,3 @@ html[data-look='drawn'] .site-footer-card {
 html[data-look='drawn'] .footer-links a {
   font-size: 1.375rem;
 }
-
-html[data-look='drawn'] .wordmark-ultra {
-  font-weight: 400;
-  -webkit-text-stroke: 0.04em currentColor;
-  paint-order: stroke fill;
-  background: linear-gradient(
-    transparent 55%,
-    color-mix(in srgb, var(--shape-goldbar) 55%, transparent) 55%
-  );
-  padding-inline: 0.5em 0.1em;
-}

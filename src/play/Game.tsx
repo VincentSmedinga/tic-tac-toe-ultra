@@ -177,7 +177,7 @@ function Play({
   }
 
   return (
-    <section className="game" aria-label="Boter, kaas en eieren Ultra">
+    <section className="game" aria-label="Boter, Kaas en Eieren Ultra">
       <p className="game-status" role="status">
         {player !== null && <ShapeIcon shape={shapeOf(player)} size={32} decorative />}
         <span>{text}</span>
