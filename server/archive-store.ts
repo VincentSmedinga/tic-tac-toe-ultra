@@ -1,5 +1,5 @@
-import { storedGameSchema } from '../shared/protocol.ts'
-import type { StoredGame } from '../shared/protocol.ts'
+import { gamesCursorSchema, storedGameSchema } from '../shared/protocol.ts'
+import type { GamesPage, GameSummary, StoredGame } from '../shared/protocol.ts'
 
 /** The part of Durable Object SQL storage the store uses, so it can run on any SQLite in tests. */
 export interface Sql {
@@ -58,8 +58,57 @@ export class ArchiveStore {
   /** A stored game, or null when there is none with this id (or it can't be read any more). */
   get(id: string): StoredGame | null {
     const [row] = this.sql.exec('SELECT data FROM games WHERE id = ?', id).toArray()
-    if (typeof row?.data !== 'string') return null
-    const parsed = storedGameSchema.safeParse(JSON.parse(row.data))
-    return parsed.success ? parsed.data : null
+    return typeof row?.data === 'string' ? parseGame(row.data) : null
+  }
+
+  /**
+   * The games these players sat at, newest first, `limit` at a time. `before` is the `next` of the
+   * page before: the list goes on after that game, even when new games have been played since.
+   */
+  list(owner: string, limit: number, before?: string): GamesPage {
+    const cursor = before === undefined ? null : parseCursor(before)
+    const rows = this.sql
+      .exec(
+        `SELECT g.data FROM players p JOIN games g ON g.id = p.game_id
+         WHERE p.owner = ?${cursor ? ' AND (p.finished_at < ? OR (p.finished_at = ? AND p.game_id < ?))' : ''}
+         ORDER BY p.finished_at DESC, p.game_id DESC LIMIT ?`,
+        ...(cursor
+          ? [owner, cursor.finishedAt, cursor.finishedAt, cursor.id, limit + 1]
+          : [owner, limit + 1]),
+      )
+      .toArray()
+    const games = rows.flatMap(({ data }) => {
+      const game = typeof data === 'string' ? parseGame(data) : null
+      return game ? [summaryOf(game)] : []
+    })
+    const page = games.slice(0, limit)
+    const last = page.at(-1)
+    return rows.length > limit && last
+      ? { games: page, next: `${last.finishedAt.toString()}.${last.id}` }
+      : { games: page }
+  }
+}
+
+function parseGame(data: string): StoredGame | null {
+  const parsed = storedGameSchema.safeParse(JSON.parse(data))
+  return parsed.success ? parsed.data : null
+}
+
+function parseCursor(cursor: string): { finishedAt: number; id: string } | null {
+  if (!gamesCursorSchema.safeParse(cursor).success) return null
+  const [finishedAt = '', id = ''] = cursor.split('.')
+  return { finishedAt: Number(finishedAt), id }
+}
+
+function summaryOf(game: StoredGame): GameSummary {
+  const { id, finishedAt, players, result, config, moves } = game
+  return {
+    id,
+    finishedAt,
+    players,
+    result,
+    width: config.width,
+    height: config.height,
+    moves: moves.length,
   }
 }

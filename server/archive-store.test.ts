@@ -102,4 +102,79 @@ describe('the archive store', () => {
     const again = new ArchiveStore(sqlOver(database))
     expect(again.get(WON.id)?.id).toBe(WON.id)
   })
+
+  describe('listing the games of a player', () => {
+    /** A game with an id made from a number, played by these owners at this time. */
+    const idOf = (n: number) => n.toString().padStart(16, 'g')
+    function save(n: number, owners: string[], finishedAt = n * 1000) {
+      store.save({ ...WON, id: idOf(n), owners }, finishedAt)
+    }
+
+    it('gives the games the player sat at, newest first, as summaries', () => {
+      save(1, ['hash-x'])
+      save(2, ['hash-x', 'hash-o'])
+      save(3, ['hash-o'])
+      const page = store.list('hash-x', 10)
+      expect(page.games.map(({ id }) => id)).toEqual([idOf(2), idOf(1)])
+      expect(page.games[0]).toEqual({
+        id: idOf(2),
+        finishedAt: 2000,
+        players: WON.players,
+        result: WON.result,
+        width: 3,
+        height: 3,
+        moves: 5,
+      })
+      expect(page.next).toBeUndefined()
+    })
+
+    it('is empty for someone who played nothing', () => {
+      save(1, ['hash-x'])
+      expect(store.list('hash-nobody', 10)).toEqual({ games: [] })
+    })
+
+    it('goes through the games a page at a time, until there are no more', () => {
+      for (let n = 1; n <= 5; n++) save(n, ['hash-x'])
+      const first = store.list('hash-x', 2)
+      expect(first.games.map(({ finishedAt }) => finishedAt)).toEqual([5000, 4000])
+      expect(first.next).toBeDefined()
+      const second = store.list('hash-x', 2, first.next)
+      expect(second.games.map(({ finishedAt }) => finishedAt)).toEqual([3000, 2000])
+      const third = store.list('hash-x', 2, second.next)
+      expect(third.games.map(({ finishedAt }) => finishedAt)).toEqual([1000])
+      expect(third.next).toBeUndefined()
+    })
+
+    it('has no next page when the last page is exactly full', () => {
+      save(1, ['hash-x'])
+      save(2, ['hash-x'])
+      expect(store.list('hash-x', 2).next).toBeUndefined()
+    })
+
+    it('keeps its place when new games are played between two pages', () => {
+      for (let n = 1; n <= 3; n++) save(n, ['hash-x'])
+      const first = store.list('hash-x', 2)
+      save(4, ['hash-x'])
+      const second = store.list('hash-x', 2, first.next)
+      expect(second.games.map(({ finishedAt }) => finishedAt)).toEqual([1000])
+    })
+
+    it('does not skip or repeat games that ended at the same moment', () => {
+      for (let n = 1; n <= 5; n++) save(n, ['hash-x'], 7000)
+      const seen: string[] = []
+      let next: string | undefined
+      do {
+        const page = store.list('hash-x', 2, next)
+        seen.push(...page.games.map(({ id }) => id))
+        next = page.next
+      } while (next !== undefined)
+      expect(seen).toHaveLength(5)
+      expect(new Set(seen).size).toBe(5)
+    })
+
+    it('starts at the top when the cursor is no cursor', () => {
+      save(1, ['hash-x'])
+      expect(store.list('hash-x', 10, 'nonsense').games).toHaveLength(1)
+    })
+  })
 })

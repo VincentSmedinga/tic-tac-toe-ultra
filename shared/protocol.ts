@@ -81,6 +81,31 @@ export const storedGameSchema = z.object({
 })
 export type StoredGame = z.infer<typeof storedGameSchema>
 
+/** What a list of games shows of one game: who, how it ended and when, without the moves. */
+export const gameSummarySchema = storedGameSchema
+  .pick({ id: true, finishedAt: true, players: true, result: true })
+  .extend({
+    width: z.number().int().positive(),
+    height: z.number().int().positive(),
+    moves: z.number().int().min(0),
+  })
+export type GameSummary = z.infer<typeof gameSummarySchema>
+
+/** Where the next page of a list starts: the time and the id of the last game of the page before. */
+export const gamesCursorSchema = z
+  .string()
+  .regex(new RegExp(`^\\d{1,15}\\.[A-Za-z0-9_-]{${GAME_ID_LENGTH.toString()}}$`))
+
+/** One page of the games a browser played, newest first; `next` is there when there are more. */
+export const gamesPageSchema = z.object({
+  games: z.array(gameSummarySchema),
+  next: gamesCursorSchema.optional(),
+})
+export type GamesPage = z.infer<typeof gamesPageSchema>
+
+export const GAMES_PAGE_SIZE = 20
+export const MAX_GAMES_PAGE_SIZE = 50
+
 /**
  * The whole room as one player sees it, sent again after every change. A game is its config plus
  * its moves (see shared/game/): the receiver rebuilds the game with `replayGame`, so there is no

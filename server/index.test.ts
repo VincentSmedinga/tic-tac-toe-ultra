@@ -15,10 +15,15 @@ const STORED = {
 function fakeEnv(existing: readonly string[] = []) {
   const rooms = new Set(existing)
   const forwarded: Request[] = []
+  const listed: { token: string; limit: number; before?: string | undefined }[] = []
   const env = {
     ARCHIVE: {
       getByName: () => ({
         get: (id: string) => Promise.resolve(id === STORED.id ? STORED : null),
+        list: (token: string, limit: number, before?: string) => {
+          listed.push({ token, limit, before })
+          return Promise.resolve({ games: [] })
+        },
       }),
     },
     ROOM: {
@@ -36,7 +41,7 @@ function fakeEnv(existing: readonly string[] = []) {
       }),
     },
   } as unknown as Env
-  return { env, rooms, forwarded }
+  return { env, rooms, forwarded, listed }
 }
 
 const call = (path: string, init?: RequestInit, env = fakeEnv().env) =>
@@ -119,12 +124,55 @@ describe('a finished game', () => {
   it('is a 404 for an id nothing was kept under, and for something that is no id', async () => {
     expect((await call('/api/games/zzzzzzzzzzzzzzzz')).status).toBe(404)
     expect((await call('/api/games/short')).status).toBe(404)
-    expect((await call('/api/games')).status).toBe(404)
     expect((await call(`/api/games/${STORED.id}/more`)).status).toBe(404)
   })
 
   it('is only for GET', async () => {
     const response = await call(`/api/games/${STORED.id}`, { method: 'POST' })
     expect(response.status).toBe(405)
+  })
+})
+
+describe('the games of a browser', () => {
+  const TOKEN = 'abcdefghijklmnopqrstuvwx'
+  const ask = (query = '', token: string | null = TOKEN, env = fakeEnv().env) =>
+    call(
+      `/api/games${query}`,
+      token === null ? undefined : { headers: { 'X-Player-Token': token } },
+      env,
+    )
+
+  it('is asked for with the token in a header, and the first page is 20 games', async () => {
+    const { env, listed } = fakeEnv()
+    const response = await ask('', TOKEN, env)
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({ games: [] })
+    expect(listed).toEqual([{ token: TOKEN, limit: 20, before: undefined }])
+  })
+
+  it('is never kept by a cache that others use', async () => {
+    expect((await ask()).headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  it('passes on the page asked for', async () => {
+    const { env, listed } = fakeEnv()
+    await ask('?limit=5&before=1700000000000.abcdefghijklmnop', TOKEN, env)
+    expect(listed).toEqual([{ token: TOKEN, limit: 5, before: '1700000000000.abcdefghijklmnop' }])
+  })
+
+  it('is refused without a token, or with one that is no token', async () => {
+    expect((await ask('', null)).status).toBe(401)
+    expect((await ask('', 'short')).status).toBe(401)
+  })
+
+  it('is refused for a page that makes no sense', async () => {
+    for (const query of ['?limit=0', '?limit=51', '?limit=abc', '?before=nonsense']) {
+      expect((await ask(query)).status).toBe(400)
+    }
+  })
+
+  it('is only for GET, and the token is never read from the address', async () => {
+    expect((await call('/api/games', { method: 'POST' })).status).toBe(405)
+    expect((await ask(`?token=${TOKEN}`, null)).status).toBe(401)
   })
 })

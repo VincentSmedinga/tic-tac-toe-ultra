@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers'
-import type { StoredGame } from '../shared/protocol.ts'
+import type { GamesPage, StoredGame } from '../shared/protocol.ts'
 import { ArchiveStore } from './archive-store.ts'
 import type { NewGame } from './archive-store.ts'
 import type { Env } from './env.ts'
@@ -28,6 +28,11 @@ export class Archive extends DurableObject<Env> {
 
   get(id: string): StoredGame | null {
     return this.store.get(id)
+  }
+
+  /** The games of the browser with this token, newest first (see `ArchiveStore.list`). */
+  async list(token: string, limit: number, before?: string): Promise<GamesPage> {
+    return this.store.list(await hashToken(token), limit, before)
   }
 }
 
