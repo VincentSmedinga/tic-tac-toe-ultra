@@ -61,6 +61,17 @@ export class ArchiveStore {
     return typeof row?.data === 'string' ? parseGame(row.data) : null
   }
 
+  /** Every game that is kept, oldest first; a game that can't be read any more is left out. */
+  all(): StoredGame[] {
+    return this.sql
+      .exec('SELECT data FROM games ORDER BY finished_at, id')
+      .toArray()
+      .flatMap(({ data }) => {
+        const game = typeof data === 'string' ? parseGame(data) : null
+        return game ? [game] : []
+      })
+  }
+
   /**
    * The games these players sat at, newest first, `limit` at a time. `before` is the `next` of the
    * page before: the list goes on after that game, even when new games have been played since.

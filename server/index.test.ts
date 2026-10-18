@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { computeStats } from '../shared/stats.ts'
 import worker from './index.ts'
 import type { Env } from './env.ts'
 
@@ -12,6 +13,8 @@ const STORED = {
   result: { kind: 'draw' },
 }
 
+const STATS = computeStats([], 0)
+
 function fakeEnv(existing: readonly string[] = []) {
   const rooms = new Set(existing)
   const forwarded: Request[] = []
@@ -21,6 +24,7 @@ function fakeEnv(existing: readonly string[] = []) {
   const env = {
     ARCHIVE: {
       getByName: () => ({
+        stats: () => Promise.resolve(STATS),
         get: (id: string) => Promise.resolve(id === STORED.id ? STORED : null),
         list: (token: string, limit: number, before?: string) => {
           listed.push({ token, limit, before })
@@ -248,5 +252,24 @@ describe('the games of a browser', () => {
   it('is only for GET, and the token is never read from the address', async () => {
     expect((await call('/api/games', { method: 'POST' })).status).toBe(405)
     expect((await ask(`?token=${TOKEN}`, null)).status).toBe(401)
+  })
+})
+
+describe('GET /api/stats', () => {
+  it('answers the statistics of the archive, for a short while to every browser', async () => {
+    const response = await call('/api/stats')
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(STATS)
+    expect(response.headers.get('Cache-Control')).toBe('public, max-age=30')
+  })
+
+  it('needs no token and takes none', async () => {
+    const response = await call('/api/stats', { headers: { 'X-Player-Token': 'x'.repeat(20) } })
+    expect(response.status).toBe(200)
+  })
+
+  it('is only for GET and has nothing below it', async () => {
+    expect((await call('/api/stats', { method: 'POST' })).status).toBe(405)
+    expect((await call('/api/stats/more')).status).toBe(404)
   })
 })

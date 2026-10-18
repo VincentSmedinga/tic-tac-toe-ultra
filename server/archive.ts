@@ -1,5 +1,6 @@
 import { DurableObject } from 'cloudflare:workers'
-import type { GamesPage, StoredGame } from '../shared/protocol.ts'
+import type { GamesPage, Stats, StoredGame } from '../shared/protocol.ts'
+import { computeStats } from '../shared/stats.ts'
 import { ArchiveStore } from './archive-store.ts'
 import type { NewGame } from './archive-store.ts'
 import type { Env } from './env.ts'
@@ -31,6 +32,14 @@ export class Archive extends DurableObject<Env> {
 
   get(id: string): StoredGame | null {
     return this.store.get(id)
+  }
+
+  /**
+   * The statistics of every game that is kept, worked out now: a family never plays enough games to
+   * make this slow, and the numbers can always be rebuilt from the games (see shared/stats.ts).
+   */
+  stats(): Stats {
+    return computeStats(this.store.all(), Date.now())
   }
 
   /** The games of the browser with this token, newest first (see `ArchiveStore.list`). */
