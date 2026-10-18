@@ -70,6 +70,13 @@ describe('ShapeIcon', () => {
 })
 
 describe('ShapeGallery', () => {
+  it('shows all twelve next to each other, and every pair that can play against each other', () => {
+    const { container } = render(<ShapeGallery />)
+    expect(container.querySelectorAll('.shape-strip svg')).toHaveLength(12)
+    // 12 shapes make 66 pairs of two.
+    expect(container.querySelectorAll('.shape-pair')).toHaveLength(66)
+  })
+
   it('shows every shape large and small, with its name and marker', () => {
     render(<ShapeGallery />)
     expect(screen.getAllByRole('img')).toHaveLength(SHAPES.length * 3)
