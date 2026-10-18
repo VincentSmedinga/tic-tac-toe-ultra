@@ -5,6 +5,7 @@ import {
   parseClientMessage,
   parseServerMessage,
   roomCodeSchema,
+  storedGameSchema,
 } from './protocol.ts'
 
 const token = 'abcdefghijklmnop'
@@ -107,5 +108,28 @@ describe('room codes', () => {
 
   it.each(['bcdf', 'BCD', 'BCDFG', 'ABCD', 'BCD1', 'BCDE', ' BCD', ''])('%j is not', (code) => {
     expect(roomCodeSchema.safeParse(code).success).toBe(false)
+  })
+})
+
+describe('a stored game', () => {
+  const stored = {
+    id: 'abcdefghijklmnop',
+    finishedAt: 1_700_000_000_000,
+    config: { width: 3, height: 3, winLength: 3, players: ['X', 'O'] },
+    moves: [{ player: 'X', x: 0, y: 0 }],
+    players: [{ id: 'X', name: 'Anna' }, { id: 'O' }],
+    result: { kind: 'won', winner: 'X' },
+  }
+
+  it('is accepted, as a win or as a draw', () => {
+    expect(storedGameSchema.safeParse(stored).success).toBe(true)
+    expect(storedGameSchema.safeParse({ ...stored, result: { kind: 'draw' } }).success).toBe(true)
+  })
+
+  it('is refused with an id that is no id, or a result nobody knows', () => {
+    expect(storedGameSchema.safeParse({ ...stored, id: 'short' }).success).toBe(false)
+    expect(storedGameSchema.safeParse({ ...stored, id: 'abcdefghijklmno!' }).success).toBe(false)
+    expect(storedGameSchema.safeParse({ ...stored, result: { kind: 'lost' } }).success).toBe(false)
+    expect(storedGameSchema.safeParse({ ...stored, finishedAt: -1 }).success).toBe(false)
   })
 })

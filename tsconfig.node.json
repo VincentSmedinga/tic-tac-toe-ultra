@@ -5,5 +5,5 @@
     "lib": ["ES2023"],
     "types": ["node"]
   },
-  "include": ["*.config.ts", "e2e", "shared/**/*.test.ts"]
+  "include": ["*.config.ts", "e2e", "shared/**/*.test.ts", "server/archive-store.test.ts"]
 }
