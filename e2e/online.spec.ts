@@ -117,6 +117,23 @@ test('a player whose connection drops is shown as away, and comes back by themse
   await expect(cell(anna, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: cirkel')
 })
 
+test('a player who goes to the start screen finds the way back to the same room and game', async ({
+  browser,
+}) => {
+  const { anna, bo, code } = await startGame(browser)
+  await cell(anna, 2, 2).click()
+  await expect(cell(bo, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: kruis')
+
+  // Bo leaves for the start screen: it offers the room, and following it gives the game back.
+  await bo.getByRole('link', { name: 'Terug naar het begin' }).click()
+  await expect(bo.getByRole('region', { name: 'Je speelt nog mee' })).toContainText(code)
+  await expect(anna.getByText(/Bo is even weg/)).toBeVisible()
+  await bo.getByRole('link', { name: `Terug naar kamer ${code}` }).click()
+  await expect(cell(bo, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: kruis')
+  await expect(bo.getByText('Jij bent aan de beurt')).toBeVisible()
+  await expect(anna.getByText(/Bo is even weg/)).toBeHidden()
+})
+
 test('a third player is told the room is full', async ({ browser }) => {
   const { code } = await startGame(browser)
   const third = await newPlayer(browser, 'Cas')

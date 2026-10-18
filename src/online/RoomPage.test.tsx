@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ServerMessage, StateMessage } from '../../shared/protocol.ts'
 import { roomConfig } from '../../shared/room.ts'
-import { getToken, setName } from './identity.ts'
+import { clearLastRoom, getLastRoom, getToken, setLastRoom, setName } from './identity.ts'
 import { RoomPage } from './RoomPage.tsx'
 import type { RoomDeps } from './useRoom.ts'
 
@@ -81,6 +81,7 @@ async function connected(exists: boolean | Error = true) {
 
 beforeEach(() => {
   window.localStorage.clear()
+  clearLastRoom()
 })
 
 afterEach(() => {
@@ -119,6 +120,46 @@ describe('RoomPage', () => {
     socket.receive({ type: 'error', error: 'invalid-message' })
     expect(await screen.findByRole('alert')).toHaveTextContent('Er ging iets mis')
     expect(screen.getByRole('button', { name: 'Opnieuw proberen' })).toBeVisible()
+  })
+
+  describe('the way back to the room from the start screen', () => {
+    it('is remembered once the room has given this player a seat', async () => {
+      const { socket } = await connected()
+      expect(getLastRoom()).toBeNull()
+      socket.receive(state([{ id: 'X', connected: true }]))
+      await screen.findByText('Wachten op een tweede speler…')
+      expect(getLastRoom()).toBe('BCDF')
+    })
+
+    it.each([
+      [
+        'does not exist',
+        () => {
+          setup(false)
+          return Promise.resolve()
+        },
+      ],
+      [
+        'is full',
+        async () => {
+          const { socket } = await connected()
+          socket.receive({ type: 'error', error: 'room-full' })
+        },
+      ],
+    ])('is forgotten when the room %s', async (_why, arrange) => {
+      setLastRoom('BCDF')
+      await arrange()
+      await screen.findByRole('alert')
+      expect(getLastRoom()).toBeNull()
+    })
+
+    it('is kept when the connection is only lost', async () => {
+      const { socket } = await connected()
+      socket.receive(state([{ id: 'X', connected: true }]))
+      await screen.findByText('Wachten op een tweede speler…')
+      socket.closeFromServer(1006)
+      expect(getLastRoom()).toBe('BCDF')
+    })
   })
 
   describe('while waiting for a second player', () => {
