@@ -4,7 +4,7 @@ import { parseServerMessage, storedGameSchema } from '../shared/protocol.ts'
 import type { StateMessage } from '../shared/protocol.ts'
 
 /** A player without a browser: a socket on the real room, which keeps the last state it got. */
-async function connect(baseURL: string, code: string, token: string, name: string) {
+async function connect(baseURL: string, code: string, token: string, name: string, shape: string) {
   const socket = new WebSocket(`${baseURL.replace('http', 'ws')}/api/rooms/${code}/ws`)
   let last: StateMessage | undefined
   socket.addEventListener('message', (event) => {
@@ -19,7 +19,7 @@ async function connect(baseURL: string, code: string, token: string, name: strin
       reject(new Error('the socket did not open'))
     })
   })
-  socket.send(JSON.stringify({ type: 'join', token, name }))
+  socket.send(JSON.stringify({ type: 'join', token, name, shape }))
   return {
     socket,
     state: () => last,
@@ -37,11 +37,11 @@ test('a finished game is kept, outlives its players and can be replayed', async 
   const created = await request.post('/api/rooms')
   const { code } = (await created.json()) as { code: string }
 
-  const anna = await connect(baseURL, code, 'a'.repeat(24), 'Anna')
-  const bo = await connect(baseURL, code, 'b'.repeat(24), 'Bo')
+  const anna = await connect(baseURL, code, 'a'.repeat(24), 'Anna', 'cross')
+  const bo = await connect(baseURL, code, 'b'.repeat(24), 'Bo', 'circle')
   await expect.poll(() => bo.state()?.players.length).toBe(2)
 
-  // Anna wins on the top row; she is the first to join, so she is X and starts.
+  // Anna wins on the top row; she is the first to join, has the cross and starts.
   const turns: [typeof anna, number, number][] = [
     [anna, 0, 0],
     [bo, 0, 1],
@@ -72,10 +72,10 @@ test('a finished game is kept, outlives its players and can be replayed', async 
   expect(game).toMatchObject({
     id,
     players: [
-      { id: 'X', name: 'Anna' },
-      { id: 'O', name: 'Bo' },
+      { id: 'cross', name: 'Anna' },
+      { id: 'circle', name: 'Bo' },
     ],
-    result: { kind: 'won', winner: 'X' },
+    result: { kind: 'won', winner: 'cross' },
   })
   expect(game.finishedAt).toBeGreaterThan(Date.now() - 60_000)
   const replayed = replayGame(game.config, game.moves)
