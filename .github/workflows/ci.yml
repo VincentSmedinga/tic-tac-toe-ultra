@@ -66,6 +66,13 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      # The style guide is for the people who make the game: nobody who plays downloads it.
+      - name: Check that the build holds no style guide
+        run: |
+          if grep -rli storybook dist; then
+            echo "::error title=Style guide in the build::The files above are in the game's build, which should hold no Storybook."
+            exit 1
+          fi
       # The deploy puts exactly the app that was built and tested here on Cloudflare.
       - name: Keep the build for the deploy
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -73,6 +80,25 @@ jobs:
           name: dist
           path: dist
           retention-days: 7
+
+  # The style guide (Storybook, .storybook/ and the *.stories.tsx files) is built, so that it can't
+  # break without notice. It is not part of the game's build and not deployed.
+  style-guide:
+    name: Style guide
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          cache: true
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - run: pnpm install --frozen-lockfile
+      - name: Build the style guide
+        run: pnpm build-storybook
 
   # Two browsers play a game together against the real build: the Worker with its Durable Object,
   # in the same runtime as Cloudflare's. Not for a push to main: its pull request ran it.
