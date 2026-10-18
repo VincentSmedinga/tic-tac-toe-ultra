@@ -1,5 +1,6 @@
-# A pull request's preview is a Worker of its own, tic-tac-toe-ultra-pr-<number> (see ci.yml). It
-# goes when the pull request is closed, merged or not, so that previews don't pile up on the account.
+# A pull request's preview is a Worker of its own, tic-tac-toe-ultra-pr-<number>, and so is the one
+# of its style guide, tic-tac-toe-ultra-styleguide-pr-<number> (see ci.yml). They go when the pull
+# request is closed, merged or not, so that previews don't pile up on the account.
 name: Preview cleanup
 
 on:
@@ -20,6 +21,7 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       WORKER: tic-tac-toe-ultra-pr-${{ github.event.pull_request.number }}
+      STYLE_GUIDE: tic-tac-toe-ultra-styleguide-pr-${{ github.event.pull_request.number }}
     steps:
       - name: Check the one-time setup
         id: setup
@@ -51,4 +53,13 @@ jobs:
             echo "Deleted $WORKER" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "::notice title=Nothing to delete::$WORKER doesn't exist, or couldn't be deleted."
+          fi
+      # The style guide's preview is a Worker of its own too (see ci.yml).
+      - name: Delete the style guide's Worker
+        if: steps.setup.outputs.ready == 'true'
+        run: |
+          if pnpm exec wrangler delete --name "$STYLE_GUIDE" --force; then
+            echo "Deleted $STYLE_GUIDE" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::notice title=Nothing to delete::$STYLE_GUIDE doesn't exist, or couldn't be deleted."
           fi

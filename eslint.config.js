@@ -4,6 +4,7 @@ import prettier from 'eslint-config-prettier/flat'
 import jsxA11y from 'eslint-plugin-jsx-a11y-x'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import storybook from 'eslint-plugin-storybook'
 import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
@@ -11,6 +12,7 @@ export default defineConfig([
   globalIgnores([
     '.claude/worktrees',
     'dist',
+    'storybook-static',
     'coverage',
     'docs/reference',
     'playwright-report',
@@ -45,6 +47,10 @@ export default defineConfig([
     ],
     languageOptions: { globals: globals.browser },
   },
+
+  // The stories and the Storybook set-up: the rules of Storybook's own plugin (it is for *.stories.*
+  // and .storybook/main and preview). Stories may export more than one thing and use hooks in render.
+  ...storybook.configs['flat/recommended'],
 
   prettier,
 ])
