@@ -29,8 +29,15 @@ export interface Move extends Cell {
 
 export type GameStatus =
   | { readonly kind: 'playing'; readonly next: PlayerId }
-  /** `line` is the whole unbroken run through the last move, so at least `winLength` cells. */
-  | { readonly kind: 'won'; readonly winner: PlayerId; readonly line: readonly Cell[] }
+  /**
+   * `lines` are all the lines the last move completes, each the whole unbroken run through it, so at
+   * least `winLength` cells: a corner can win a row and a column at once, a middle cell more.
+   */
+  | {
+      readonly kind: 'won'
+      readonly winner: PlayerId
+      readonly lines: readonly (readonly Cell[])[]
+    }
   | { readonly kind: 'draw' }
 
 export interface GameState {
@@ -106,8 +113,10 @@ export function applyMove(state: GameState, move: Move): MoveResult {
   const moves = [...state.moves, { player: move.player, x: move.x, y: move.y }]
   const next: GameState = { config, cells, moves, moveCount, status }
 
-  const line = findLine(next, move)
-  if (line) return succeed({ ...next, status: { kind: 'won', winner: move.player, line } })
+  const lines = findLines(next, move)
+  if (lines.length > 0) {
+    return succeed({ ...next, status: { kind: 'won', winner: move.player, lines } })
+  }
   if (moveCount === config.width * config.height)
     return succeed({ ...next, status: { kind: 'draw' } })
 
@@ -131,10 +140,10 @@ function isOnField({ width, height }: GameConfig, x: number, y: number): boolean
 }
 
 /**
- * The winning line through the cell just played, if there is one. Only the four lines through that
- * cell can have become a win, so this costs the same on a huge field as on a small one.
+ * The winning lines through the cell just played, one at most per direction. Only the four lines
+ * through that cell can have become a win, so this costs the same on a huge field as on a small one.
  */
-function findLine(state: GameState, { x, y, player }: Move): Cell[] | null {
+function findLines(state: GameState, { x, y, player }: Move): Cell[][] {
   const ray = (dx: number, dy: number): Cell[] => {
     const cells: Cell[] = []
     for (
@@ -147,9 +156,10 @@ function findLine(state: GameState, { x, y, player }: Move): Cell[] | null {
     return cells
   }
 
+  const lines: Cell[][] = []
   for (const [dx, dy] of DIRECTIONS) {
     const line = [...ray(-dx, -dy).reverse(), { x, y }, ...ray(dx, dy)]
-    if (line.length >= state.config.winLength) return line
+    if (line.length >= state.config.winLength) lines.push(line)
   }
-  return null
+  return lines
 }

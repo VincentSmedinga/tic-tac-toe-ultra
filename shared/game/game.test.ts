@@ -190,7 +190,8 @@ describe('winning on 3×3', () => {
     )
     if (game.status.kind !== 'won') throw new Error('the game is not won')
     expect(game.status.winner).toBe('X')
-    expect(sorted(game.status.line)).toEqual(sorted(line))
+    expect(game.status.lines).toHaveLength(1)
+    expect(sorted(game.status.lines[0] ?? [])).toEqual(sorted(line))
   })
 
   it('O can win as well', () => {
@@ -385,7 +386,7 @@ describe('a bigger field', () => {
     ])
     expect(game.status).toMatchObject({ kind: 'won', winner: 'X' })
     if (game.status.kind !== 'won') throw new Error('not won')
-    expect(game.status.line).toEqual([2, 3, 4, 5, 6].map((x) => ({ x, y: 2 })))
+    expect(game.status.lines).toEqual([[2, 3, 4, 5, 6].map((x) => ({ x, y: 2 }))])
   })
 
   it('works on a field that is wider than it is high', () => {
@@ -402,5 +403,186 @@ describe('a bigger field', () => {
     expect(game.status).toMatchObject({ kind: 'won', winner: 'X' })
     expect(getCell(game, { x: 4, y: 2 })).toBe('X')
     expect(getCell(game, { x: 5, y: 2 })).toBeUndefined()
+  })
+})
+
+describe('a move that completes more than one line', () => {
+  const cells = (list: readonly (readonly [number, number])[]) => list.map(([x, y]) => ({ x, y }))
+
+  /** The lines of a won game, each with its cells sorted, for comparing. */
+  function linesOf(game: GameState): Cell[][] {
+    if (game.status.kind !== 'won') throw new Error('the game is not won')
+    return game.status.lines.map((line) => sorted(line))
+  }
+
+  /** The cells that are on any of the lines, each once. */
+  function cellsOf(game: GameState): Cell[] {
+    return sorted(
+      linesOf(game)
+        .flat()
+        .filter((cell, i, all) => all.findIndex(({ x, y }) => x === cell.x && y === cell.y) === i),
+    )
+  }
+
+  /** X plays `xs` and O plays `os` in turn, and then X plays `last`. */
+  function race(
+    config: GameConfig,
+    xs: readonly (readonly [number, number])[],
+    os: readonly (readonly [number, number])[],
+    last: readonly [number, number],
+  ): GameState {
+    const turns = xs.flatMap((cell, i) => [cell, os[i] ?? [-1, -1]]).filter(([x]) => x >= 0)
+    return play(createGame(config), [...turns, last] as (readonly [number, number])[])
+  }
+
+  it('wins the row and the column at once from a corner: five cells, not three', () => {
+    // X has the top row and the right column; the corner (2, 0) completes both.
+    const game = play(createGame(classic), [
+      [0, 0],
+      [0, 1],
+      [1, 0],
+      [1, 1],
+      [2, 1],
+      [0, 2],
+      [2, 2],
+      [1, 2],
+      [2, 0],
+    ])
+    expect(game.status).toMatchObject({ kind: 'won', winner: 'X' })
+    expect(linesOf(game)).toEqual([
+      sorted(
+        cells([
+          [0, 0],
+          [1, 0],
+          [2, 0],
+        ]),
+      ),
+      sorted(
+        cells([
+          [2, 0],
+          [2, 1],
+          [2, 2],
+        ]),
+      ),
+    ])
+    expect(cellsOf(game)).toHaveLength(5)
+  })
+
+  it('wins both diagonals at once from the middle: five cells, with the middle once', () => {
+    // X has the four corners, O the four edges, and X's last move is the middle.
+    const game = play(createGame(classic), [
+      [0, 0],
+      [1, 0],
+      [2, 0],
+      [0, 1],
+      [0, 2],
+      [2, 1],
+      [2, 2],
+      [1, 2],
+      [1, 1],
+    ])
+    expect(linesOf(game)).toEqual([
+      sorted(
+        cells([
+          [0, 0],
+          [1, 1],
+          [2, 2],
+        ]),
+      ),
+      sorted(
+        cells([
+          [2, 0],
+          [1, 1],
+          [0, 2],
+        ]),
+      ),
+    ])
+    expect(cellsOf(game)).toHaveLength(5)
+  })
+
+  it('wins a row, a column and both diagonals at once on a bigger field: four lines', () => {
+    const config: GameConfig = { width: 7, height: 7, winLength: 4, players: ['X', 'O'] }
+    // Around (3, 3) X has three cells on each of the four lines, with a gap where the move will be.
+    const xs: [number, number][] = [
+      [1, 3],
+      [2, 3],
+      [4, 3],
+      [3, 1],
+      [3, 2],
+      [3, 4],
+      [1, 1],
+      [2, 2],
+      [4, 4],
+      [5, 1],
+      [4, 2],
+      [2, 4],
+    ]
+    // O keeps to cells that are two apart, so that it never has two next to each other.
+    const os: [number, number][] = [
+      [0, 0],
+      [0, 2],
+      [0, 4],
+      [0, 6],
+      [2, 0],
+      [4, 0],
+      [6, 0],
+      [6, 2],
+      [6, 4],
+      [6, 6],
+      [2, 6],
+      [4, 6],
+    ]
+    const game = race(config, xs, os, [3, 3])
+    expect(game.status).toMatchObject({ kind: 'won', winner: 'X' })
+    expect(linesOf(game)).toHaveLength(4)
+    expect(cellsOf(game)).toHaveLength(13)
+  })
+
+  it('has one line for a longer run, next to the line of the other direction', () => {
+    const config: GameConfig = { width: 7, height: 7, winLength: 4, players: ['X', 'O'] }
+    // The move at (3, 3) joins a row of six and a column of five.
+    const xs: [number, number][] = [
+      [0, 3],
+      [1, 3],
+      [2, 3],
+      [4, 3],
+      [5, 3],
+      [3, 0],
+      [3, 1],
+      [3, 2],
+      [3, 4],
+    ]
+    const os: [number, number][] = [
+      [6, 0],
+      [6, 2],
+      [6, 4],
+      [6, 6],
+      [0, 6],
+      [2, 6],
+      [4, 6],
+      [0, 0],
+      [0, 5],
+    ]
+    const game = race(config, xs, os, [3, 3])
+    expect(linesOf(game).map((line) => line.length)).toEqual([6, 5])
+  })
+
+  it('wins only one line when only one is complete', () => {
+    const game = play(createGame(classic), [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 0],
+      [2, 2],
+    ])
+    expect(linesOf(game)).toEqual([
+      sorted(
+        cells([
+          [0, 0],
+          [1, 1],
+          [2, 2],
+        ]),
+      ),
+    ])
   })
 })
