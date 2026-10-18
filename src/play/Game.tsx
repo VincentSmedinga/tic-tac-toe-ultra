@@ -1,5 +1,5 @@
 import { useReducer, useState } from 'react'
-import { applyMove, createGame } from '../../shared/game/index.ts'
+import { applyMove, createGame, replayGame } from '../../shared/game/index.ts'
 import type { Cell, GameState } from '../../shared/game/index.ts'
 import { CLASSIC_FIELD, DEFAULT_PLAYERS, PLAYER_LIMITS, roomConfig } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
@@ -24,7 +24,9 @@ interface State {
 }
 
 type Action =
-  { type: 'play'; cell: Cell } | { type: 'rematch'; shapes: Shapes; field: FieldSettings }
+  | { type: 'play'; cell: Cell }
+  | { type: 'undo' }
+  | { type: 'rematch'; shapes: Shapes; field: FieldSettings }
 
 /** The game of a round: classic tic-tac-toe, in which the other player starts every round. */
 function newGame(round: number, shapes: Shapes, field: FieldSettings): State {
@@ -36,6 +38,11 @@ function reducer(state: State, action: Action): State {
 
   const { status } = state.game
   if (status.kind !== 'playing') return state
+  if (action.type === 'undo') {
+    // Everybody is at the same screen, so the last move is the one to take back.
+    const back = replayGame(state.game.config, state.game.moves.slice(0, -1))
+    return back.ok && state.game.moveCount > 0 ? { ...state, game: back.state } : state
+  }
   const result = applyMove(state.game, { player: status.next, ...action.cell })
   return result.ok ? { ...state, game: result.state } : state
 }
@@ -189,6 +196,19 @@ function Play({
           dispatch({ type: 'play', cell })
         }}
       />
+      {game.status.kind === 'playing' && game.moveCount > 0 && (
+        <div className="game-actions">
+          <button
+            type="button"
+            className="rematch rematch-quiet"
+            onClick={() => {
+              dispatch({ type: 'undo' })
+            }}
+          >
+            Zet ongedaan maken
+          </button>
+        </div>
+      )}
       {game.status.kind !== 'playing' && (
         <div className="game-actions">
           <button

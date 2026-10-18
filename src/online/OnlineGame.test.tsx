@@ -162,6 +162,35 @@ describe('OnlineGame', () => {
     })
   })
 
+  describe('taking a move back', () => {
+    const undoButton = () => screen.queryByRole('button', { name: 'Zet ongedaan maken' })
+
+    it('is offered to the one who played the last move, and sent', async () => {
+      const send = vi.fn()
+      render(<OnlineGame state={stateOf([x(0, 0)], 'X')} send={send} />)
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Zet ongedaan maken' }))
+      expect(send).toHaveBeenCalledWith({ type: 'undo' })
+    })
+
+    it('is not offered to the other player, nor before a move, nor once the next player has moved', () => {
+      const { unmount } = render(<OnlineGame state={stateOf([x(0, 0)], 'O')} send={vi.fn()} />)
+      expect(undoButton()).not.toBeInTheDocument()
+      unmount()
+
+      const empty = render(<OnlineGame state={stateOf([], 'X')} send={vi.fn()} />)
+      expect(undoButton()).not.toBeInTheDocument()
+      empty.unmount()
+
+      render(<OnlineGame state={stateOf([x(0, 0), o(1, 1)], 'X')} send={vi.fn()} />)
+      expect(undoButton()).not.toBeInTheDocument()
+    })
+
+    it('is not offered after the game is over', () => {
+      render(<OnlineGame state={stateOf(xWins, 'X')} send={vi.fn()} />)
+      expect(undoButton()).not.toBeInTheDocument()
+    })
+  })
+
   describe('the end of a game', () => {
     it('tells the winner, marks the line and offers a rematch that is sent', async () => {
       const send = vi.fn()

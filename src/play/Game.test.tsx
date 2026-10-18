@@ -186,6 +186,31 @@ describe('Game', () => {
     })
   })
 
+  describe('taking a move back', () => {
+    const undoButton = () => screen.queryByRole('button', { name: 'Zet ongedaan maken' })
+
+    it('is offered after a move and gives the turn back', async () => {
+      await startGame()
+      expect(undoButton()).not.toBeInTheDocument()
+
+      const user = await tap([1, 1], [2, 2])
+      await user.click(screen.getByRole('button', { name: 'Zet ongedaan maken' }))
+      expect(cell(2, 2)).toHaveAccessibleName('Rij 2, kolom 2: leeg')
+      expect(cell(1, 1)).toHaveAccessibleName('Rij 1, kolom 1: kruis')
+      expect(screen.getByRole('status')).toHaveTextContent('Cirkel is aan de beurt')
+
+      await user.click(screen.getByRole('button', { name: 'Zet ongedaan maken' }))
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis begint')
+      expect(undoButton()).not.toBeInTheDocument()
+    })
+
+    it('is gone once the game is over', async () => {
+      await startGame()
+      await tap(...crossWins)
+      expect(undoButton()).not.toBeInTheDocument()
+    })
+  })
+
   it('does not offer a rematch while the game is on', async () => {
     await startGame()
     expect(screen.queryByRole('button', { name: 'Nog een keer' })).not.toBeInTheDocument()

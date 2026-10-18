@@ -71,6 +71,30 @@ test('a player who is not on turn cannot move', async ({ browser }) => {
   await expect(anna.getByText('Jij begint')).toBeVisible()
 })
 
+test('a player can take a move back until the next player has moved', async ({ browser }) => {
+  const { anna, bo } = await startGame(browser)
+  const undo = (page: Page) => page.getByRole('button', { name: 'Zet ongedaan maken' })
+
+  // Anna plays the wrong cell and takes it back: both see an empty board and she is on turn again.
+  await cell(anna, 1, 1).click()
+  await expect(cell(bo, 1, 1)).toHaveAccessibleName('Rij 1, kolom 1: kruis')
+  await expect(undo(bo)).toHaveCount(0)
+  await undo(anna).click()
+  await expect(cell(bo, 1, 1)).toHaveAccessibleName('Rij 1, kolom 1: leeg')
+  await expect(anna.getByText('Jij begint')).toBeVisible()
+  await expect(bo.getByText('Anna begint')).toBeVisible()
+
+  // Once Bo has moved, the move of Anna is final; now Bo may take theirs back.
+  await cell(anna, 2, 2).click()
+  await cell(bo, 1, 1).click()
+  await expect(cell(anna, 1, 1)).toHaveAccessibleName('Rij 1, kolom 1: cirkel')
+  await expect(undo(anna)).toHaveCount(0)
+  await undo(bo).click()
+  await expect(cell(anna, 1, 1)).toHaveAccessibleName('Rij 1, kolom 1: leeg')
+  await expect(cell(anna, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: kruis')
+  await expect(bo.getByText('Jij bent aan de beurt')).toBeVisible()
+})
+
 test('a page that is loaded again in the middle of a game comes back to the same seat and game', async ({
   browser,
 }) => {

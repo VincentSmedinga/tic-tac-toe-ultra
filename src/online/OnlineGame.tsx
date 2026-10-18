@@ -70,6 +70,11 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
     )
   }
   const myTurn = game.status.kind === 'playing' && game.status.next === myShapeOf(state)
+  // You may take your move back until the next player has moved: then it is theirs that came last.
+  const canUndo =
+    game.status.kind === 'playing' &&
+    game.moveCount > 0 &&
+    game.moves.at(-1)?.player === myShapeOf(state)
   const away = state.players.filter((player) => player.id !== state.you && !player.connected)
 
   return (
@@ -115,6 +120,20 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
           send({ type: 'move', x: cell.x, y: cell.y })
         }}
       />
+
+      {canUndo && (
+        <div className="game-actions">
+          <button
+            type="button"
+            className="rematch rematch-quiet"
+            onClick={() => {
+              send({ type: 'undo' })
+            }}
+          >
+            Zet ongedaan maken
+          </button>
+        </div>
+      )}
 
       {game.status.kind !== 'playing' && (
         <div className="game-actions">
