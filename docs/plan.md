@@ -34,6 +34,8 @@ The first set is drawn by hand: [docs/reference/shapes.png](reference/shapes.png
 
 The SVGs follow the hand-drawn lines, so they keep a slightly wobbly, hand-made look. The colour belongs to the shape and becomes a design token (hex to be chosen from the photo). Seven shapes means the first set supports up to seven players.
 
+A second drawing, [docs/reference/shapes-2.png](reference/shapes-2.png), repeats these seven and adds five more: an ellipse (viridian 54), a heart (wine red 1), a castle (prussian blue 69), waves (orange 23) and a block (lemon yellow 35, to be confirmed). They are for more than seven players. Photos from a phone hold the place where they were taken, so only a copy without metadata goes in the repository (`.gitignore` keeps the original HEIC files out).
+
 ## Milestones
 
 - **0 · Foundation:** project, CI, deploy.
