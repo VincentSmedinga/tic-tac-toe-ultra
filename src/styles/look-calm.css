@@ -2,59 +2,59 @@
  * Style C, "Rustig": calm and big. The page itself, with nothing but space around the big type
  * and one big button; no frames and no scenery. What is on the screen is the game.
  */
-html[data-stijl='c'] {
+html[data-look='calm'] {
   --font-title: ui-rounded, 'SF Pro Rounded', system-ui, sans-serif;
   --size-lead: clamp(1.25rem, 5vw, 1.625rem);
   --wallpaper-opacity: 0.06;
 }
 
-html[data-stijl='c'] main {
+html[data-look='calm'] main {
   gap: clamp(1rem, 4vw, 2rem);
   width: min(100%, 36rem);
 }
 
-html[data-stijl='c'] .wordmark-text {
+html[data-look='calm'] .wordmark-text {
   font-size: clamp(2.5rem, 12vw, 4.5rem);
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
-html[data-stijl='c'] .wordmark-shapes {
+html[data-look='calm'] .wordmark-shapes {
   font-size: clamp(2.25rem, 10vw, 3.5rem);
 }
 
-html[data-stijl='c'] h2,
-html[data-stijl='c'] legend {
+html[data-look='calm'] h2,
+html[data-look='calm'] legend {
   font-size: clamp(1.75rem, 7vw, 2.5rem);
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
-html[data-stijl='c'] .start,
-html[data-stijl='c'] .room,
-html[data-stijl='c'] .games,
-html[data-stijl='c'] .game-page {
+html[data-look='calm'] .start,
+html[data-look='calm'] .room,
+html[data-look='calm'] .games,
+html[data-look='calm'] .game-page {
   gap: clamp(1.5rem, 5vw, 2.5rem);
   width: 100%;
 }
 
 /* No frames: the sections are told apart by space. */
-html[data-stijl='c'] .choice {
+html[data-look='calm'] .choice {
   padding: 0;
   border: 0;
   gap: 1rem;
 }
 
-html[data-stijl='c'] .game-item,
-html[data-stijl='c'] .message,
-html[data-stijl='c'] .share {
+html[data-look='calm'] .game-item,
+html[data-look='calm'] .message,
+html[data-look='calm'] .share {
   border: 0;
   border-radius: 1.25rem;
   background: color-mix(in srgb, var(--text) 7%, var(--page));
 }
 
-html[data-stijl='c'] .button,
-html[data-stijl='c'] .rematch {
+html[data-look='calm'] .button,
+html[data-look='calm'] .rematch {
   width: 100%;
   min-height: 4.25rem;
   border: 3px solid var(--text);
@@ -63,31 +63,31 @@ html[data-stijl='c'] .rematch {
   font-weight: 700;
 }
 
-html[data-stijl='c'] .button-primary,
-html[data-stijl='c'] .rematch {
+html[data-look='calm'] .button-primary,
+html[data-look='calm'] .rematch {
   background: var(--text);
   color: var(--page);
 }
 
-html[data-stijl='c'] .rematch-quiet {
+html[data-look='calm'] .rematch-quiet {
   background: transparent;
   color: var(--text);
 }
 
-html[data-stijl='c'] .button-quiet {
+html[data-look='calm'] .button-quiet {
   width: auto;
   border-color: transparent;
   text-decoration: underline;
 }
 
-html[data-stijl='c'] .game-actions,
-html[data-stijl='c'] .actions {
+html[data-look='calm'] .game-actions,
+html[data-look='calm'] .actions {
   flex-direction: column;
   align-items: stretch;
   width: 100%;
 }
 
-html[data-stijl='c'] .field input {
+html[data-look='calm'] .field input {
   min-height: 3.75rem;
   border: 0;
   border-bottom: 3px solid var(--text);
@@ -96,39 +96,39 @@ html[data-stijl='c'] .field input {
   text-align: center;
 }
 
-html[data-stijl='c'] .room-code {
+html[data-look='calm'] .room-code {
   font-size: clamp(3.5rem, 20vw, 6rem);
   font-weight: 800;
   letter-spacing: 0.12em;
 }
 
-html[data-stijl='c'] .game-status {
+html[data-look='calm'] .game-status {
   justify-content: center;
   font-size: clamp(1.75rem, 8vw, 2.5rem);
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 
-html[data-stijl='c'] .board {
+html[data-look='calm'] .board {
   gap: 0.75rem;
   width: min(100%, 38rem, max(16rem, calc(100dvh - 20rem)));
 }
 
-html[data-stijl='c'] .cell,
-html[data-stijl='c'] .shape-choice {
+html[data-look='calm'] .cell,
+html[data-look='calm'] .shape-choice {
   border: 2px solid var(--line);
   border-radius: 1.25rem;
 }
 
-html[data-stijl='c'] .cell[data-winning] {
+html[data-look='calm'] .cell[data-winning] {
   border-color: var(--win);
 }
 
-html[data-stijl='c'] .shape-choice {
+html[data-look='calm'] .shape-choice {
   font-size: 0.875rem;
 }
 
-html[data-stijl='c'] .shape-choice[aria-pressed='true'] {
+html[data-look='calm'] .shape-choice[aria-pressed='true'] {
   border-color: var(--text);
   box-shadow: none;
   background: color-mix(in srgb, var(--text) 10%, transparent);
@@ -136,24 +136,28 @@ html[data-stijl='c'] .shape-choice[aria-pressed='true'] {
   outline-offset: -3px;
 }
 
-html[data-stijl='c'] .player,
-html[data-stijl='c'] .players {
+html[data-look='calm'] .player,
+html[data-look='calm'] .players {
   justify-content: center;
 }
 
-html[data-stijl='c'] .replay-controls button,
-html[data-stijl='c'] .replay-speed button {
+html[data-look='calm'] .replay-controls button,
+html[data-look='calm'] .replay-speed button {
   width: auto;
   min-height: 3.5rem;
   border-radius: 999px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  html[data-stijl='c']::view-transition-old(root) {
+  html[data-look='calm']::view-transition-old(root) {
     animation: 260ms cubic-bezier(0.4, 0, 1, 1) both slide-out;
   }
 
-  html[data-stijl='c']::view-transition-new(root) {
+  html[data-look='calm']::view-transition-new(root) {
     animation: 360ms cubic-bezier(0, 0, 0.2, 1) both slide-in;
   }
+}
+
+html[data-look='calm'] .appearance-toggle {
+  font-weight: 700;
 }

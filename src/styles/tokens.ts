@@ -11,7 +11,7 @@ function hexTokens(css: string): Record<string, string> {
   )
 }
 
-const [lightCss = '', darkCss = ''] = tokens.split('@media')
+const [lightCss = '', darkCss = ''] = tokens.split(":root[data-scheme='dark']")
 
-/** The colour tokens of each theme, read from tokens.css as text, for tests. */
+/** The colour tokens of each scheme, read from tokens.css as text, for tests. */
 export const themes = { light: hexTokens(lightCss), dark: hexTokens(darkCss) }

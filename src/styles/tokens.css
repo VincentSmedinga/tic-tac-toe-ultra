@@ -6,10 +6,16 @@
  * marker (a window of degrees, kept by src/styles/palette.test.ts) and was then moved to be as far
  * from all the others as it can be. How far, how colourful and how they look with red-green colour
  * blindness is measured by that test, and why is in docs/plan.md, Shapes and colours.
- * The dark theme has its own set, lighter, so that every shape keeps at least 3:1 against the page.
+ * The dark scheme has its own set, lighter, so that every shape keeps at least 3:1 against the page.
+ * Which scheme is on is `data-scheme` on <html>, set before the first paint by public/appearance.js
+ * (and kept up to date by src/appearance/scheme.ts).
  */
 :root {
+  color-scheme: light;
+
   --page: #ffffff;
+  /* The colour of the browser's bar: the page, unless a look paints something else behind it. */
+  --chrome: var(--page);
   --text: #1b1b1f;
   --line: #8c8c99;
   --win: #b87900;
@@ -29,25 +35,25 @@
   --shape-goldbar: #ab8c1a; /* lemon yellow 35 */
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --page: #1b1b1f;
-    --text: #f2f2f4;
-    --line: #7d7d8a;
-    --win: #ffc83d;
-    --focus: #8ab4ff;
+:root[data-scheme='dark'] {
+  color-scheme: dark;
 
-    --shape-cross: #f67564;
-    --shape-circle: #83b9f8;
-    --shape-square: #49eb90;
-    --shape-diamond: #b286f6;
-    --shape-star: #c1b9bb;
-    --shape-plus: #f972d1;
-    --shape-asterisk: #2dddec;
-    --shape-oval: #38a999;
-    --shape-heart: #f35179;
-    --shape-fort: #7e72f8;
-    --shape-waves: #f69a27;
-    --shape-goldbar: #edca3c;
-  }
+  --page: #1b1b1f;
+  --text: #f2f2f4;
+  --line: #7d7d8a;
+  --win: #ffc83d;
+  --focus: #8ab4ff;
+
+  --shape-cross: #f67564;
+  --shape-circle: #83b9f8;
+  --shape-square: #49eb90;
+  --shape-diamond: #b286f6;
+  --shape-star: #c1b9bb;
+  --shape-plus: #f972d1;
+  --shape-asterisk: #2dddec;
+  --shape-oval: #38a999;
+  --shape-heart: #f35179;
+  --shape-fort: #7e72f8;
+  --shape-waves: #f69a27;
+  --shape-goldbar: #edca3c;
 }

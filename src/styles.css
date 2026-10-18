@@ -1,11 +1,10 @@
 @import './styles/tokens.css';
-@import './styles/stijl-gedeeld.css';
-@import './styles/stijl-a.css';
-@import './styles/stijl-b.css';
-@import './styles/stijl-c.css';
+@import './styles/look-shared.css';
+@import './styles/look-drawn.css';
+@import './styles/look-playful.css';
+@import './styles/look-calm.css';
 
 :root {
-  color-scheme: light dark;
   font-family: system-ui, sans-serif;
 }
 

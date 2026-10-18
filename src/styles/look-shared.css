@@ -1,8 +1,9 @@
 /*
  * What the three styles have in common (issue #32, still a prototype): everything centred on the
  * screen, a fluid type scale, a board that is as big as the room that is left (width and height),
- * and screens that slide. The styles themselves (stijl-a.css, -b.css and -c.css) only change
- * tokens and add their own paint, each under its own `data-stijl`.
+ * and screens that slide. The looks themselves (look-drawn.css, look-playful.css and
+ * look-calm.css) only change tokens and add their own paint, each under its own `data-look`; light
+ * and dark is `data-scheme` on the same element, set before the first paint by public/appearance.js.
  *
  * The shapes always sit on `--page`, whatever is behind it (`--backdrop`), so that the colours
  * keep the contrast they were tested for in tokens.test.ts and palette.test.ts.
@@ -46,7 +47,7 @@ legend,
   font-family: var(--font-title);
 }
 
-main > :not(.wallpaper):not(.stijl-kiezer) {
+main > :not(.wallpaper):not(.appearance) {
   width: 100%;
 }
 
