@@ -479,6 +479,8 @@ describe('how long a game takes', () => {
     host.time = 70_000
     say(session, 'b', { type: 'move', x: 1, y: 1 })
     expect(host.room?.startedAt).toBe(70_000)
+  })
+})
 
 describe('a room with more seats than people', () => {
   /** A room of four seats in which Anna (a, who made it), Bo (b) and Cas (c) have sat down. */
