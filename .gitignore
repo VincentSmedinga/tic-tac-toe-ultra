@@ -11,10 +11,6 @@ coverage/
 
 # Storybook
 storybook-static/
-
-# Playwright
-playwright-report/
-test-results/
 blob-report/
 
 # Editors and OS
@@ -31,3 +27,7 @@ blob-report/
 # metadata (a PNG without its eXIf and iTXt chunks, see docs/plan.md, Shapes and colours)
 docs/reference/*.heic
 docs/reference/*.HEIC
+
+# Playwright
+playwright-report/
+test-results/
