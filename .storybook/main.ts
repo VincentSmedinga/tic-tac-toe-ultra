@@ -10,6 +10,8 @@ export default defineMain({
   // Stories sit next to the part they show, like its CSS and its tests. Nothing in the game imports
   // a story, so the game's build (`pnpm build`) never contains one.
   stories: ['../src/**/*.stories.tsx'],
+  // The headers of the deployed style guide (noindex); they end up next to its index.html.
+  staticDirs: ['./public'],
   addons: ['@storybook/addon-a11y'],
   // Nothing about this project goes to third parties.
   core: { disableTelemetry: true, disableWhatsNewNotifications: true },

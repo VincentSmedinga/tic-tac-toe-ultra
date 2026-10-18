@@ -82,11 +82,24 @@ jobs:
           retention-days: 7
 
   # The style guide (Storybook, .storybook/ and the *.stories.tsx files) is built, so that it can't
-  # break without notice. It is not part of the game's build and not deployed.
+  # break without notice, and a ready pull request or main deploys it to an address of its own: a
+  # Worker with static assets and no code (.storybook/wrangler.jsonc), tic-tac-toe-ultra-styleguide
+  # for main and tic-tac-toe-ultra-styleguide-pr-<number> for a pull request (preview-cleanup.yml
+  # deletes that one). It is not part of the game's build. A draft only builds it.
   style-guide:
     name: Style guide
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+    concurrency:
+      group: style-guide-${{ github.event.pull_request.number || 'production' }}
+      cancel-in-progress: false
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      DEPLOY: ${{ github.event.pull_request.draft != true && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -99,6 +112,68 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Build the style guide
         run: pnpm build-storybook
+      - name: Check the one-time setup
+        id: setup
+        run: |
+          if [ "$DEPLOY" != true ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::notice title=Style guide not deployed::Add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets; see README.md, One-time setup."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Deploy to Cloudflare
+        id: deploy
+        if: steps.setup.outputs.ready == 'true'
+        env:
+          WORKER: ${{ github.event_name == 'pull_request' && format('tic-tac-toe-ultra-styleguide-pr-{0}', github.event.pull_request.number) || 'tic-tac-toe-ultra-styleguide' }}
+          WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.json
+        run: |
+          pnpm exec wrangler deploy --config .storybook/wrangler.jsonc --name "$WORKER"
+          url=$(jq -r 'select(.type == "deploy") | .targets[0]' "$WRANGLER_OUTPUT_FILE_PATH" | tail -n 1)
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Style guide deployed to $url" >> "$GITHUB_STEP_SUMMARY"
+      # Cloudflare needs a moment to serve a new deployment, hence the tries. index.json lists the
+      # stories: if it answers, the style guide is there, with its own headers (noindex, and not the
+      # game's Content-Security-Policy, which Storybook can't run under).
+      - name: Check that the style guide answers, with its own headers
+        if: steps.setup.outputs.ready == 'true'
+        env:
+          URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            headers=$(curl --fail --silent --head --max-time 20 "$URL/" || true)
+            if curl --fail --silent --max-time 20 "$URL/index.json" | jq -e '.entries | length > 0' > /dev/null &&
+              grep -qi '^x-robots-tag: noindex' <<<"$headers" &&
+              ! grep -qi '^content-security-policy' <<<"$headers"; then
+              exit 0
+            fi
+            echo "The style guide doesn't answer, with its own headers, yet (try $attempt of 6)"
+            sleep 10
+          done
+          echo "::error title=The style guide doesn't answer::$URL/index.json fails, or $URL/ isn't served with its own headers, after the deploy"
+          exit 1
+      - name: Put the address of the style guide on the pull request
+        if: steps.setup.outputs.ready == 'true' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          URL: ${{ steps.deploy.outputs.url }}
+          COMMIT: ${{ github.event.pull_request.head.sha }}
+        run: |
+          marker='<!-- tic-tac-toe-ultra-style-guide -->'
+          body="$marker
+          **Style guide:** $URL
+
+          Built from ${COMMIT::7}."
+          id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+            --jq ".[] | select(.body | startswith(\"$marker\")) | .id" | head -n 1)
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -f body="$body" > /dev/null
+          else
+            gh pr comment "$PR" --body "$body"
+          fi
 
   # Two browsers play a game together against the real build: the Worker with its Durable Object,
   # in the same runtime as Cloudflare's. Not for a push to main: its pull request ran it.
