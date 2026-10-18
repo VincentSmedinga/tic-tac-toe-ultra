@@ -1,0 +1,185 @@
+/*
+ * The play mode (issue #55): the section of a game becomes a layer over the whole page, with the
+ * board, who is to play, the players and the way out, and nothing else. See docs/plan.md, Full
+ * screen. Only transforms, opacity and sizes of the layer change: no cell is resized by anything
+ * that happens inside the board, and the board does not move (#21).
+ */
+
+/* Out of the mode the parts of the screen lie where they always did: this box is not there. */
+.game-info {
+  display: contents;
+}
+
+.play-mode-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.play-mode-button svg {
+  flex: none;
+}
+
+/* The page behind does not scroll or rubber-band while the mode is on. */
+html[data-play-mode],
+html[data-play-mode] body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.game[data-play-mode] {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: auto;
+  height: auto;
+  margin: 0;
+  /* Room for the notch, the home bar and the corners of a phone that is turned. */
+  padding: max(0.5rem, env(safe-area-inset-top)) max(0.5rem, env(safe-area-inset-right))
+    max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
+  overflow: hidden;
+  overscroll-behavior: none;
+  /* The page colour all over, whatever the look paints behind the other screens: the shapes keep
+     the contrast they were tested for, and nothing behind the board is loud. */
+  background: var(--page);
+  color: var(--text);
+}
+
+/* Top: who is to play and the way out; the players under it, small. */
+.game[data-play-mode] .game-info {
+  display: flex;
+  flex-wrap: wrap;
+  grid-row: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 0.75rem;
+  min-width: 0;
+}
+
+.game[data-play-mode] .game-status {
+  order: 1;
+  min-height: 0;
+  padding: 0.25rem 0.75rem;
+  font-size: clamp(1.125rem, 4.5vw, 1.5rem);
+  box-shadow: none;
+}
+
+.game[data-play-mode] .play-mode-button {
+  order: 2;
+  min-width: 3rem;
+  padding-inline: 1rem;
+}
+
+.game[data-play-mode] .players {
+  flex: 1 0 100%;
+  order: 3;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin: 0;
+}
+
+.game[data-play-mode] .player {
+  gap: 0.375rem;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.9375rem;
+}
+
+/* The one to play is marked by more than colour: a line under the name. */
+.game[data-play-mode] .player[data-turn] {
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 0.25rem;
+}
+
+.game[data-play-mode] .message,
+.game[data-play-mode] .lost {
+  flex: 1 0 100%;
+  order: 0;
+  box-sizing: border-box;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+}
+
+.game[data-play-mode] .field-label {
+  display: none;
+}
+
+/* The field gets all the room that is left, width and height: the frame is the container the board
+   measures itself against, so a field that fits is wholly in view and one that doesn't (the cells
+   keep their size, --cell-min) is scrolled in the frame. */
+.game[data-play-mode] .board-frame {
+  grid-row: 2;
+  display: flex;
+  /* A container of its own size has no size of its own: it is as big as its place in the grid. */
+  justify-self: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  container-type: size;
+}
+
+.game[data-play-mode] .board {
+  flex: none;
+  /* The largest board that fits the width and the height of the frame, never narrower than the
+     cells need to stay as big as --cell-min. margin: auto centres it and, unlike centring with
+     justify-content, never puts the start of a scrolled board out of reach. */
+  width: max(
+    min(100cqw, calc(100cqh * var(--columns) / var(--rows))),
+    calc(var(--columns) * var(--cell-min))
+  );
+  margin: auto;
+}
+
+.game[data-play-mode] .game-actions {
+  grid-row: 3;
+  flex-direction: row;
+  justify-content: center;
+  width: auto;
+  gap: 0.5rem;
+}
+
+/* Turned the other way: the board on the left with all the height, the rest on the right. */
+@media (orientation: landscape) {
+  .game[data-play-mode] {
+    grid-template-columns: minmax(0, 1fr) minmax(11rem, 16rem);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 1rem;
+  }
+
+  .game[data-play-mode] .board-frame {
+    grid-column: 1;
+    grid-row: 1 / -1;
+  }
+
+  .game[data-play-mode] .game-info {
+    grid-column: 2;
+    grid-row: 1;
+    flex-direction: column;
+    align-self: start;
+    max-height: 100%;
+    overflow-y: auto;
+  }
+
+  .game[data-play-mode] .players {
+    flex: none;
+    order: 3;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .game[data-play-mode] .game-actions {
+    grid-column: 2;
+    grid-row: 3;
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

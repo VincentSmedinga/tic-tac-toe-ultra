@@ -117,14 +117,19 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
     )
   }
 
+  const lostBanner =
+    connection !== 'open' ? <Lost onRetry={retry} connecting={connection === 'connecting'} /> : null
+
   return (
     <div className="room">
-      {connection !== 'open' && <Lost onRetry={retry} connecting={connection === 'connecting'} />}
-
       {isStarted(state) ? (
-        <OnlineGame state={state} send={send} />
+        // The game takes the banner in with it, so that it shows over the whole screen too.
+        <OnlineGame state={state} send={send} banner={lostBanner} />
       ) : (
-        <Lobby state={state} send={send} />
+        <>
+          {lostBanner}
+          <Lobby state={state} send={send} />
+        </>
       )}
     </div>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { replayGame } from '../../shared/game/index.ts'
 import type { GameState } from '../../shared/game/index.ts'
 import type { ClientMessage, StateMessage } from '../../shared/protocol.ts'
@@ -7,17 +8,22 @@ import { useText } from '../i18n/store.ts'
 import type { Text } from '../i18n/types.ts'
 import { Board } from '../play/Board.tsx'
 import { fieldLabel } from '../play/field.ts'
+import { usePlayMode } from '../play/playMode.ts'
+import { PlayModeButton } from '../play/PlayModeButton.tsx'
 import { usePlayerNames, shapeOf } from '../play/players.ts'
 import type { PlayerNames } from '../play/players.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import type { StartedState } from './started.ts'
 import '../play/Game.css'
+import '../play/PlayMode.css'
 import './Online.css'
 
 interface OnlineGameProps {
   state: StartedState
   send: (message: ClientMessage) => void
+  /** What the room has to say about its connection: it goes with the game, also over the whole screen. */
+  banner?: ReactNode
 }
 
 /** The name a player goes by: the one they typed, or their shape ("Kruis"). `shape` is the player of the game. */
@@ -47,8 +53,16 @@ function statusText(t: Text, names: PlayerNames, state: StateMessage, game: Game
 }
 
 /** The game of a room: both players, whose turn it is, the board, and a rematch at the end. */
-export function OnlineGame({ state, send }: OnlineGameProps) {
+export function OnlineGame({ state, send, banner }: OnlineGameProps) {
   const t = useText()
+  const {
+    on: modeOn,
+    available: modeAvailable,
+    attachLayer,
+    attachTrigger,
+    toggle: toggleMode,
+    close: closeMode,
+  } = usePlayMode()
   const { list } = useFormat()
   const names = usePlayerNames()
   // The round whose replay is open, so a rematch can't leave it open for the next round.
@@ -57,68 +71,96 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
   if (!replayed.ok) {
     // The room only sends moves that replay, so this is a message that came out wrong.
     return (
-      <p className="message" role="alert">
-        {t('online.broken')}
-      </p>
+      <>
+        {banner}
+        <p className="message" role="alert">
+          {t('online.broken')}
+        </p>
+      </>
     )
   }
   const game = replayed.state
   // A rematch started by the other player ends the replay: there is a new game to play.
   if (replayRound === state.round && game.status.kind !== 'playing') {
     return (
-      <Replay
-        config={state.config}
-        moves={state.moves}
-        players={state.players.flatMap(({ shape, name }) =>
-          shape === undefined ? [] : [{ id: shape, name }],
-        )}
-        onClose={() => {
-          setReplayRound(null)
-        }}
-      />
+      <>
+        {banner}
+        <Replay
+          config={state.config}
+          moves={state.moves}
+          players={state.players.flatMap(({ shape, name }) =>
+            shape === undefined ? [] : [{ id: shape, name }],
+          )}
+          onClose={() => {
+            setReplayRound(null)
+          }}
+        />
+      </>
     )
   }
   const myTurn = game.status.kind === 'playing' && game.status.next === myShapeOf(state)
   const away = state.players.filter((player) => player.id !== state.you && !player.connected)
 
+  const toPlay = game.status.kind === 'playing' ? game.status.next : undefined
+
   return (
-    <section className="game online-game" aria-label={t('online.label')}>
-      <div className="players players-row">
-        {state.players.map((player) =>
-          player.shape === undefined ? null : (
-            <div key={player.id} className="player" data-you={player.id === state.you || undefined}>
-              <ShapeIcon shape={player.shape} size={28} decorative />
-              <span>
-                {player.id === state.you
-                  ? t('player.youShort', { name: displayName(state, names, player.shape) })
-                  : displayName(state, names, player.shape)}
-              </span>
-            </div>
-          ),
-        )}
-      </div>
+    <section
+      ref={attachLayer}
+      className="game online-game"
+      aria-label={t('online.label')}
+      data-play-mode={modeOn || undefined}
+    >
+      <div className="game-info">
+        {banner}
 
-      {away.length > 0 && (
-        <p className="message" role="status">
-          {t('online.away', {
-            names: list(away.map((player) => displayName(state, names, player.shape ?? ''))),
-            count: away.length,
-          })}
+        <div className="players players-row">
+          {state.players.map((player) =>
+            player.shape === undefined ? null : (
+              <div
+                key={player.id}
+                className="player"
+                data-you={player.id === state.you || undefined}
+                data-turn={player.shape === toPlay || undefined}
+              >
+                <ShapeIcon shape={player.shape} size={28} decorative />
+                <span>
+                  {player.id === state.you
+                    ? t('player.youShort', { name: displayName(state, names, player.shape) })
+                    : displayName(state, names, player.shape)}
+                </span>
+              </div>
+            ),
+          )}
+        </div>
+
+        {away.length > 0 && (
+          <p className="message" role="status">
+            {t('online.away', {
+              names: list(away.map((player) => displayName(state, names, player.shape ?? ''))),
+              count: away.length,
+            })}
+          </p>
+        )}
+
+        <p className="game-status" role="status">
+          {game.status.kind !== 'draw' && (
+            <ShapeIcon
+              shape={shapeOf(game.status.kind === 'won' ? game.status.winner : game.status.next)}
+              size={32}
+              decorative
+            />
+          )}
+          <span>{statusText(t, names, state, game)}</span>
         </p>
-      )}
 
-      <p className="game-status" role="status">
-        {game.status.kind !== 'draw' && (
-          <ShapeIcon
-            shape={shapeOf(game.status.kind === 'won' ? game.status.winner : game.status.next)}
-            size={32}
-            decorative
-          />
-        )}
-        <span>{statusText(t, names, state, game)}</span>
-      </p>
-
-      <p className="field-label">{fieldLabel(t, state.field)}</p>
+        <p className="field-label">{fieldLabel(t, state.field)}</p>
+        <PlayModeButton
+          on={modeOn}
+          available={modeAvailable}
+          toggle={toggleMode}
+          attachTrigger={attachTrigger}
+        />
+      </div>
 
       <Board
         game={game}
@@ -143,6 +185,8 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
             type="button"
             className="rematch rematch-quiet"
             onClick={() => {
+              // The replay is a screen of its own, not part of the mode.
+              closeMode()
               setReplayRound(state.round)
             }}
           >
