@@ -19,14 +19,32 @@ This file is the way of working for everyone who changes this repository, people
 - **Pull request.** A Conventional Commits title (it becomes the squash commit on `main`), a body that says what changes and why, `Closes #n` for finished issues, and the milestone. Fill in the template. Open it as a draft while the work is in progress and mark it ready when it's worth reviewing.
 - **Keep AGENTS.md current.** A pull request that changes how we work (a convention, a command, a folder, a pattern) updates this file in the same pull request. This file describes what exists: add CI, commands and folders here when they arrive.
 
+## Commands
+
+Node 24 and pnpm 12 (`corepack enable` or a global pnpm).
+
+| Command                             | What it does                                                |
+| ----------------------------------- | ----------------------------------------------------------- |
+| `pnpm install`                      | Install dependencies                                        |
+| `pnpm dev`                          | Start the app on http://localhost:5173                      |
+| `pnpm build`                        | Typecheck and build the app into `dist/`                    |
+| `pnpm preview`                      | Serve `dist/` as built                                      |
+| `pnpm check`                        | Everything CI will check: types, lint, formatting and tests |
+| `pnpm typecheck`                    | Check all TypeScript projects                               |
+| `pnpm lint`                         | ESLint (strict type-checked TypeScript, React hooks, a11y)  |
+| `pnpm test` / `pnpm test:watch`     | Vitest, once or in watch mode                               |
+| `pnpm format` / `pnpm format:check` | Format with Prettier / check formatting                     |
+
+Tests sit next to the code as `*.test.ts(x)`: in `src/` they run in jsdom, in `shared/` and `server/` in Node.
+
 ## Structure (planned)
 
-| Folder          | Holds                                                                                          |
-| --------------- | ---------------------------------------------------------------------------------------------- |
-| `shared/game/`  | The game engine: pure TypeScript, no browser or Node APIs, used by both the app and the server |
-| `shared/`       | The message protocol between client and server (zod)                                           |
-| `src/`          | The React app: board, shapes, lobby                                                            |
-| `server/`       | The room as a Cloudflare Durable Object with WebSocket; the server is authoritative            |
-| `docs/`         | The plan and decisions; `docs/reference/` holds source material such as the drawn shapes       |
+| Folder         | Holds                                                                                          |
+| -------------- | ---------------------------------------------------------------------------------------------- |
+| `shared/game/` | The game engine: pure TypeScript, no browser or Node APIs, used by both the app and the server |
+| `shared/`      | The message protocol between client and server (zod)                                           |
+| `src/`         | The React app: board, shapes, lobby                                                            |
+| `server/`      | The room as a Cloudflare Durable Object with WebSocket; the server is authoritative            |
+| `docs/`        | The plan and decisions; `docs/reference/` holds source material such as the drawn shapes       |
 
-The project is set up in the first issues; until then there is no code and no commands. It will use Node 24 and pnpm, like [Blokhut](https://github.com/VincentSmedinga/blokhut).
+`shared/` and `server/` are still empty; they fill up in the issues of milestones 1 and 2. The tooling follows [Blokhut](https://github.com/VincentSmedinga/blokhut). TypeScript stays on 6.0 until typescript-eslint supports 7.

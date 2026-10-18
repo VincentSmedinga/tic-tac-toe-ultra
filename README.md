@@ -8,4 +8,13 @@ Version 1 is the game as it exists: 3×3, two players, X and O, played online an
 - **Way of working:** [AGENTS.md](AGENTS.md)
 - **Planning:** the [milestones](https://github.com/VincentSmedinga/tic-tac-toe-ultra/milestones) and the project board "Tic-Tac-Toe Ultra"
 
-There is no code yet: the project is set up in the first issues.
+## Local development
+
+You need Node 24 and pnpm 12.
+
+```sh
+pnpm install
+pnpm dev
+```
+
+`pnpm dev` starts the app on http://localhost:5173. `pnpm check` runs everything CI will check; the other commands are in [AGENTS.md](AGENTS.md).
