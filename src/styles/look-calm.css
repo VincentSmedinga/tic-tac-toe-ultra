@@ -13,14 +13,18 @@ html[data-look='calm'] .app {
   width: min(100%, 36rem);
 }
 
-html[data-look='calm'] .wordmark-text {
-  font-size: clamp(2.5rem, 12vw, 4.5rem);
-  font-weight: 800;
-  letter-spacing: -0.03em;
+html[data-look='calm'] .wordmark {
+  --title-size: clamp(1.6rem, 7.5vw, 3.5rem);
 }
 
-html[data-look='calm'] .wordmark-shapes {
-  font-size: clamp(2.25rem, 10vw, 3.5rem);
+/* The icon is a dark square: on a dark page it gets a thin edge, so that it is there in both. */
+html[data-look='calm'] .wordmark-logo {
+  outline: 2px solid var(--line);
+}
+
+html[data-look='calm'] .wordmark-text {
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 html[data-look='calm'] h2,

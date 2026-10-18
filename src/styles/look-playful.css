@@ -31,8 +31,17 @@ html[data-look='playful'] body {
   background: var(--backdrop) fixed;
 }
 
+html[data-look='playful'] .wordmark {
+  --title-size: clamp(1.6rem, 7.5vw, 3.25rem);
+}
+
+/* The icon is a card like the others: a thick edge and a hard shadow. */
+html[data-look='playful'] .wordmark-logo {
+  outline: 4px solid var(--edge);
+  box-shadow: 0 5px 0 var(--edge);
+}
+
 html[data-look='playful'] .wordmark-text {
-  font-size: clamp(2.2rem, 10vw, 3.75rem);
   font-weight: 700;
   /* A thick outline in the colour of the edge, so the title stands on any colour behind it. */
   color: #ffffff;
