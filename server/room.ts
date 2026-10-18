@@ -156,6 +156,7 @@ export class Room extends DurableObject<Env> {
       touch: () => {
         this.touch()
       },
+      now: () => Date.now(),
       newGameId,
       archive: (id, game) => {
         // Written to storage first, so the game survives a failed call, a sleep and a rematch; the

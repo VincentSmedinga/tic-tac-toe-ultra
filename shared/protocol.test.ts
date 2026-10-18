@@ -143,6 +143,15 @@ describe('a stored game', () => {
     expect(storedGameSchema.safeParse({ ...stored, result: { kind: 'draw' } }).success).toBe(true)
   })
 
+  it('may say when it started, and has not to', () => {
+    expect(storedGameSchema.safeParse({ ...stored, startedAt: 1_699_999_990_000 }).success).toBe(
+      true,
+    )
+    expect(storedGameSchema.safeParse(stored).success).toBe(true)
+    expect(storedGameSchema.safeParse({ ...stored, startedAt: -1 }).success).toBe(false)
+    expect(storedGameSchema.safeParse({ ...stored, startedAt: 1.5 }).success).toBe(false)
+  })
+
   it('is refused with an id that is no id, or a result nobody knows', () => {
     expect(storedGameSchema.safeParse({ ...stored, id: 'short' }).success).toBe(false)
     expect(storedGameSchema.safeParse({ ...stored, id: 'abcdefghijklmno!' }).success).toBe(false)

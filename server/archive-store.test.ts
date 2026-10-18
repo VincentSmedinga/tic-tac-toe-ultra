@@ -55,6 +55,18 @@ describe('the archive store', () => {
     })
   })
 
+  it('keeps when the game started, so that its duration is known', () => {
+    store.save({ ...WON, id: 'started-started-', startedAt: 1_699_999_990_000 }, 1_700_000_000_000)
+    const game = store.get('started-started-')
+    expect(game?.startedAt).toBe(1_699_999_990_000)
+    expect((game?.finishedAt ?? 0) - (game?.startedAt ?? 0)).toBe(10_000)
+  })
+
+  it('keeps a game without a start, as it was kept before, and does not make one up', () => {
+    store.save(WON, 1)
+    expect(store.get(WON.id)).not.toHaveProperty('startedAt')
+  })
+
   it('reads back a game the engine can replay without errors', () => {
     store.save(WON, 1)
     const game = store.get(WON.id)

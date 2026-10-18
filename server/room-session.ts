@@ -18,6 +18,8 @@ export interface Host {
   close(id: string, code: number, reason: string): void
   /** Something happened: a room that nobody touches for a day goes away. */
   touch(): void
+  /** The time now, in milliseconds since 1970. */
+  now(): number
   /** A fresh, unguessable id for a game that is about to be kept. */
   newGameId(): string
   /**
@@ -97,16 +99,21 @@ export class RoomSession {
       this.error(socketId, change.error)
       return
     }
+    // The first move of a round says when the game started, which is what its duration is from.
+    const played =
+      message.type === 'move' && room.moves.length === 0 && change.room.moves.length === 1
+        ? { ...change.room, startedAt: this.host.now() }
+        : change.room
     // The move that ends a round keeps the game, right then and only once, however many players are
     // still connected: a player who has left or lost the connection by now doesn't matter.
-    const finished = !isOver(room) ? finishedGame(change.room) : null
+    const finished = !isOver(room) ? finishedGame(played) : null
     if (finished) {
       const gameId = this.host.newGameId()
       this.host.archive(gameId, finished)
-      this.commit({ ...change.room, gameId })
+      this.commit({ ...played, gameId })
       return
     }
-    this.commit(change.room)
+    this.commit(played)
   }
 
   /** The archive has the game with this id: from now on the players are told where it is kept. */

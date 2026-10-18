@@ -15,6 +15,8 @@ class FakeHost implements Host {
   code = 'BCDF'
   room: RoomState | null = newRoom()
   touched = 0
+  /** The clock of the room: a test sets it, and moves it on. */
+  time = 1_000
   readonly archived: { id: string; game: Finished }[] = []
   private ids = 0
   readonly sockets_ = new Map<string, { token: string | null; open: boolean }>()
@@ -44,6 +46,9 @@ class FakeHost implements Host {
   }
   touch() {
     this.touched++
+  }
+  now() {
+    return this.time
   }
   newGameId() {
     return `game-${(++this.ids).toString()}`
@@ -417,6 +422,62 @@ describe('keeping a finished game', () => {
     setup.host.drop('b')
     setup.session.closed()
     expect(setup.host.archived).toEqual([])
+  })
+})
+
+describe('how long a game takes', () => {
+  const WIN = [
+    ['a', 0, 0],
+    ['b', 0, 1],
+    ['a', 1, 0],
+    ['b', 1, 1],
+    ['a', 2, 0],
+  ] as const
+
+  it('is known from the first move: the game remembers when it was played', () => {
+    const { host, session } = started()
+    host.time = 5_000
+    say(session, 'a', { type: 'move', x: 0, y: 0 })
+    expect(host.room?.startedAt).toBe(5_000)
+  })
+
+  it('does not change with the moves after the first', () => {
+    const { host, session } = started()
+    host.time = 5_000
+    say(session, 'a', { type: 'move', x: 0, y: 0 })
+    host.time = 9_000
+    say(session, 'b', { type: 'move', x: 1, y: 1 })
+    expect(host.room?.startedAt).toBe(5_000)
+  })
+
+  it('is not set by a move that is refused, nor before any move', () => {
+    const { host, session } = started()
+    expect(host.room?.startedAt).toBeUndefined()
+    say(session, 'b', { type: 'move', x: 0, y: 0 })
+    expect(host.room?.startedAt).toBeUndefined()
+  })
+
+  it('is kept with the game, with the moment it was won', () => {
+    const { host, session } = started()
+    host.time = 5_000
+    for (const [id, x, y] of WIN) {
+      say(session, id, { type: 'move', x, y })
+      host.time += 1_000
+    }
+    expect(host.archived).toHaveLength(1)
+    expect(host.archived[0]?.game.startedAt).toBe(5_000)
+  })
+
+  it('starts again with the first move of the next round', () => {
+    const { host, session } = started()
+    host.time = 5_000
+    for (const [id, x, y] of WIN) say(session, id, { type: 'move', x, y })
+    say(session, 'b', { type: 'rematch' })
+    expect(host.room?.startedAt).toBeUndefined()
+
+    host.time = 70_000
+    say(session, 'b', { type: 'move', x: 1, y: 1 })
+    expect(host.room?.startedAt).toBe(70_000)
   })
 })
 
