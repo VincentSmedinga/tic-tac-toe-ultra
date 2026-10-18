@@ -13,16 +13,14 @@
   accent-color: var(--text);
 }
 
-.replay-controls,
-.replay-speed {
+.replay-controls {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.5rem;
 }
 
-.replay-controls button,
-.replay-speed button {
+.replay-controls button {
   min-width: 3rem;
   min-height: 3rem;
   padding: 0.25rem;
@@ -38,10 +36,6 @@
 .replay-controls button:disabled {
   opacity: 0.4;
   cursor: default;
-}
-
-.replay-speed button[aria-pressed='true'] {
-  border-color: var(--text);
 }
 
 /* Play is the one button that starts something: a round, solid, bigger one in the middle of the
@@ -63,13 +57,7 @@ html[data-look] .replay-controls .replay-play svg {
   margin: auto;
 }
 
-.replay-speed button[aria-pressed='true'] {
-  background: var(--text);
-  color: var(--page);
-}
-
 .replay-controls button:focus-visible,
-.replay-speed button:focus-visible,
 .replay-position input:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;

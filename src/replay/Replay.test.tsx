@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { GameConfig, Move } from '../../shared/game/index.ts'
-import { Replay } from './Replay.tsx'
+import { MAX_ARRIVAL_MS } from '../motion/arrival.ts'
+import { Replay, STEP_MS } from './Replay.tsx'
 
 const CLASSIC: GameConfig = { width: 3, height: 3, winLength: 3, players: ['X', 'O'] }
 
@@ -186,9 +187,9 @@ describe('Replay', () => {
       act(() => {
         screen.getByRole('button', { name: 'Afspelen' }).click()
       })
-      advance(800)
+      advance(STEP_MS)
       expect(screen.getByText('Zet 1 van 5')).toBeInTheDocument()
-      advance(800)
+      advance(STEP_MS)
       expect(screen.getByText('Zet 2 van 5')).toBeInTheDocument()
 
       act(() => {
@@ -200,7 +201,7 @@ describe('Replay', () => {
       act(() => {
         screen.getByRole('button', { name: 'Afspelen' }).click()
       })
-      advance(800, 3)
+      advance(STEP_MS, 3)
       expect(screen.getByText('Zet 5 van 5')).toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Afspelen' })).toBeInTheDocument()
     })
@@ -215,22 +216,14 @@ describe('Replay', () => {
         screen.getByRole('button', { name: 'Afspelen' }).click()
       })
       expect(screen.getByText('Zet 0 van 5')).toBeInTheDocument()
-      advance(800)
+      advance(STEP_MS)
       expect(screen.getByText('Zet 1 van 5')).toBeInTheDocument()
     })
 
-    it('goes faster when asked', () => {
-      vi.useFakeTimers()
+    it('has one speed, long enough for a shape to be written before the next step', () => {
       render(<Replay config={CLASSIC} moves={X_WINS} />)
-      act(() => {
-        screen.getByRole('button', { name: 'Snel' }).click()
-      })
-      expect(screen.getByRole('button', { name: 'Snel' })).toHaveAttribute('aria-pressed', 'true')
-      act(() => {
-        screen.getByRole('button', { name: 'Afspelen' }).click()
-      })
-      advance(300, 2)
-      expect(screen.getByText('Zet 2 van 5')).toBeInTheDocument()
+      expect(screen.queryByRole('group', { name: 'Snelheid' })).toBeNull()
+      expect(STEP_MS).toBeGreaterThanOrEqual(MAX_ARRIVAL_MS + 200)
     })
 
     it('stops when a button or key moves it by hand', () => {

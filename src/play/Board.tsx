@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Cell, GameState } from '../../shared/game/index.ts'
+import { arrivalEnd } from '../motion/arrival.ts'
+import { GENTLE_MS } from '../motion/play.ts'
+import { useMotion } from '../motion/preference.ts'
+import { newSeed } from '../motion/random.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { shapeById } from '../shapes/shapes.ts'
 import { boardLines } from './lines.ts'
 import { shapeOf } from './players.ts'
+import { useArrival } from './useArrival.ts'
 
 interface BoardProps {
   game: GameState
@@ -14,6 +19,8 @@ interface BoardProps {
   lastMove?: Cell
   /** False leaves the cells out of the tab order, for a board that is only looked at (a long replay). */
   focusable?: boolean
+  /** Fixes how the shapes are written (a test, a replay); without it every board has a seed of its own. */
+  seed?: number
 }
 
 /**
@@ -22,7 +29,9 @@ interface BoardProps {
  * too big for the screen keeps cells that are big enough to tap and is scrolled inside its frame;
  * one that fits fills the room that is left. For the keyboard the board is one stop, as in a grid:
  * Tab goes in and out, the arrow keys, Home and End move over the cells (a field of 19 × 19 would
- * be 361 stops otherwise).
+ * be 361 stops otherwise). A shape that has just been placed is written on the field as with a
+ * marker (`useArrival`): the move has counted already, and the writing of an earlier shape carries on
+ * while the next one is placed.
  */
 export function Board({
   game,
@@ -30,6 +39,7 @@ export function Board({
   interactive = true,
   lastMove,
   focusable = true,
+  seed,
 }: BoardProps) {
   const { width, height } = game.config
   const grid = useRef<HTMLDivElement>(null)
@@ -44,6 +54,18 @@ export function Board({
   )
   const playing = game.status.kind === 'playing' && interactive
   const lines = boardLines(width, height)
+  const [ownSeed] = useState(newSeed)
+  const motion = useMotion()
+  const arrivals = useArrival(game, seed ?? ownSeed)
+  // The win colour waits until the winning shape is written, or it is there before the shape is.
+  const lastPlayed = game.moves.at(-1)
+  const lastPlan = lastPlayed ? arrivals.get(lastPlayed.y * width + lastPlayed.x) : undefined
+  const winDelay =
+    winning.size > 0 && lastPlan && motion !== 'off'
+      ? motion === 'gentle'
+        ? GENTLE_MS
+        : arrivalEnd(lastPlan)
+      : undefined
 
   const moveTo = (x: number, y: number) => {
     const index = Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))
@@ -128,6 +150,7 @@ export function Board({
           const x = index % width
           const y = Math.floor(index / width)
           const open = playing && player === null
+          const plan = arrivals.get(index)
           const content = player === null ? 'leeg' : shapeById(shapeOf(player)).name
           return (
             <button
@@ -140,12 +163,28 @@ export function Board({
               tabIndex={focusable && index === active ? 0 : -1}
               data-winning={winning.has(`${x.toString()},${y.toString()}`) || undefined}
               data-last={(lastMove?.x === x && lastMove.y === y) || undefined}
+              data-win-late={
+                (winDelay !== undefined && winning.has(`${x.toString()},${y.toString()}`)) ||
+                undefined
+              }
+              style={
+                winDelay === undefined
+                  ? undefined
+                  : ({ '--win-delay': `${winDelay.toString()}ms` } as React.CSSProperties)
+              }
               onClick={() => {
                 setActive(index)
                 if (open) onPlay({ x, y })
               }}
             >
-              {player !== null && <ShapeIcon shape={shapeOf(player)} size="100%" decorative />}
+              {player !== null && (
+                <ShapeIcon
+                  shape={shapeOf(player)}
+                  size="100%"
+                  decorative
+                  arrival={plan && motion !== 'off' ? { plan, mode: motion } : undefined}
+                />
+              )}
             </button>
           )
         })}

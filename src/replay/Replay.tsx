@@ -15,18 +15,17 @@ interface ReplayProps {
   onClose?: () => void
 }
 
-const SPEEDS = [
-  { id: 'slow', label: 'Langzaam', delay: 1600 },
-  { id: 'normal', label: 'Normaal', delay: 800 },
-  { id: 'fast', label: 'Snel', delay: 300 },
-] as const
-type SpeedId = (typeof SPEEDS)[number]['id']
+/**
+ * Milliseconds between two steps when it plays on its own. One speed, chosen to go with the writing
+ * of the shapes (src/motion/): a shape takes 0.8 to 1 second, so every step is done, and rests a
+ * moment, before the next one begins.
+ */
+export const STEP_MS = 1200
 
 /** Looks at a game again, move by move: with buttons, a slider, the arrow keys, or on its own. */
 export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
   const [requested, setStep] = useState(0)
   const [autoplay, setAutoplay] = useState(false)
-  const [speed, setSpeed] = useState<SpeedId>('normal')
 
   const replayed = replayGame(config, moves)
   const total = moves.length
@@ -34,17 +33,16 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
   const step = Math.min(requested, total)
   // Autoplay stops by itself at the end, without anything having to switch it off.
   const playing = autoplay && step < total
-  const delay = SPEEDS.find(({ id }) => id === speed)?.delay ?? 800
 
   useEffect(() => {
     if (!playing) return
     const timer = setTimeout(() => {
       setStep((current) => current + 1)
-    }, delay)
+    }, STEP_MS)
     return () => {
       clearTimeout(timer)
     }
-  }, [playing, step, delay])
+  }, [playing, step])
 
   // The arrow keys, Home and End work wherever the focus is, as long as it isn't in a field that
   // uses them itself (the slider).
@@ -179,21 +177,6 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
         >
           <Glyph kind="last" />
         </button>
-      </div>
-
-      <div className="replay-speed" role="group" aria-label="Snelheid">
-        {SPEEDS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={speed === id}
-            onClick={() => {
-              setSpeed(id)
-            }}
-          >
-            {label}
-          </button>
-        ))}
       </div>
 
       {onClose && (
