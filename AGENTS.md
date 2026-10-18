@@ -12,10 +12,12 @@ This file is the way of working for everyone who changes this repository, people
 ## Way of working
 
 - **Planning.** Work is planned as GitHub issues in milestones (`0 · Foundation`, `1 · Playable 3×3`, `2 · Online`, `3 · Big field`, `4 · History`), labelled `app` (the frontend), `server` (the room server), `game` (the game engine and rules), `ops` (CI, deploys, tooling), `docs` or `bug`. The [project board](https://github.com/users/VincentSmedinga/projects) "Tic-Tac-Toe Ultra" shows them: add a new issue there too and move it along the Status column (Todo, In Progress, Done). Closed issues and merged pull requests move to Done by themselves. Tick an issue's checkboxes before or right after each item is done, not in a batch later. A pull request says `Closes #n` only when merging it finishes all of that issue's boxes (a box such as "the family tries it" can be ticked afterwards); otherwise it says `Part of #n`.
-- **Pull requests only.** Every change goes through a pull request from a branch. `main` only changes by squash-merging a pull request. The first commit, with this documentation, is the one exception.
+- **Pull requests only.** Every change goes through a pull request from a branch. `main` only changes by squash-merging a pull request. The first commit, with this documentation, is the one exception. A ruleset on `main` (Settings, Rules) makes a pull request, one approval and the `Checks` check a condition for merging, allows squash merges only, and refuses force pushes and deleting `main`; the repository's admins can bypass it on a pull request.
 - **Authors.** Whoever writes a change is its author, so that someone else can review it: GitHub doesn't let anyone approve their own pull request. A coding agent commits under its own name, with the person who runs it as the committer, and opens its pull requests as itself, with Vincent as reviewer. Claude Code commits as `Claude <noreply@anthropic.com>`, set in `.claude/settings.json`, and works on GitHub as the `smedinga-claude` app (see [CLAUDE.md](CLAUDE.md)).
 - **Branches.** Short and descriptive: `game-engine`, `shape-gallery`.
 - **Commits.** Small and focused, one concern each, so the history explains itself. Use [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): subject` in the imperative, plus a body that says why. Types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `style`, `build`, `ci`, `chore`. The scope is optional and names the area: `game`, `app`, `server`.
+- **CI.** GitHub Actions (`.github/workflows/ci.yml`) runs on every pull request (a draft gets the checks but no deploy) and on pushes to `main`: the `Checks` job (the Conventional Commits title of the pull request, `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test` and `pnpm build`), then the `Deploy` job. The title is checked first and from GitHub as it is now, so after fixing a title, re-run the failed `Checks` job; editing a title also runs the small `Pull request title` workflow (`pr-title.yml`), which isn't required. Keep the pattern of both in sync. The repository is public, so Actions minutes are free and everything runs on every pull request. Actions are pinned to a commit with the version in a comment. A new check that must pass is added to the ruleset by name.
+- **Deploys.** The `Deploy` job puts the build that `Checks` made on Cloudflare Pages (project `tic-tac-toe-ultra`): a ready pull request as a preview, whose address CI comments on the pull request, and `main` as production, then it checks that the page answers. It is skipped, with a notice, for a draft, for a fork, and until the one-time setup in the README is done. `public/_headers` holds the security headers; a full Content-Security-Policy comes with the server.
 - **Pull request.** A Conventional Commits title (it becomes the squash commit on `main`), a body that says what changes and why, `Closes #n` for finished issues, and the milestone. Fill in the template. Open it as a draft while the work is in progress and mark it ready when it's worth reviewing.
 - **Keep AGENTS.md current.** A pull request that changes how we work (a convention, a command, a folder, a pattern) updates this file in the same pull request. This file describes what exists: add CI, commands and folders here when they arrive.
 
@@ -23,17 +25,17 @@ This file is the way of working for everyone who changes this repository, people
 
 Node 24 and pnpm 12 (`corepack enable` or a global pnpm).
 
-| Command                             | What it does                                                |
-| ----------------------------------- | ----------------------------------------------------------- |
-| `pnpm install`                      | Install dependencies                                        |
-| `pnpm dev`                          | Start the app on http://localhost:5173                      |
-| `pnpm build`                        | Typecheck and build the app into `dist/`                    |
-| `pnpm preview`                      | Serve `dist/` as built                                      |
-| `pnpm check`                        | Everything CI will check: types, lint, formatting and tests |
-| `pnpm typecheck`                    | Check all TypeScript projects                               |
-| `pnpm lint`                         | ESLint (strict type-checked TypeScript, React hooks, a11y)  |
-| `pnpm test` / `pnpm test:watch`     | Vitest, once or in watch mode                               |
-| `pnpm format` / `pnpm format:check` | Format with Prettier / check formatting                     |
+| Command                             | What it does                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------- |
+| `pnpm install`                      | Install dependencies                                                      |
+| `pnpm dev`                          | Start the app on http://localhost:5173                                    |
+| `pnpm build`                        | Typecheck and build the app into `dist/`                                  |
+| `pnpm preview`                      | Serve `dist/` as built                                                    |
+| `pnpm check`                        | Everything CI checks, except the build: types, lint, formatting and tests |
+| `pnpm typecheck`                    | Check all TypeScript projects                                             |
+| `pnpm lint`                         | ESLint (strict type-checked TypeScript, React hooks, a11y)                |
+| `pnpm test` / `pnpm test:watch`     | Vitest, once or in watch mode                                             |
+| `pnpm format` / `pnpm format:check` | Format with Prettier / check formatting                                   |
 
 Tests sit next to the code as `*.test.ts(x)`: in `src/` they run in jsdom, in `shared/` and `server/` in Node.
 
