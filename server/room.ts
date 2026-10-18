@@ -1,5 +1,7 @@
 import { DurableObject } from 'cloudflare:workers'
+import { ARCHIVE_NAME } from './archive.ts'
 import type { Env } from './env.ts'
+import { newGameId } from './game-id.ts'
 import { newRoom } from './room-logic.ts'
 import type { RoomState } from './room-logic.ts'
 import { RoomSession } from './room-session.ts'
@@ -102,6 +104,17 @@ export class Room extends DurableObject<Env> {
       },
       touch: () => {
         this.touch()
+      },
+      newGameId,
+      archive: (id, game) => {
+        // After the answer to the players has gone out; a failure is logged and never reaches them.
+        this.ctx.waitUntil(
+          this.env.ARCHIVE.getByName(ARCHIVE_NAME)
+            .save({ id, ...game })
+            .catch((error: unknown) => {
+              console.error('Keeping a finished game failed', error)
+            }),
+        )
       },
     }
     return new RoomSession(host)

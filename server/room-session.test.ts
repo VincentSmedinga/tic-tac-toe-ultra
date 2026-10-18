@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { replayGame } from '../shared/game/index.ts'
 import type { ServerMessage, StateMessage } from '../shared/protocol.ts'
 import { newRoom } from './room-logic.ts'
-import type { RoomState } from './room-logic.ts'
+import type { Finished, RoomState } from './room-logic.ts'
 import { CLOSE_REPLACED, CLOSE_ROOM_FULL, CLOSE_UNKNOWN_ROOM, RoomSession } from './room-session.ts'
 import type { Host } from './room-session.ts'
 
@@ -15,6 +15,8 @@ class FakeHost implements Host {
   code = 'BCDF'
   room: RoomState | null = newRoom()
   touched = 0
+  readonly archived: { id: string; game: Finished }[] = []
+  private ids = 0
   readonly sockets_ = new Map<string, { token: string | null; open: boolean }>()
   readonly sent: { id: string; message: ServerMessage }[] = []
   readonly closes: { id: string; code: number; reason: string }[] = []
@@ -42,6 +44,12 @@ class FakeHost implements Host {
   }
   touch() {
     this.touched++
+  }
+  newGameId() {
+    return `game-${(++this.ids).toString()}`
+  }
+  archive(id: string, game: Finished) {
+    this.archived.push({ id, game })
   }
 
   /** The socket is gone, as when a phone loses its connection. */
@@ -198,6 +206,114 @@ describe('playing', () => {
     const { host, session } = started()
     say(session, 'a', { type: 'move', x: 2, y: 2 })
     expect(host.room?.moves).toEqual([{ player: 'X', x: 2, y: 2 }])
+  })
+})
+
+describe('keeping a finished game', () => {
+  const WIN_FOR_X = [
+    ['a', 0, 0],
+    ['b', 0, 1],
+    ['a', 1, 0],
+    ['b', 1, 1],
+    ['a', 2, 0],
+  ] as const
+  /** All nine cells filled and no line for either player. */
+  const DRAW = [
+    ['a', 0, 0],
+    ['b', 1, 1],
+    ['a', 2, 2],
+    ['b', 1, 0],
+    ['a', 1, 2],
+    ['b', 0, 2],
+    ['a', 2, 0],
+    ['b', 2, 1],
+    ['a', 0, 1],
+  ] as const
+
+  function play(
+    setup: ReturnType<typeof started>,
+    turns: readonly (readonly [string, number, number])[],
+  ) {
+    for (const [id, x, y] of turns) say(setup.session, id, { type: 'move', x, y })
+  }
+
+  it('does not keep a game that is still going', () => {
+    const setup = started()
+    play(setup, WIN_FOR_X.slice(0, 4))
+    expect(setup.host.archived).toEqual([])
+    expect(setup.host.lastState('a').gameId).toBeUndefined()
+  })
+
+  it('keeps a won game once, with who played and how it ended', () => {
+    const setup = started()
+    play(setup, WIN_FOR_X)
+
+    expect(setup.host.archived).toHaveLength(1)
+    const [{ id, game }] = setup.host.archived as [{ id: string; game: Finished }]
+    expect(game).toMatchObject({
+      players: [{ id: 'X', name: 'Anna' }, { id: 'O' }],
+      result: { kind: 'won', winner: 'X' },
+      owners: [TOKEN_X, TOKEN_O],
+    })
+    const replayed = replayGame(game.config, game.moves)
+    expect(replayed.ok && replayed.state.status.kind).toBe('won')
+    // Both players are told where the game is kept.
+    expect(setup.host.lastState('a').gameId).toBe(id)
+    expect(setup.host.lastState('b').gameId).toBe(id)
+  })
+
+  it('keeps a drawn game', () => {
+    const setup = started()
+    play(setup, DRAW)
+    expect(setup.host.archived).toHaveLength(1)
+    expect(setup.host.archived[0]?.game.result).toEqual({ kind: 'draw' })
+    expect(setup.host.archived[0]?.game.moves).toHaveLength(9)
+  })
+
+  it('keeps it also when the opponent has lost the connection by then', () => {
+    const setup = started()
+    play(setup, WIN_FOR_X.slice(0, 4))
+    setup.host.drop('b')
+    play(setup, WIN_FOR_X.slice(4))
+    expect(setup.host.archived).toHaveLength(1)
+  })
+
+  it('does not keep it again for a move after the end, a rematch or a player who comes back', () => {
+    const setup = started()
+    play(setup, WIN_FOR_X)
+    say(setup.session, 'b', { type: 'move', x: 2, y: 2 })
+    setup.host.connect('b2')
+    say(setup.session, 'b2', { type: 'join', token: TOKEN_O })
+    expect(setup.host.archived).toHaveLength(1)
+
+    say(setup.session, 'b', { type: 'rematch' })
+    expect(setup.host.archived).toHaveLength(1)
+    expect(setup.host.lastState('a').gameId).toBeUndefined()
+  })
+
+  it('keeps every round of the evening as a game of its own', () => {
+    const setup = started()
+    play(setup, WIN_FOR_X)
+    say(setup.session, 'a', { type: 'rematch' })
+    // The other one starts the second round.
+    play(setup, [
+      ['b', 0, 0],
+      ['a', 0, 1],
+      ['b', 1, 0],
+      ['a', 1, 1],
+      ['b', 2, 0],
+    ])
+    expect(setup.host.archived.map(({ id }) => id)).toEqual(['game-1', 'game-2'])
+    expect(setup.host.archived[1]?.game.result).toEqual({ kind: 'won', winner: 'O' })
+  })
+
+  it('drops a game that nobody finishes', () => {
+    const setup = started()
+    play(setup, WIN_FOR_X.slice(0, 3))
+    setup.host.drop('a')
+    setup.host.drop('b')
+    setup.session.closed()
+    expect(setup.host.archived).toEqual([])
   })
 })
 
