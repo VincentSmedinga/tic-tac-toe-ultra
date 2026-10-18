@@ -16,7 +16,7 @@ A game where many players play noughts and crosses together on one big field, ea
 ## Architecture
 
 - `shared/game/`: the game engine, pure TypeScript with no browser or Node APIs. `GameConfig { width, height, winLength, players[] }`, `applyMove(state, move)` with turn order for N players, and a win and draw check that only looks at the last move in four directions, so it also works on a big field. Version 1 uses `{3, 3, 3, [X, O]}`.
-- `shared/protocol.ts`: the messages between client and server (zod), so both sides share the same types.
+- `shared/protocol.ts`: the messages between client and server (zod), so both sides share the same types. A message from a player is `join` (with a token that is kept in the browser, and an optional name), `move` or `rematch`; the server answers every change with the whole room as a `state` (config plus moves; the receiver rebuilds the game with the engine) and tells only the sender about an `error`. `shared/room.ts` has the players of a room, the game of each round and the room codes: four consonants, so they never spell a word.
 - `src/`: the React app: board, shapes, lobby. Shapes are a registry of SVG components; a player is assigned one, and the engine only knows a player id.
 - `server/`: the room as a Cloudflare Durable Object with WebSocket. The server is authoritative: it validates every move with the same engine from `shared/` and sends the new state to all players. Clients only send `{ move: {x, y} }`.
 
