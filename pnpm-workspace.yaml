@@ -1,0 +1,5 @@
+# Dependencies whose install scripts may run; pnpm blocks all others.
+# esbuild and workerd (Cloudflare's runtime, used by Wrangler) fetch a platform binary.
+allowBuilds:
+  esbuild: true
+  workerd: true
