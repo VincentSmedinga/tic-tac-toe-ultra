@@ -1,9 +1,8 @@
 import type { Dictionary } from './types.ts'
 
 /**
- * The texts of the game in English, written by Claude and meant to be read by whoever speaks it
- * best in the family. The names of the shapes follow the Dutch ones the person who drew them
- * chose, and are to be confirmed by that person.
+ * The texts of the game in English, written by Claude and read through by Vincent, who confirmed
+ * them on 2026-10-18, together with the names of the twelve shapes in all three languages.
  */
 export const en: Dictionary = {
   'app.title': 'Tic-Tac-Toe Ultra',
