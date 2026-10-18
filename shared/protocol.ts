@@ -93,6 +93,11 @@ export const storedGameSchema = z.object({
   id: gameIdSchema,
   /** When the last move was played, in milliseconds since 1970. */
   finishedAt: z.number().int().nonnegative(),
+  /**
+   * When the first move was played, in milliseconds since 1970: with `finishedAt` it says how long
+   * the game took. Games kept before this have none, and are left out of what is about duration.
+   */
+  startedAt: z.number().int().nonnegative().optional(),
   config: configSchema,
   moves: z.array(moveSchema),
   /** Everyone who sat at the game, by player id, with the name they typed if any. */

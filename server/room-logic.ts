@@ -27,6 +27,8 @@ export interface RoomState {
   round: number
   seats: Seat[]
   moves: Move[]
+  /** When the first move of this round was played; a rematch clears it. */
+  startedAt?: number
   /** The id the game of this round is kept under, set when the round is over; a rematch clears it. */
   gameId?: string
   /** The archive has confirmed it has the game: only then are the players told the id. */
@@ -179,6 +181,7 @@ export function finishedGame(room: RoomState): Finished | null {
   return {
     config: { ...config, players: [...config.players] },
     moves: [...moves],
+    ...(room.startedAt === undefined ? {} : { startedAt: room.startedAt }),
     // The players of a game are its shapes, in seat order.
     players: room.seats.flatMap(({ shape, name }) =>
       shape === undefined ? [] : [{ id: shape, ...(name === undefined ? {} : { name }) }],
