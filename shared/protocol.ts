@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from './room.ts'
+import { FIELD_LIMITS, ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH, isValidField } from './room.ts'
 import { SHAPE_IDS } from './shapes.ts'
 
 /** What goes over the WebSocket between a player and a room: JSON, validated on both sides. */
@@ -24,6 +24,15 @@ const nameSchema = z
   .optional()
 
 export const shapeSchema = z.enum(SHAPE_IDS)
+
+/** The field of a room, as asked for when it is made and as told to the players. */
+export const fieldSchema = z
+  .object({
+    width: z.number().int().min(FIELD_LIMITS.minSide).max(FIELD_LIMITS.maxSide),
+    height: z.number().int().min(FIELD_LIMITS.minSide).max(FIELD_LIMITS.maxSide),
+    winLength: z.number().int().min(FIELD_LIMITS.minWin).max(FIELD_LIMITS.maxWin),
+  })
+  .refine(isValidField, { message: 'odd numbers, and the row must fit on the field' })
 
 export const clientMessageSchema = z.discriminatedUnion('type', [
   /** `shape` is the one this browser used last: taken when it is free and none is chosen yet. */
@@ -130,6 +139,8 @@ export const stateMessageSchema = z.object({
   code: roomCodeSchema,
   /** The seat of the one who receives this. */
   you: z.string(),
+  /** The field of this room, from the moment it is made: how big, and how many in a row win. */
+  field: fieldSchema,
   /** Which round of the evening this is; the starting player alternates with it. */
   round: z.number().int().min(0),
   /** Who has a seat, in seat order, and whether they are connected right now. */

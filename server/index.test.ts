@@ -15,6 +15,7 @@ const STORED = {
 function fakeEnv(existing: readonly string[] = []) {
   const rooms = new Set(existing)
   const forwarded: Request[] = []
+  const fields: unknown[] = []
   const listed: { token: string; limit: number; before?: string | undefined }[] = []
   const env = {
     ARCHIVE: {
@@ -28,9 +29,10 @@ function fakeEnv(existing: readonly string[] = []) {
     },
     ROOM: {
       getByName: (code: string) => ({
-        create: (newCode: string) => {
+        create: (newCode: string, field: unknown) => {
           if (rooms.has(code)) return Promise.resolve(false)
           rooms.add(newCode)
+          fields.push(field)
           return Promise.resolve(true)
         },
         exists: () => Promise.resolve(rooms.has(code)),
@@ -41,7 +43,7 @@ function fakeEnv(existing: readonly string[] = []) {
       }),
     },
   } as unknown as Env
-  return { env, rooms, forwarded, listed }
+  return { env, rooms, forwarded, listed, fields }
 }
 
 const call = (path: string, init?: RequestInit, env = fakeEnv().env) =>
@@ -75,6 +77,43 @@ describe('making a room', () => {
     const response = await call('/api/rooms')
     expect(response.status).toBe(405)
     expect(response.headers.get('Allow')).toBe('POST')
+  })
+})
+
+describe('making a room with a field of its own', () => {
+  const post = (body: BodyInit | undefined, env = fakeEnv().env) =>
+    call('/api/rooms', { method: 'POST', body }, env)
+
+  it('makes a classic room when nothing is asked for', async () => {
+    const { env, fields } = fakeEnv()
+    expect((await post(undefined, env)).status).toBe(201)
+    expect(fields).toEqual([{ width: 3, height: 3, winLength: 3 }])
+  })
+
+  it('makes the room with the field that was asked for', async () => {
+    const { env, fields } = fakeEnv()
+    const response = await post(JSON.stringify({ width: 7, height: 9, winLength: 5 }), env)
+    expect(response.status).toBe(201)
+    expect(fields).toEqual([{ width: 7, height: 9, winLength: 5 }])
+  })
+
+  it('refuses a field that is too big, even, too long a row or no field at all, and makes no room', async () => {
+    const { env, rooms } = fakeEnv()
+    for (const body of [
+      { width: 21, height: 3, winLength: 3 },
+      { width: 4, height: 3, winLength: 3 },
+      { width: 5, height: 5, winLength: 4 },
+      { width: 3, height: 3, winLength: 5 },
+      { width: 3 },
+      'nonsense',
+      [],
+    ]) {
+      const response = await post(JSON.stringify(body), env)
+      expect(response.status, JSON.stringify(body)).toBe(400)
+      expect(await response.json()).toEqual({ error: 'bad-field' })
+    }
+    expect((await post('{not json', env)).status).toBe(400)
+    expect(rooms.size).toBe(0)
   })
 })
 

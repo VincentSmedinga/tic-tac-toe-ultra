@@ -2,6 +2,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { ARCHIVE_NAME } from './archive.ts'
 import { ArchiveQueue } from './archive-queue.ts'
 import type { Pending } from './archive-queue.ts'
+import type { FieldSettings } from '../shared/room.ts'
 import type { Env } from './env.ts'
 import { newGameId } from './game-id.ts'
 import { newRoom, upgradeRoom } from './room-logic.ts'
@@ -45,10 +46,10 @@ export class Room extends DurableObject<Env> {
   })
 
   /** Makes the room with this code; false when it already exists. Called by the Worker. */
-  create(code: string): boolean {
+  create(code: string, field: FieldSettings): boolean {
     if (this.exists()) return false
     this.ctx.storage.kv.put(CODE_KEY, code)
-    this.ctx.storage.kv.put(ROOM_KEY, newRoom())
+    this.ctx.storage.kv.put(ROOM_KEY, newRoom(field))
     this.touch()
     return true
   }

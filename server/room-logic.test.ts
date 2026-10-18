@@ -11,6 +11,7 @@ import {
   rematch,
   stateFor,
   upgradeRoom,
+  fieldOf,
 } from './room-logic.ts'
 import type { Change, RoomState } from './room-logic.ts'
 
@@ -424,5 +425,106 @@ describe('a room stored before the shapes were chosen', () => {
     expect(upgradeRoom(current)).toBe(current)
     const fresh = undecided()
     expect(upgradeRoom(fresh)).toBe(fresh)
+  })
+})
+
+describe('the field of a room', () => {
+  const big = { width: 7, height: 5, winLength: 5 }
+  const bigRoom = (): RoomState => {
+    const start = newRoom(big)
+    return room(
+      choose(
+        room(
+          choose(
+            room(join(room(join(start, TOKEN_X, undefined)), TOKEN_O, undefined)),
+            TOKEN_X,
+            'star',
+          ),
+        ),
+        TOKEN_O,
+        'heart',
+      ),
+    )
+  }
+
+  it('is classic when nothing is asked for, and also for a room stored before this', () => {
+    expect(fieldOf(newRoom())).toEqual({ width: 3, height: 3, winLength: 3 })
+    expect(fieldOf({ round: 0, seats: [], moves: [] })).toEqual({
+      width: 3,
+      height: 3,
+      winLength: 3,
+    })
+  })
+
+  it('is the one the room was made with, and the game is played on it', () => {
+    const current = bigRoom()
+    expect(fieldOf(current)).toEqual(big)
+    const game = gameOf(current)
+    expect(game.kind === 'game' && game.game.config).toMatchObject(big)
+    expect(game.kind === 'game' && game.game.cells).toHaveLength(35)
+    expect(room(play(current, TOKEN_X, { x: 6, y: 4 })).moves).toEqual([
+      { player: 'star', x: 6, y: 4 },
+    ])
+  })
+
+  it('refuses a move outside the field of this room, and takes one a classic room would refuse', () => {
+    expect(play(bigRoom(), TOKEN_X, { x: 7, y: 0 })).toEqual({ ok: false, error: 'out-of-bounds' })
+    expect(play(twoPlayers(), TOKEN_X, { x: 6, y: 4 })).toEqual({
+      ok: false,
+      error: 'out-of-bounds',
+    })
+  })
+
+  it('is told to the players from the first moment, also before the game', () => {
+    const alone = room(join(newRoom(big), TOKEN_X, undefined))
+    expect(stateFor(alone, TOKEN_X, 'BCDF', new Set())?.field).toEqual(big)
+    expect(stateFor(alone, TOKEN_X, 'BCDF', new Set())).not.toHaveProperty('config')
+    expect(stateFor(bigRoom(), TOKEN_O, 'BCDF', new Set())?.config).toMatchObject(big)
+  })
+
+  it('stays the same in a rematch', () => {
+    let current = bigRoom()
+    // Five in a row along the long side wins: (0..4, 0) for the star, the heart plays row 1.
+    for (const [token, x, y] of [
+      [TOKEN_X, 0, 0],
+      [TOKEN_O, 0, 1],
+      [TOKEN_X, 1, 0],
+      [TOKEN_O, 1, 1],
+      [TOKEN_X, 2, 0],
+      [TOKEN_O, 2, 1],
+      [TOKEN_X, 3, 0],
+      [TOKEN_O, 3, 1],
+      [TOKEN_X, 4, 0],
+    ] as const) {
+      current = room(play(current, token, { x, y }))
+    }
+    expect(isOver(current)).toBe(true)
+    const next = room(rematch(current, TOKEN_X))
+    expect(fieldOf(next)).toEqual(big)
+    expect(next.moves).toEqual([])
+  })
+
+  it('is kept in the game that is stored', () => {
+    const finished = finishedGame(
+      ((): RoomState => {
+        let current = bigRoom()
+        for (const [token, x, y] of [
+          [TOKEN_X, 0, 0],
+          [TOKEN_O, 0, 1],
+          [TOKEN_X, 1, 0],
+          [TOKEN_O, 1, 1],
+          [TOKEN_X, 2, 0],
+          [TOKEN_O, 2, 1],
+          [TOKEN_X, 3, 0],
+          [TOKEN_O, 3, 1],
+          [TOKEN_X, 4, 0],
+        ] as const) {
+          current = room(play(current, token, { x, y }))
+        }
+        return current
+      })(),
+    )
+    expect(finished?.config).toMatchObject(big)
+    expect(finished?.result).toEqual({ kind: 'won', winner: 'star' })
   })
 })
