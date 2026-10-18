@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { useState } from 'react'
+import { arrivalPlan } from '../motion/arrival.ts'
+import { useMotion } from '../motion/preference.ts'
+import { closureOf } from '../shapes/closure.ts'
+import { strokeLengths } from '../shapes/length.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { SHAPES } from '../shapes/shapes.ts'
+import type { ShapeId } from '../shapes/shapes.ts'
 import './StyleGuide.css'
 
 const meta = {
@@ -65,6 +71,56 @@ export const Pairs: Story = {
             </li>
           ))}
         </ul>
+      </section>
+    )
+  },
+}
+
+const CLOSED: readonly ShapeId[] = ['circle', 'oval', 'diamond', 'square']
+
+/**
+ * The shapes that close on themselves are not started at the same place every time: the circle and
+ * the oval wherever the pen lands, the diamond at one of its corners, the square at any of its
+ * sides, going round one way or the other. Press the button to write them again, each time with
+ * another seed.
+ */
+export const Writing: Story = {
+  name: 'Schrijven van gesloten vormen',
+  render: function Render() {
+    const [seed, setSeed] = useState(1)
+    const motion = useMotion()
+    return (
+      <section className="guide" aria-labelledby="writing-title">
+        <h2 id="writing-title">Gesloten vormen schrijven</h2>
+        <p className="guide-note">
+          Elke keer begint de pen ergens anders. Het resultaat is steeds dezelfde vorm.
+        </p>
+        <div className="guide-shapes">
+          {CLOSED.map((id) => (
+            <figure key={id}>
+              <ShapeIcon
+                shape={id}
+                size={120}
+                arrival={
+                  motion === 'off'
+                    ? undefined
+                    : {
+                        plan: arrivalPlan(seed, 0, strokeLengths(id), closureOf(id)),
+                        mode: motion,
+                      }
+                }
+              />
+            </figure>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setSeed((current) => current + 1)
+          }}
+        >
+          Schrijf opnieuw
+        </button>
       </section>
     )
   },
