@@ -6,7 +6,7 @@ import { ShapeIcon } from './ShapeIcon.tsx'
 import { PATHS, SHAPES } from './shapes.ts'
 
 describe('the set of shapes', () => {
-  it('has the seven shapes of the drawn set, each once', () => {
+  it('has the twelve shapes of the drawn sets, each once', () => {
     expect(SHAPES.map(({ id }) => id)).toEqual([
       'cross',
       'circle',
@@ -15,8 +15,13 @@ describe('the set of shapes', () => {
       'star',
       'plus',
       'asterisk',
+      'oval',
+      'heart',
+      'fort',
+      'waves',
+      'goldbar',
     ])
-    expect(new Set(SHAPES.map(({ name }) => name)).size).toBe(7)
+    expect(new Set(SHAPES.map(({ name }) => name)).size).toBe(12)
   })
 
   it('has a drawing for every shape', () => {
