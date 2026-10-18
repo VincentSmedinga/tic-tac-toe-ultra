@@ -128,6 +128,54 @@ describe('the archive store', () => {
     expect(again.get(WON.id)?.id).toBe(WON.id)
   })
 
+  describe('counting rooms and rounds', () => {
+    it('counts the rooms that were made, each once', () => {
+      store.roomMade('room-one', 1, 2)
+      store.roomMade('room-one', 2, 2)
+      store.roomMade('room-two', 3, 4)
+      expect(store.roomCounts()).toEqual({ made: 2, rounds: [] })
+    })
+
+    it('counts the rounds of each room that has games, and no more than the games say', () => {
+      store.roomMade('room-one', 1, 2)
+      store.roomMade('room-two', 1, 2)
+      store.roomMade('room-three', 1, 2)
+      for (const [id, roomId] of [
+        ['game-1-game-1-gam', 'room-one'],
+        ['game-2-game-2-gam', 'room-one'],
+        ['game-3-game-3-gam', 'room-one'],
+        ['game-4-game-4-gam', 'room-two'],
+      ] as const) {
+        store.save({ ...WON, id, roomId }, 10)
+      }
+      store.save({ ...WON, id: 'no-room-no-room-n' }, 11)
+      const { made, rounds } = store.roomCounts()
+      expect(made).toBe(3)
+      expect([...rounds].sort()).toEqual([1, 3])
+    })
+
+    it('keeps the room next to the game and never in it', () => {
+      store.save({ ...WON, roomId: 'room-one' }, 1)
+      expect(JSON.stringify(store.get(WON.id))).not.toContain('room-one')
+      expect(JSON.stringify(store.all())).not.toContain('room-one')
+      expect(JSON.stringify(store.list('hash-x', 10))).not.toContain('room-one')
+    })
+
+    it('takes over an archive from before rooms were counted, and opens again', () => {
+      const old = new DatabaseSync(':memory:')
+      old.exec(
+        'CREATE TABLE games (id TEXT PRIMARY KEY, finished_at INTEGER NOT NULL, data TEXT NOT NULL)',
+      )
+      old
+        .prepare('INSERT INTO games (id, finished_at, data) VALUES (?, ?, ?)')
+        .run(WON.id, 5, JSON.stringify({ ...WON, finishedAt: 5, owners: undefined }))
+      const upgraded = new ArchiveStore(sqlOver(old))
+      expect(upgraded.get(WON.id)?.finishedAt).toBe(5)
+      upgraded.save({ ...WON, id: 'newer-newer-newe', roomId: 'room-one' }, 6)
+      expect(new ArchiveStore(sqlOver(old)).roomCounts()).toEqual({ made: 0, rounds: [1] })
+    })
+  })
+
   describe('listing every game', () => {
     it('gives all games oldest first, and skips one that was damaged', () => {
       store.save({ ...WON, id: 'second-second-se' }, 20)

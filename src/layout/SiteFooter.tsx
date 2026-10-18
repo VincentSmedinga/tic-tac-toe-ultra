@@ -15,6 +15,7 @@ export function SiteFooter({ route }: { route: Route }) {
         <nav className="footer-links" aria-label="Naar een ander scherm">
           {route.name !== 'start' && <Link to="/">Terug naar het begin</Link>}
           {route.name !== 'games' && <Link to="/spellen">Gespeelde spellen</Link>}
+          {route.name !== 'stats' && <Link to="/statistieken">Statistieken</Link>}
         </nav>
         <AppearanceControls />
       </div>

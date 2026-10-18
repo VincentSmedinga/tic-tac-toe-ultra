@@ -201,6 +201,19 @@ export const statsSchema = z.object({
       winningCells: z.array(countSchema),
     }),
   ),
+  /**
+   * The rooms, from the time rooms were counted: how many were made, in how many a round was
+   * finished, in how many there was a rematch, and how many rounds the rooms had.
+   */
+  rooms: z.object({
+    made: countSchema,
+    played: countSchema,
+    rematches: countSchema,
+    averageRounds: z.number().min(0),
+    mostRounds: countSchema,
+    /** Rooms with 1, 2, 3 and 4 rounds, and with 5 or more. */
+    rounds: z.array(countSchema).length(5),
+  }),
   /** Games finished on each day of the week (Monday first) and each hour of the day, Dutch time. */
   weekdays: z.array(countSchema).length(7),
   hours: z.array(countSchema).length(24),
