@@ -154,12 +154,13 @@ export function usePlayMode(): PlayMode {
     const returnTo = trigger
     const restore = element ? inertAround(element) : () => undefined
     const release = keepAwake()
-    centre(element)
 
     // The focus goes to the board, to the cell the keyboard was on, unless it is on the board already.
     if (element && !element.querySelector('.board')?.contains(document.activeElement)) {
-      element.querySelector<HTMLElement>('.board [tabindex="0"]')?.focus()
+      element.querySelector<HTMLElement>('.board [tabindex="0"]')?.focus({ preventScroll: true })
     }
+    // After the focus, which would scroll to its cell: the field starts in the middle, as it does.
+    centre(element)
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close()
