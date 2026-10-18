@@ -46,10 +46,10 @@ export class Room extends DurableObject<Env> {
   })
 
   /** Makes the room with this code; false when it already exists. Called by the Worker. */
-  create(code: string, field: FieldSettings): boolean {
+  create(code: string, field: FieldSettings, seats: number): boolean {
     if (this.exists()) return false
     this.ctx.storage.kv.put(CODE_KEY, code)
-    this.ctx.storage.kv.put(ROOM_KEY, newRoom(field))
+    this.ctx.storage.kv.put(ROOM_KEY, newRoom(field, seats))
     this.touch()
     return true
   }

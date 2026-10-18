@@ -1,20 +1,26 @@
 import { applyMove, replayGame } from '../shared/game/index.ts'
 import type { Cell, GameState, Move } from '../shared/game/index.ts'
 import type { ErrorCode, StateMessage, StoredGame } from '../shared/protocol.ts'
-import { CLASSIC_FIELD, ROOM_SEATS, roomConfig } from '../shared/room.ts'
+import {
+  CLASSIC_FIELD,
+  DEFAULT_PLAYERS,
+  PLAYER_LIMITS,
+  roomConfig,
+  seatId,
+} from '../shared/room.ts'
 import type { FieldSettings } from '../shared/room.ts'
 import type { ShapeId } from '../shared/shapes.ts'
 
 /**
  * The rules of a room, as functions on its state: who may sit, which shape each one has, whose move
- * is allowed, when there is a rematch. No sockets, no storage, so it is tested without Cloudflare. What a room keeps is
- * only this state: the game is rebuilt from the moves with the engine in shared/game/.
+ * is allowed, when the game starts and when there is a rematch. No sockets, no storage, so it is
+ * tested without Cloudflare. What a room keeps is only this state: the game is rebuilt from the moves with the engine in shared/game/.
  */
 
 export interface Seat {
   /** Who this player's browser is; never sent to the other player. */
   token: string
-  /** The seat (`X` or `O`), in the order of joining; the player of the game is the shape. */
+  /** The seat (`X`, `O`, `3`, …), in the order of joining; the player of the game is the shape. */
   id: string
   name?: string
   /** The shape this player chose; the game starts when every seat has one. */
@@ -24,6 +30,10 @@ export interface Seat {
 export interface RoomState {
   /** How big the field is and how many in a row win; a room stored before this is classic. */
   field?: FieldSettings
+  /** How many people may play; a room stored before this has two seats. */
+  seatCount?: number
+  /** The one who made the room (the first seat) has said "start", with fewer seats taken than there are. */
+  started?: boolean
   round: number
   seats: Seat[]
   moves: Move[]
@@ -46,8 +56,25 @@ export type RoomGame =
   /** The stored moves don't replay: only a rematch gets the room going again. */
   | { kind: 'damaged' }
 
-export function newRoom(field: FieldSettings = CLASSIC_FIELD): RoomState {
-  return { field, round: 0, seats: [], moves: [] }
+export function newRoom(
+  field: FieldSettings = CLASSIC_FIELD,
+  seatCount: number = DEFAULT_PLAYERS,
+): RoomState {
+  return { field, seatCount, round: 0, seats: [], moves: [] }
+}
+
+/** How many seats the room has. */
+export function seatCountOf(room: RoomState): number {
+  return room.seatCount ?? DEFAULT_PLAYERS
+}
+
+/**
+ * Whether the game is on its way: every seat has a person, or the one who made the room has said
+ * to start with the people who are there (at least two). From then on nobody else can sit down.
+ */
+function isOn(room: RoomState): boolean {
+  if (room.seats.length < PLAYER_LIMITS.min) return false
+  return room.started === true || room.seats.length >= seatCountOf(room)
 }
 
 /** The field of a room: the one it was made with, or the classic one for a room from before. */
@@ -63,16 +90,16 @@ function fail(error: ErrorCode): Change {
   return { ok: false, error }
 }
 
-/** The shapes of the seats in seat order, when there is a seat for everybody and each has chosen. */
+/** The shapes of the seats in seat order, when the game is on and each person has chosen. */
 function shapesOf(room: RoomState): ShapeId[] | null {
-  if (room.seats.length < ROOM_SEATS.length) return null
+  if (!isOn(room)) return null
   const shapes = room.seats.flatMap((seat) => (seat.shape === undefined ? [] : [seat.shape]))
   return shapes.length === room.seats.length ? shapes : null
 }
 
-/** The game of the room: it starts when every seat is taken and every player has a shape. */
+/** The game of the room: it starts when it is on and every player has a shape. */
 export function gameOf(room: RoomState): RoomGame {
-  if (room.seats.length < ROOM_SEATS.length) return { kind: 'waiting' }
+  if (!isOn(room)) return { kind: 'waiting' }
   const shapes = shapesOf(room)
   if (!shapes) return { kind: 'choosing' }
   const replayed = replayGame(roomConfig(room.round, shapes, fieldOf(room)), room.moves)
@@ -85,7 +112,8 @@ function takenByOther(room: RoomState, token: string, shape: ShapeId): boolean {
 }
 
 /**
- * Takes a seat, or gets the same one back when the token already has one; refuses a third. The
+ * Takes a seat, or gets the same one back when the token already has one; refuses somebody new when
+ * every seat is taken or the game has been started with the people who were there. The
  * shape that was asked for (the one this browser had last time) is taken when it is free and the
  * player has none yet; otherwise it is left to them to choose.
  */
@@ -102,9 +130,9 @@ export function join(
     )
     return ok({ ...room, seats })
   }
-  const id = ROOM_SEATS[room.seats.length]
-  if (id === undefined) return fail('room-full')
-  const seat = withShape(withName({ token, id }, name), room, shape)
+  if (room.started === true) return fail('game-started')
+  if (room.seats.length >= seatCountOf(room)) return fail('room-full')
+  const seat = withShape(withName({ token, id: seatId(room.seats.length) }, name), room, shape)
   return ok({ ...room, seats: [...room.seats, seat] })
 }
 
@@ -136,6 +164,20 @@ export function choose(room: RoomState, token: string, shape: ShapeId): Change {
   })
 }
 
+/**
+ * Starts the game with the people who are there, when the room has more seats than people: only for
+ * the one who made it (the first seat), with at least two people who all have a shape. A room whose
+ * seats are all taken starts by itself, as soon as everybody has chosen.
+ */
+export function startGame(room: RoomState, token: string): Change {
+  if (!room.seats.some((seat) => seat.token === token)) return fail('not-joined')
+  if (room.seats[0]?.token !== token) return fail('not-host')
+  if (isOn(room)) return fail('game-started')
+  if (room.seats.length < PLAYER_LIMITS.min) return fail('not-enough-players')
+  if (room.seats.some((seat) => seat.shape === undefined)) return fail('shape-needed')
+  return ok({ ...room, started: true })
+}
+
 /** A move of the player with this token; only the engine decides whether it is allowed. */
 export function play(room: RoomState, token: string, cell: Cell): Change {
   const seat = room.seats.find((candidate) => candidate.token === token)
@@ -157,7 +199,14 @@ export function rematch(room: RoomState, token: string): Change {
   if (current.kind === 'choosing') return fail('shape-needed')
   if (current.kind === 'game' && current.game.status.kind === 'playing')
     return fail('game-not-over')
-  return ok({ field: room.field, round: room.round + 1, seats: room.seats, moves: [] })
+  return ok({
+    field: room.field,
+    seatCount: room.seatCount,
+    started: room.started,
+    round: room.round + 1,
+    seats: room.seats,
+    moves: [],
+  })
 }
 
 /** Whether the round has been won or drawn. A damaged or waiting room is not over. */
@@ -210,6 +259,7 @@ export function stateFor(
     code,
     you: seat.id,
     field: { ...fieldOf(room) },
+    seats: seatCountOf(room),
     round: room.round,
     players: room.seats.map(({ token: seatToken, id, name, shape }) => ({
       id,

@@ -5,6 +5,7 @@ import {
   parseClientMessage,
   parseServerMessage,
   fieldSchema,
+  roomSettingsSchema,
   roomCodeSchema,
   storedGameSchema,
 } from './protocol.ts'
@@ -96,6 +97,7 @@ describe('a message from the server', () => {
     code: 'BCDF',
     you: 'X',
     field: { width: 3, height: 3, winLength: 3 },
+    seats: 2,
     round: 0,
     players: [{ id: 'X', connected: true }],
     config: { width: 3, height: 3, winLength: 3, players: ['X', 'O'] },
@@ -190,5 +192,30 @@ describe('the field of a room', () => {
     expect(fieldSchema.safeParse({ width: 3.5, height: 3, winLength: 3 }).success).toBe(false)
     expect(fieldSchema.safeParse({ width: '5', height: 5, winLength: 3 }).success).toBe(false)
     expect(fieldSchema.safeParse({ width: 5, height: 5 }).success).toBe(false)
+  })
+})
+
+describe('what a room is made with', () => {
+  const field = { width: 7, height: 7, winLength: 5 }
+
+  it('is the field, and how many people may play', () => {
+    expect(roomSettingsSchema.safeParse(field).success).toBe(true)
+    for (const players of [2, 3, 7, 12]) {
+      expect(roomSettingsSchema.safeParse({ ...field, players }).success, `${players}`).toBe(true)
+    }
+  })
+
+  it('is refused with fewer than two or more than twelve people, or half a person', () => {
+    for (const players of [0, 1, 13, 100, 2.5, '3']) {
+      expect(roomSettingsSchema.safeParse({ ...field, players }).success, `${players}`).toBe(false)
+    }
+  })
+
+  it('is refused with a field that is no field, whoever plays', () => {
+    expect(roomSettingsSchema.safeParse({ ...field, width: 4, players: 3 }).success).toBe(false)
+  })
+
+  it('may be asked to start the game, and to nothing else with it', () => {
+    expect(parseClientMessage(JSON.stringify({ type: 'start' }))).toEqual({ type: 'start' })
   })
 })

@@ -1,6 +1,15 @@
 import { parseClientMessage } from '../shared/protocol.ts'
 import type { ErrorCode, ServerMessage } from '../shared/protocol.ts'
-import { choose, finishedGame, isOver, join, play, rematch, stateFor } from './room-logic.ts'
+import {
+  choose,
+  finishedGame,
+  isOver,
+  join,
+  play,
+  rematch,
+  startGame,
+  stateFor,
+} from './room-logic.ts'
 import type { Change, Finished, RoomState } from './room-logic.ts'
 
 /** What a room needs from Cloudflare, so that the session below can be tested without it. */
@@ -90,6 +99,9 @@ export class RoomSession {
         break
       case 'choose':
         change = choose(room, token, message.shape)
+        break
+      case 'start':
+        change = startGame(room, token)
         break
       case 'rematch':
         change = rematch(room, token)
