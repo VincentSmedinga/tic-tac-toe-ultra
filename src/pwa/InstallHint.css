@@ -1,0 +1,31 @@
+/* A small line in the footer; the game's own buttons and colours, nothing louder than a link. */
+.install-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  font-size: 1rem;
+}
+
+.install-hint p {
+  margin: 0;
+}
+
+.install-hint button {
+  min-height: 3rem;
+  padding: 0 1rem;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page);
+  color: var(--text);
+  font: inherit;
+  font-family: var(--font-title);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.install-hint button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
