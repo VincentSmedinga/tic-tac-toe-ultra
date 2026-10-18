@@ -7,6 +7,9 @@
 :root {
   --page: #ffffff;
   --text: #1b1b1f;
+  --line: #8c8c99;
+  --win: #b87900;
+  --focus: #1a5fd0;
 
   --shape-cross: #d93a44; /* vivid red 4 */
   --shape-circle: #3a86c8; /* royal blue 70 */
@@ -21,6 +24,9 @@
   :root {
     --page: #1b1b1f;
     --text: #f2f2f4;
+    --line: #7d7d8a;
+    --win: #ffc83d;
+    --focus: #8ab4ff;
 
     --shape-cross: #ff6b72;
     --shape-circle: #6bb3f0;
