@@ -1,3 +1,4 @@
+import { useText } from '../i18n/store.ts'
 import './Wordmark.css'
 
 /**
@@ -6,10 +7,11 @@ import './Wordmark.css'
  * that is on the home screen (see scripts/icons.ts), in the same dark square in every look.
  */
 export function Wordmark() {
+  const t = useText()
   return (
     <h1 className="wordmark">
       <img className="wordmark-logo" src="/icon.svg" alt="" width="512" height="512" />
-      <span className="wordmark-text">Boter, Kaas en Eieren Ultra</span>
+      <span className="wordmark-text">{t('app.title')}</span>
     </h1>
   )
 }

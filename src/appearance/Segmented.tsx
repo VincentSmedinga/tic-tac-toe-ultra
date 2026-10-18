@@ -4,6 +4,8 @@ export interface SegmentedOption<T extends string> {
   value: T
   label: string
   hint?: string
+  /** The language of the label, when it is not the page's (the names of the languages). */
+  lang?: string
 }
 
 interface SegmentedProps<T extends string> {
@@ -32,6 +34,7 @@ export function Segmented<T extends string>({
             key={option.value}
             type="button"
             title={option.hint}
+            lang={option.lang}
             aria-pressed={option.value === value}
             onClick={() => {
               onChange(option.value)

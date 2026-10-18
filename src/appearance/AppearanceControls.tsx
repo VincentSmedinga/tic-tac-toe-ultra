@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { isPreview, offeredLanguages } from '../i18n/language.ts'
+import { setLanguage, useLanguage, useText } from '../i18n/store.ts'
 import { setAnimations, useAnimations, useReducedMotion } from '../motion/preference.ts'
 import { LOOKS, applyLook, readLook, saveLook } from './look.ts'
 import type { LookId } from './look.ts'
@@ -14,11 +16,6 @@ import type { Scheme, SchemePreference } from './scheme.ts'
 import { Segmented } from './Segmented.tsx'
 import './AppearanceControls.css'
 
-const SCHEMES = [
-  { value: 'light', label: 'Licht' },
-  { value: 'dark', label: 'Donker' },
-] as const
-
 /**
  * The choices about how the game looks, kept per device: the theme (a look, of which there are
  * three), light or dark, and whether the game may move. They live in the footer, which has a place of its own on every screen.
@@ -27,6 +24,8 @@ const SCHEMES = [
  * before the first paint.
  */
 export function AppearanceControls() {
+  const t = useText()
+  const language = useLanguage()
   const [look, setLook] = useState<LookId>(() => readLook())
   const [preference, setPreference] = useState<SchemePreference>(() => readPreference())
   const [systemIsDark, setSystemIsDark] = useState(() => matchMedia(DARK_QUERY).matches)
@@ -69,36 +68,53 @@ export function AppearanceControls() {
   }
 
   return (
-    <section className="appearance" aria-label="Uiterlijk">
+    <section className="appearance" aria-label={t('appearance.label')}>
       <Segmented
-        label="Thema"
-        options={LOOKS.map(({ id, name, hint }) => ({ value: id, label: name, hint }))}
+        label={t('appearance.look')}
+        options={LOOKS.map(({ id }) => ({
+          value: id,
+          label: t(`look.${id}.name`),
+          hint: t(`look.${id}.hint`),
+        }))}
         value={look}
         onChange={chooseLook}
       />
       <Segmented
-        label="Licht of donker"
-        options={SCHEMES}
+        label={t('appearance.scheme')}
+        options={[
+          { value: 'light', label: t('scheme.light') },
+          { value: 'dark', label: t('scheme.dark') },
+        ]}
         value={scheme}
         onChange={chooseLightOrDark}
       />
       <Segmented
-        label="Animaties"
+        label={t('appearance.animations')}
         options={[
           {
             value: 'on',
-            label: 'Aan',
+            label: t('animations.on'),
             // A phone that asks for less motion gets a fade and no moving strokes.
-            hint: reducedMotion
-              ? 'Je apparaat vraagt om minder beweging: alleen zacht verschijnen'
-              : undefined,
+            hint: reducedMotion ? t('animations.reduced') : undefined,
           },
-          { value: 'off', label: 'Uit' },
+          { value: 'off', label: t('animations.off') },
         ]}
         value={animations ? 'on' : 'off'}
         onChange={(wanted) => {
           setAnimations(wanted === 'on')
         }}
+      />
+      {/* Each language in its own language, whatever the page is in; a language nobody has read yet
+          is left out (see language.ts). */}
+      <Segmented
+        label={t('appearance.language')}
+        options={offeredLanguages(isPreview(), language).map(({ id, name }) => ({
+          value: id,
+          label: name,
+          lang: id,
+        }))}
+        value={language}
+        onChange={setLanguage}
       />
     </section>
   )

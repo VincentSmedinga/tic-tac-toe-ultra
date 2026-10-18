@@ -29,7 +29,7 @@ describe('OwnStats', () => {
 
   it('names the shape it plays most', async () => {
     render(<OwnStats token={TOKEN} api={apiWith(OWN)} />)
-    expect(await screen.findByText('Je speelt het vaakst met het hart (5 spellen).')).toBeVisible()
+    expect(await screen.findByText('Je favoriete vorm is hart (5 spellen).')).toBeVisible()
   })
 
   it('says one game in the singular', async () => {
@@ -43,7 +43,7 @@ describe('OwnStats', () => {
     } as const
     render(<OwnStats token={TOKEN} api={apiWith(one)} />)
     expect(await screen.findByText(/Je hebt 1 spel gespeeld: 1 gewonnen/)).toBeVisible()
-    expect(screen.getByText(/het kruis \(1 spel\)/)).toBeVisible()
+    expect(screen.getByText(/favoriete vorm is kruis \(1 spel\)/)).toBeVisible()
   })
 
   it('counts games of which it is not known whether they were won as played only', async () => {

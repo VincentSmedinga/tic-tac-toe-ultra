@@ -1,3 +1,6 @@
+import { useEffect } from 'react'
+import { applyLanguage } from './i18n/store.ts'
+import { useLanguage } from './i18n/store.ts'
 import { SiteFooter } from './layout/SiteFooter.tsx'
 import { GamePage } from './games/GamePage.tsx'
 import { GamesPage } from './games/GamesPage.tsx'
@@ -11,6 +14,12 @@ import { Wordmark } from './appearance/Wordmark.tsx'
 
 export function App() {
   const route = useRoute()
+  const language = useLanguage()
+  // The page's `lang`, direction and title say which language the screen is in (public/appearance.js
+  // did it before the first paint).
+  useEffect(() => {
+    applyLanguage(language)
+  }, [language])
   return (
     <div className="app">
       <Wallpaper />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useText } from '../i18n/store.ts'
 
 interface CopyLinkProps {
   link: string
@@ -8,6 +9,7 @@ interface CopyLinkProps {
 
 /** A link to hand to someone, shown in full, with a button that copies it. */
 export function CopyLink({ link, lead }: CopyLinkProps) {
+  const t = useText()
   const [copied, setCopied] = useState<'yes' | 'no' | null>(null)
 
   async function copy() {
@@ -30,12 +32,10 @@ export function CopyLink({ link, lead }: CopyLinkProps) {
           void copy()
         }}
       >
-        Kopieer link
+        {t('copy.button')}
       </button>
-      {copied === 'yes' && <p role="status">Link gekopieerd.</p>}
-      {copied === 'no' && (
-        <p role="status">Kopiëren lukt niet. Selecteer de link hierboven en kopieer hem zelf.</p>
-      )}
+      {copied === 'yes' && <p role="status">{t('copy.done')}</p>}
+      {copied === 'no' && <p role="status">{t('copy.failed')}</p>}
     </div>
   )
 }

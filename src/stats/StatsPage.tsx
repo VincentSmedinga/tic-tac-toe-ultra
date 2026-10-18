@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react'
 import type { Stats } from '../../shared/protocol.ts'
+import { useFormat } from '../i18n/format.ts'
+import { formatNumber } from '../i18n/text.ts'
+import { useText } from '../i18n/store.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
+import { useShapeNames } from '../shapes/names.ts'
 import type { ShapeId } from '../shapes/shapes.ts'
 import { statsApi } from './api.ts'
 import type { StatsApi } from './api.ts'
 import { HeatMap, Bars } from './Charts.tsx'
-import { decimal, duration, games, kindName, percent, shapeName, shortDate } from './format.ts'
+import { duration } from './format.ts'
 import '../online/Online.css'
 import './Stats.css'
 
 /** With fewer games than this the numbers say nothing yet: an average of two games is not one. */
 export const MIN_GAMES = 3
-
-const WEEKDAYS = ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag']
-const WEEKDAYS_SHORT = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo']
 
 interface StatsPageProps {
   api?: StatsApi
@@ -21,6 +22,7 @@ interface StatsPageProps {
 
 /** "Statistieken": what the family has played, worked out from every finished game. */
 export function StatsPage({ api = statsApi }: StatsPageProps) {
+  const t = useText()
   const [stats, setStats] = useState<Stats | null>(null)
   const [failed, setFailed] = useState(false)
   const [attempt, setAttempt] = useState(0)
@@ -44,14 +46,14 @@ export function StatsPage({ api = statsApi }: StatsPageProps) {
 
   return (
     <div className="stats">
-      <h2>Statistieken</h2>
+      <h2>{t('stats.title')}</h2>
 
-      {stats === null && !failed && <p role="status">Statistieken ophalen…</p>}
+      {stats === null && !failed && <p role="status">{t('stats.loading')}</p>}
 
       {failed && (
         <>
           <p className="message" role="alert">
-            De statistieken zijn nu niet op te halen. Probeer het zo nog eens.
+            {t('stats.failed')}
           </p>
           <button
             type="button"
@@ -61,7 +63,7 @@ export function StatsPage({ api = statsApi }: StatsPageProps) {
               setAttempt((count) => count + 1)
             }}
           >
-            Opnieuw proberen
+            {t('common.retry')}
           </button>
         </>
       )}
@@ -73,14 +75,12 @@ export function StatsPage({ api = statsApi }: StatsPageProps) {
 }
 
 function TooFew({ count }: { count: number }) {
+  const t = useText()
   return (
     <section className="stats-card" aria-labelledby="stats-few">
-      <h3 id="stats-few">Nog te weinig spellen</h3>
+      <h3 id="stats-few">{t('stats.few.title')}</h3>
       <p>
-        {count === 0
-          ? 'Er is nog geen spel uitgespeeld.'
-          : `Er ${count === 1 ? 'is' : 'zijn'} pas ${games(count)} uitgespeeld.`}{' '}
-        Speel er een paar, dan staat hier wat jullie het vaakst doen.
+        {count === 0 ? t('stats.few.none') : t('stats.few.some', { count })} {t('stats.few.advice')}
       </p>
     </section>
   )
@@ -107,30 +107,35 @@ function Numbers({ stats }: { stats: Stats }) {
 }
 
 function Totals({ stats }: { stats: Stats }) {
+  const t = useText()
+  const { shortDate } = useFormat()
   return (
     <section className="stats-card" aria-labelledby="stats-totals">
-      <h3 id="stats-totals">Samen gespeeld</h3>
+      <h3 id="stats-totals">{t('stats.totals.title')}</h3>
       <dl className="stats-figures">
         <div>
-          <dt>Spellen</dt>
+          <dt>{t('stats.totals.games')}</dt>
           <dd>{stats.games}</dd>
         </div>
         <div>
-          <dt>Gewonnen</dt>
+          <dt>{t('stats.totals.won')}</dt>
           <dd>{stats.won}</dd>
         </div>
         <div>
-          <dt>Gelijkspel</dt>
+          <dt>{t('stats.totals.drawn')}</dt>
           <dd>{stats.drawn}</dd>
         </div>
       </dl>
-      <h4>Per week</h4>
+      <h4>{t('stats.perWeek')}</h4>
       <Bars
-        title="Spellen per week"
+        title={t('stats.perWeek.chart')}
         bars={stats.weeks.map(({ start, won, drawn }) => ({
           label: shortDate(start),
           value: won + drawn,
-          description: `Week van ${shortDate(start)}: ${games(won + drawn)}`,
+          description: t('stats.perWeek.bar', {
+            date: shortDate(start),
+            games: t('count.games', { count: won + drawn }),
+          }),
         }))}
         labelEvery={4}
       />
@@ -139,66 +144,71 @@ function Totals({ stats }: { stats: Stats }) {
 }
 
 function Lengths({ stats }: { stats: Stats }) {
+  const t = useText()
+  const { locale } = useFormat()
   const { duration: time, moves } = stats
   if (moves === null) return null
   return (
     <section className="stats-card" aria-labelledby="stats-lengths">
-      <h3 id="stats-lengths">Hoe lang duurt een spel?</h3>
+      <h3 id="stats-lengths">{t('stats.lengths.title')}</h3>
       <table className="stats-table">
         <thead>
           <tr>
             <th scope="col">
-              <span className="stats-sr">Soort</span>
+              <span className="stats-sr">{t('stats.lengths.kind')}</span>
             </th>
-            <th scope="col">Tijd</th>
-            <th scope="col">Zetten</th>
+            <th scope="col">{t('stats.lengths.time')}</th>
+            <th scope="col">{t('stats.lengths.moves')}</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <th scope="row">Gemiddeld</th>
-            <td>{time ? duration(time.average) : '–'}</td>
-            <td>{decimal(moves.average)}</td>
+            <th scope="row">{t('stats.lengths.average')}</th>
+            <td>{time ? duration(t, time.average) : '–'}</td>
+            <td>{formatNumber(locale, moves.average)}</td>
           </tr>
           <tr>
-            <th scope="row">Middelste</th>
-            <td>{time ? duration(time.median) : '–'}</td>
-            <td>{decimal(moves.median)}</td>
+            <th scope="row">{t('stats.lengths.median')}</th>
+            <td>{time ? duration(t, time.median) : '–'}</td>
+            <td>{formatNumber(locale, moves.median)}</td>
           </tr>
           <tr>
-            <th scope="row">Kortste</th>
-            <td>{time ? duration(time.shortest) : '–'}</td>
+            <th scope="row">{t('stats.lengths.shortest')}</th>
+            <td>{time ? duration(t, time.shortest) : '–'}</td>
             <td>{moves.shortest}</td>
           </tr>
           <tr>
-            <th scope="row">Langste</th>
-            <td>{time ? duration(time.longest) : '–'}</td>
+            <th scope="row">{t('stats.lengths.longest')}</th>
+            <td>{time ? duration(t, time.longest) : '–'}</td>
             <td>{moves.longest}</td>
           </tr>
         </tbody>
       </table>
       <p className="stats-note">
         {time === null
-          ? 'De tijd is nog niet bijgehouden voor deze spellen.'
+          ? t('stats.lengths.noTime')
           : time.games === moves.games
             ? ''
-            : `De tijd telt ${games(time.games)}: oudere spellen hebben geen tijd.`}
+            : t('stats.lengths.someTime', { games: t('count.games', { count: time.games }) })}
       </p>
     </section>
   )
 }
 
 function Shapes({ stats }: { stats: Stats }) {
+  const t = useText()
+  const { percent } = useFormat()
+  const { title } = useShapeNames()
   const most = Math.max(1, ...stats.shapes.map(({ games: played }) => played))
   return (
     <section className="stats-card" aria-labelledby="stats-shapes">
-      <h3 id="stats-shapes">De vormen</h3>
+      <h3 id="stats-shapes">{t('stats.shapes.title')}</h3>
       <ul className="stats-shapes">
         {stats.shapes.map(({ shape, games: played, won }) => (
           <li key={shape}>
             <ShapeIcon shape={shape} size={32} decorative />
             <span className="stats-shape-text">
-              <strong>{shapeName(shape)}</strong>
+              <strong>{title(shape)}</strong>
               <span className="stats-bar-line" aria-hidden="true">
                 <span
                   className="stats-bar-fill"
@@ -206,8 +216,14 @@ function Shapes({ stats }: { stats: Stats }) {
                 />
               </span>
               <span>
-                {games(played)}, {won} gewonnen ({percent(won, played)})
-                {played < MIN_GAMES && <span className="stats-note"> · nog weinig spellen</span>}
+                {t('stats.shapes.line', {
+                  games: t('count.games', { count: played }),
+                  won,
+                  percent: percent(won, played),
+                })}
+                {played < MIN_GAMES && (
+                  <span className="stats-note"> · {t('stats.shapes.few')}</span>
+                )}
               </span>
             </span>
           </li>
@@ -218,47 +234,53 @@ function Shapes({ stats }: { stats: Stats }) {
 }
 
 function Starter({ stats }: { stats: Stats }) {
+  const t = useText()
+  const { percent } = useFormat()
   const { won, lost, drawn } = stats.starter
   const total = won + lost + drawn
   if (total === 0) return null
   return (
     <section className="stats-card" aria-labelledby="stats-starter">
-      <h3 id="stats-starter">Wie begint, wint die vaker?</h3>
-      <p>
-        De speler die begon won {won} van de {total} spellen ({percent(won, total)}), verloor er{' '}
-        {lost} en speelde er {drawn} gelijk.
-      </p>
+      <h3 id="stats-starter">{t('stats.starter.title')}</h3>
+      <p>{t('stats.starter.text', { won, total, percent: percent(won, total), lost, drawn })}</p>
       <StarterBar won={won} lost={lost} drawn={drawn} />
     </section>
   )
 }
 
 function Rooms({ stats }: { stats: Stats }) {
+  const t = useText()
+  const { percent } = useFormat()
   const { made, played, rematches, averageRounds, mostRounds, rounds } = stats.rooms
   if (made === 0) return null
-  const plural = (count: number, one: string, many: string) =>
-    `${count.toString()} ${count === 1 ? one : many}`
+
   return (
     <section className="stats-card" aria-labelledby="stats-rooms">
-      <h3 id="stats-rooms">Kamers en herkansingen</h3>
+      <h3 id="stats-rooms">{t('stats.rooms.title')}</h3>
       <p>
-        Er {made === 1 ? 'is' : 'zijn'} {plural(made, 'kamer', 'kamers')} gemaakt.
+        {t('stats.rooms.made', { count: made })}
         {played > 0 &&
-          ` In ${played.toString()} daarvan is een spel uitgespeeld, en in ${rematches.toString()} (${percent(rematches, played)}) is daarna nog een keer gespeeld.`}
+          ` ${t('stats.rooms.played', { played, rematches, percent: percent(rematches, played) })}`}
       </p>
       {played > 0 && (
         <>
-          <p>
-            Gemiddeld {decimal(averageRounds)} {averageRounds === 1 ? 'ronde' : 'rondes'} per kamer,
-            de meeste {mostRounds}.
-          </p>
-          <h4>Kamers per aantal rondes</h4>
+          <p>{t('stats.rooms.average', { count: averageRounds, most: mostRounds })}</p>
+          <h4>{t('stats.rooms.chart')}</h4>
           <Bars
-            title="Kamers per aantal rondes"
+            title={t('stats.rooms.chart')}
             bars={rounds.map((value, index) => ({
               label: index === 4 ? '5+' : (index + 1).toString(),
               value,
-              description: `${index === 4 ? '5 of meer' : (index + 1).toString()} ${index === 0 ? 'ronde' : 'rondes'}: ${plural(value, 'kamer', 'kamers')}`,
+              description:
+                index === 4
+                  ? t('stats.rooms.barMany', {
+                      rounds: 5,
+                      rooms: t('count.rooms', { count: value }),
+                    })
+                  : t('stats.rooms.bar', {
+                      count: index + 1,
+                      rooms: t('count.rooms', { count: value }),
+                    }),
             }))}
           />
         </>
@@ -268,11 +290,12 @@ function Rooms({ stats }: { stats: Stats }) {
 }
 
 function StarterBar({ won, lost, drawn }: { won: number; lost: number; drawn: number }) {
+  const t = useText()
   const total = Math.max(1, won + lost + drawn)
   const parts = [
-    { key: 'won', label: 'Won', count: won },
-    { key: 'drawn', label: 'Gelijk', count: drawn },
-    { key: 'lost', label: 'Verloor', count: lost },
+    { key: 'won', label: t('stats.starter.won'), count: won },
+    { key: 'drawn', label: t('stats.starter.drawn'), count: drawn },
+    { key: 'lost', label: t('stats.starter.lost'), count: lost },
   ]
   return (
     <div className="stats-split" aria-hidden="true">
@@ -290,40 +313,51 @@ function StarterBar({ won, lost, drawn }: { won: number; lost: number; drawn: nu
 }
 
 function Kind({ kind }: { kind: Stats['kinds'][number] }) {
+  const t = useText()
   const { width, height, winLength, players, games: played, won, drawn } = kind
   const enough = played >= MIN_GAMES
   return (
     <section className="stats-card" aria-labelledby={`stats-kind-${kindId(kind)}`}>
-      <h3 id={`stats-kind-${kindId(kind)}`}>Veld van {kindName(width, height, winLength)}</h3>
+      <h3 id={`stats-kind-${kindId(kind)}`}>
+        {t('stats.kind.title', { width, height, row: winLength })}
+      </h3>
       <p>
-        {players} spelers, {games(played)}: {won} gewonnen en {drawn} gelijk. Gemiddeld{' '}
-        {decimal(kind.averageMoves)} zetten.
+        {t('stats.kind.summary', {
+          players,
+          games: t('count.games', { count: played }),
+          won,
+          drawn,
+          moves: kind.averageMoves,
+        })}
       </p>
       {enough ? (
         <>
           <p>
-            Wie begon won {kind.starter.won} keer, verloor er {kind.starter.lost} en speelde er{' '}
-            {kind.starter.drawn} gelijk.
+            {t('stats.kind.starter', {
+              won: kind.starter.won,
+              lost: kind.starter.lost,
+              drawn: kind.starter.drawn,
+            })}
           </p>
           <div className="stats-heats">
             <HeatMap
-              title="Waar begint iedereen?"
+              title={t('stats.heat.first')}
               width={width}
               height={height}
               counts={kind.firstMoves}
-              unit="eerst gespeeld"
+              kind="first"
             />
             <HeatMap
-              title="Waar staat de winnende rij?"
+              title={t('stats.heat.winning')}
               width={width}
               height={height}
               counts={kind.winningCells}
-              unit="in een winnende rij"
+              kind="winning"
             />
           </div>
         </>
       ) : (
-        <p className="stats-note">Nog te weinig spellen van dit soort voor meer.</p>
+        <p className="stats-note">{t('stats.kind.tooFew')}</p>
       )}
     </section>
   )
@@ -334,30 +368,36 @@ function kindId({ width, height, winLength, players }: Stats['kinds'][number]): 
 }
 
 function When({ stats }: { stats: Stats }) {
+  const t = useText()
+  const { weekday } = useFormat()
   const busiestDay = stats.weekdays.indexOf(Math.max(...stats.weekdays))
   const busiestHour = stats.hours.indexOf(Math.max(...stats.hours))
   return (
     <section className="stats-card" aria-labelledby="stats-when">
-      <h3 id="stats-when">Wanneer spelen we?</h3>
-      <p>
-        Het meest op {WEEKDAYS[busiestDay]} en rond {busiestHour} uur.
-      </p>
-      <h4>Per dag van de week</h4>
+      <h3 id="stats-when">{t('stats.when.title')}</h3>
+      <p>{t('stats.when.busiest', { day: weekday(busiestDay, 'long'), hour: busiestHour })}</p>
+      <h4>{t('stats.when.perWeekday')}</h4>
       <Bars
-        title="Spellen per dag van de week"
+        title={t('stats.when.perWeekdayChart')}
         bars={stats.weekdays.map((value, index) => ({
-          label: WEEKDAYS_SHORT[index] ?? '',
+          label: weekday(index, 'short'),
           value,
-          description: `${WEEKDAYS[index] ?? ''}: ${games(value)}`,
+          description: t('stats.when.weekdayBar', {
+            day: weekday(index, 'long'),
+            games: t('count.games', { count: value }),
+          }),
         }))}
       />
-      <h4>Per uur van de dag</h4>
+      <h4>{t('stats.when.perHour')}</h4>
       <Bars
-        title="Spellen per uur van de dag"
+        title={t('stats.when.perHourChart')}
         bars={stats.hours.map((value, index) => ({
           label: index.toString(),
           value,
-          description: `${index.toString()} uur: ${games(value)}`,
+          description: t('stats.when.hourBar', {
+            hour: index,
+            games: t('count.games', { count: value }),
+          }),
         }))}
         showValues={false}
         labelEvery={6}
@@ -373,37 +413,51 @@ interface Fact {
 }
 
 function Fun({ stats }: { stats: Stats }) {
+  const t = useText()
+  const { name } = useShapeNames()
   const { fastestWin, longestGame, longestRun, favouritePair } = stats.fun
   const facts: Fact[] = []
   if (fastestWin) {
     facts.push({
       shapes: [fastestWin.shape],
-      text: `Snelste winst: ${lower(fastestWin.shape)} won in ${duration(fastestWin.milliseconds)} (${fastestWin.moves.toString()} zetten).`,
+      text: t('stats.fun.fastest', {
+        shape: name(fastestWin.shape),
+        time: duration(t, fastestWin.milliseconds),
+        moves: fastestWin.moves,
+      }),
     })
   }
   if (longestGame) {
     facts.push({
       shapes: [],
-      text: `Langste spel: ${longestGame.moves.toString()} zetten op een veld van ${longestGame.width.toString()} bij ${longestGame.height.toString()}.`,
+      text: t('stats.fun.longestGame', {
+        moves: longestGame.moves,
+        width: longestGame.width,
+        height: longestGame.height,
+      }),
     })
   }
   if (longestRun && longestRun.wins >= 2) {
     facts.push({
       shapes: [longestRun.shape],
-      text: `Langste reeks: ${lower(longestRun.shape)} won ${longestRun.wins.toString()} spellen achter elkaar.`,
+      text: t('stats.fun.longestRun', { shape: name(longestRun.shape), wins: longestRun.wins }),
     })
   }
   if (favouritePair) {
     const [one, two] = favouritePair.shapes
     facts.push({
       shapes: [one, two],
-      text: `Vaakst samen aan tafel: ${lower(one)} en ${lower(two)} (${games(favouritePair.games)}).`,
+      text: t('stats.fun.pair', {
+        one: name(one),
+        two: name(two),
+        games: t('count.games', { count: favouritePair.games }),
+      }),
     })
   }
   if (facts.length === 0) return null
   return (
     <section className="stats-card" aria-labelledby="stats-fun">
-      <h3 id="stats-fun">Leuk om te weten</h3>
+      <h3 id="stats-fun">{t('stats.fun.title')}</h3>
       <ul className="stats-facts">
         {facts.map(({ shapes, text }) => (
           <li key={text}>
@@ -416,8 +470,4 @@ function Fun({ stats }: { stats: Stats }) {
       </ul>
     </section>
   )
-}
-
-function lower(shape: ShapeId): string {
-  return shapeName(shape).toLowerCase()
 }

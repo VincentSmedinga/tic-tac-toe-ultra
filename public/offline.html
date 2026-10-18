@@ -64,5 +64,37 @@
     <h1>Geen verbinding</h1>
     <p>Je bent niet online. Zodra je weer internet hebt, kun je verder met spelen.</p>
     <a href="">Probeer opnieuw</a>
+    <script>
+      // The page is in Dutch, and in the language of the game where that is another one: the
+      // choice is in localStorage, like the app's (src/i18n/). The texts are the same as the
+      // dictionaries' `offline.*` (language.test.ts compares).
+      ;(() => {
+        const texts = {
+          en: {
+            title: 'No connection',
+            body: 'You are not online. Once you have internet again, you can carry on playing.',
+            retry: 'Try again',
+          },
+          fy: {
+            title: 'Gjin ferbining',
+            body: 'Do bist net online. Sadree’t der wer ynternet is, kinst fierder spylje.',
+            retry: 'Besykje opnij',
+          },
+        }
+        let language = ''
+        try {
+          language = localStorage.getItem('tic-tac-toe-ultra.language') || ''
+        } catch {
+          // Storage can be blocked: Dutch.
+        }
+        const found = Object.prototype.hasOwnProperty.call(texts, language) ? texts[language] : null
+        if (!found) return
+        document.documentElement.lang = language
+        document.title = found.title
+        document.querySelector('h1').textContent = found.title
+        document.querySelector('p').textContent = found.body
+        document.querySelector('a').textContent = found.retry
+      })()
+    </script>
   </body>
 </html>

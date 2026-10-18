@@ -3,20 +3,24 @@ import '../src/styles.css'
 
 import addonA11y from '@storybook/addon-a11y'
 import { definePreview } from '@storybook/react-vite'
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { useGlobals } from 'storybook/preview-api'
 import { LOOKS, applyLook, isLook, saveLook } from '../src/appearance/look.ts'
+import { LANGUAGES, isLanguage } from '../src/i18n/language.ts'
+import type { LanguageId } from '../src/i18n/language.ts'
+import { setLanguage, textFor } from '../src/i18n/store.ts'
 import type { LookId } from '../src/appearance/look.ts'
 import { applyScheme, savePreference } from '../src/appearance/scheme.ts'
 import type { Scheme } from '../src/appearance/scheme.ts'
 
 /**
- * The two switches of the game, in the toolbar: the look (`data-look`) and light or dark
- * (`data-scheme`) on <html>, put there by the game's own `applyLook` and `applyScheme`. The footer
- * of the game changes the same two attributes, so the toolbar follows them.
+ * The three switches of the game, in the toolbar: the look (`data-look`), light or dark
+ * (`data-scheme`) and the language (`lang`) on <html>, put there by the game's own `applyLook`,
+ * `applyScheme` and `setLanguage`. The footer of the game changes the same attributes, so the
+ * toolbar follows them. The toolbar offers every language, also one nobody has read yet.
  */
 export default definePreview({
-  initialGlobals: { look: 'drawn', scheme: 'light' },
+  initialGlobals: { look: 'drawn', scheme: 'light', language: 'nl' },
   globalTypes: {
     look: {
       description: 'Thema (data-look)',
@@ -24,7 +28,7 @@ export default definePreview({
         title: 'Thema',
         icon: 'paintbrush',
         dynamicTitle: true,
-        items: LOOKS.map(({ id, name }) => ({ value: id, title: name })),
+        items: LOOKS.map(({ id }) => ({ value: id, title: textFor('nl')(`look.${id}.name`) })),
       },
     },
     scheme: {
@@ -39,16 +43,33 @@ export default definePreview({
         ],
       },
     },
+    language: {
+      description: 'Taal (lang)',
+      toolbar: {
+        title: 'Taal',
+        icon: 'globe',
+        dynamicTitle: true,
+        items: LANGUAGES.map(({ id, name }) => ({ value: id, title: name })),
+      },
+    },
   },
   decorators: [
     (Story, { globals }) => {
       const [, updateGlobals] = useGlobals()
       const look = isLook(String(globals.look)) ? (globals.look as LookId) : 'drawn'
       const scheme: Scheme = globals.scheme === 'dark' ? 'dark' : 'light'
+      const language: LanguageId = isLanguage(String(globals.language))
+        ? (globals.language as LanguageId)
+        : 'nl'
 
       // What the footer of the game reads when it is shown (see its story).
       saveLook(look)
       savePreference(scheme)
+
+      // Not while rendering: changing the language tells every screen that shows it.
+      useLayoutEffect(() => {
+        setLanguage(language)
+      }, [language])
 
       useEffect(() => {
         applyLook(look)
@@ -61,15 +82,18 @@ export default definePreview({
         const observer = new MutationObserver(() => {
           const nextLook = root.dataset.look
           const nextScheme = root.dataset.scheme
-          if (nextLook !== look || nextScheme !== scheme) {
-            updateGlobals({ look: nextLook, scheme: nextScheme })
+          if (nextLook !== look || nextScheme !== scheme || root.lang !== language) {
+            updateGlobals({ look: nextLook, scheme: nextScheme, language: root.lang })
           }
         })
-        observer.observe(root, { attributes: true, attributeFilter: ['data-look', 'data-scheme'] })
+        observer.observe(root, {
+          attributes: true,
+          attributeFilter: ['data-look', 'data-scheme', 'lang'],
+        })
         return () => {
           observer.disconnect()
         }
-      }, [look, scheme, updateGlobals])
+      }, [look, scheme, language, updateGlobals])
 
       return <Story />
     },

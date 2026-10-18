@@ -2,15 +2,11 @@ import { syncChrome } from './scheme.ts'
 
 /**
  * The look of the game, which everyone chooses for themselves: three ways to dress the same
- * screens. It is kept per device and ends up as `data-look` on <html>, which the looks in
+ * screens (their names are in the dictionaries, `look.<id>.name`). It is kept per device and ends up as `data-look` on <html>, which the looks in
  * `styles/look-*.css` hang on; public/appearance.js sets it before the first paint. Keep the two in
  * sync.
  */
-export const LOOKS = [
-  { id: 'drawn', name: 'Getekend', hint: 'warm, papier en stift' },
-  { id: 'playful', name: 'Speels', hint: 'kleurrijk, grote kaarten' },
-  { id: 'calm', name: 'Rustig', hint: 'groot, veel ruimte' },
-] as const
+export const LOOKS = [{ id: 'drawn' }, { id: 'playful' }, { id: 'calm' }] as const
 
 export type LookId = (typeof LOOKS)[number]['id']
 

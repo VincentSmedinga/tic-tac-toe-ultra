@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import type { GameSummary } from '../../shared/protocol.ts'
+import { useFormat } from '../i18n/format.ts'
+import { useText } from '../i18n/store.ts'
 import { getToken } from '../online/identity.ts'
 import { Link } from '../online/Link.tsx'
 import { gamePath } from '../online/route.ts'
-import { labelOf, shapeOf } from '../play/players.ts'
+import { usePlayerNames, shapeOf } from '../play/players.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { OwnStats } from '../stats/OwnStats.tsx'
 import type { OwnStatsApi } from '../stats/api.ts'
@@ -18,10 +20,9 @@ interface GamesPageProps {
   ownStats?: OwnStatsApi
 }
 
-const WHEN = new Intl.DateTimeFormat('nl-NL', { dateStyle: 'medium', timeStyle: 'short' })
-
 /** "Gespeelde spellen": the finished games of this browser, newest first, a page at a time. */
 export function GamesPage({ api = gamesApi, ownStats }: GamesPageProps) {
+  const t = useText()
   const [token] = useState(getToken)
   const [games, setGames] = useState<GameSummary[]>([])
   const [next, setNext] = useState<string | undefined>()
@@ -65,14 +66,14 @@ export function GamesPage({ api = gamesApi, ownStats }: GamesPageProps) {
 
   return (
     <div className="games">
-      <h2>Gespeelde spellen</h2>
+      <h2>{t('games.title')}</h2>
 
-      {status === 'loading' && <p role="status">Spellen ophalen…</p>}
+      {status === 'loading' && <p role="status">{t('games.loading')}</p>}
 
       {status === 'failed' && (
         <>
           <p className="message" role="alert">
-            De spellen zijn nu niet op te halen. Probeer het zo nog eens.
+            {t('games.failed')}
           </p>
           <button
             type="button"
@@ -82,24 +83,21 @@ export function GamesPage({ api = gamesApi, ownStats }: GamesPageProps) {
               setAttempt((count) => count + 1)
             }}
           >
-            Opnieuw proberen
+            {t('common.retry')}
           </button>
         </>
       )}
 
       {status === 'ready' && games.length === 0 && (
         <>
-          <p>Je hebt op dit apparaat nog geen spel online gespeeld.</p>
-          <p>
-            Een spel dat uit is, staat hier vanzelf. Spellen die je samen op één scherm speelt
-            worden niet bewaard.
-          </p>
+          <p>{t('games.empty')}</p>
+          <p>{t('games.emptyHelp')}</p>
         </>
       )}
 
       {games.length > 0 && (
         <>
-          <p>Dit zijn de spellen die je op dit apparaat hebt gespeeld, de nieuwste eerst.</p>
+          <p>{t('games.intro')}</p>
           <OwnStats token={token} {...(ownStats ? { api: ownStats } : {})} />
           <ol className="game-list">
             {games.map((game) => (
@@ -120,12 +118,12 @@ export function GamesPage({ api = gamesApi, ownStats }: GamesPageProps) {
             void loadMore()
           }}
         >
-          {loadingMore ? 'Laden…' : 'Meer spellen'}
+          {loadingMore ? t('games.loadingMore') : t('games.more')}
         </button>
       )}
       {moreFailed && (
         <p className="message" role="alert">
-          De volgende spellen zijn nu niet op te halen. Probeer het zo nog eens.
+          {t('games.moreFailed')}
         </p>
       )}
     </div>
@@ -133,15 +131,21 @@ export function GamesPage({ api = gamesApi, ownStats }: GamesPageProps) {
 }
 
 function GameItem({ game }: { game: GameSummary }) {
+  const t = useText()
+  const { dateTime } = useFormat()
+  const { labelOf } = usePlayerNames()
   const nameOfPlayer = (id: string) => labelOf(id, game.players.find((p) => p.id === id)?.name)
   const result =
-    game.result.kind === 'won' ? `${nameOfPlayer(game.result.winner)} heeft gewonnen` : 'Gelijkspel'
+    game.result.kind === 'won'
+      ? t('games.won', { name: nameOfPlayer(game.result.winner) })
+      : t('games.draw')
+  const when = dateTime(game.finishedAt, 'medium')
   return (
     <Link to={gamePath(game.id)} className="game-item">
       <span className="game-when">
-        {WHEN.format(game.finishedAt)}
-        {(game.width !== 3 || game.height !== 3) &&
-          ` · veld van ${game.width.toString()} bij ${game.height.toString()}`}
+        {game.width !== 3 || game.height !== 3
+          ? t('games.whenField', { date: when, width: game.width, height: game.height })
+          : when}
       </span>
       <span className="game-players">
         {game.players.map((player) => (

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { replayGame, stateAfter } from '../../shared/game/index.ts'
 import type { GameConfig, Move } from '../../shared/game/index.ts'
+import { useText } from '../i18n/store.ts'
 import { Board } from '../play/Board.tsx'
-import { labelOf, shapeOf } from '../play/players.ts'
+import { usePlayerNames, shapeOf } from '../play/players.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import './Replay.css'
 
@@ -24,6 +25,8 @@ export const STEP_MS = 1200
 
 /** Looks at a game again, move by move: with buttons, a slider, the arrow keys, or on its own. */
 export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
+  const t = useText()
+  const { labelOf } = usePlayerNames()
   const [requested, setStep] = useState(0)
   const [autoplay, setAutoplay] = useState(false)
 
@@ -65,7 +68,7 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
   if (!replayed.ok) {
     return (
       <p className="message" role="alert">
-        Dit spel kan niet worden teruggekeken.
+        {t('replay.invalid')}
       </p>
     )
   }
@@ -91,20 +94,20 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
   let text: string
   if (step === total && game.status.kind === 'won') {
     icon = game.status.winner
-    text = `${who(game.status.winner)} heeft gewonnen!`
+    text = t('status.won', { name: who(game.status.winner) })
   } else if (step === total && game.status.kind === 'draw') {
-    text = 'Gelijkspel! Niemand heeft gewonnen.'
+    text = t('status.draw')
   } else if (last) {
     icon = last.player
-    text = `${who(last.player)} zet`
+    text = t('replay.moves', { name: who(last.player) })
   } else {
     icon = config.players[0] ?? null
-    text = `Het spel begint: ${icon === null ? '' : who(icon)} is de eerste`
+    text = icon === null ? t('replay.beginsPlain') : t('replay.begins', { name: who(icon) })
   }
-  const position = `Zet ${step.toString()} van ${total.toString()}`
+  const position = t('replay.position', { step, total })
 
   return (
-    <section className="game replay" aria-label="Spel terugkijken">
+    <section className="game replay" aria-label={t('replay.label')}>
       <p className="game-status" role="status">
         {icon !== null && <ShapeIcon shape={shapeOf(icon)} size={32} decorative />}
         <span>{text}</span>
@@ -127,10 +130,10 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
         />
       </div>
 
-      <div className="replay-controls" role="group" aria-label="Bediening">
+      <div className="replay-controls" role="group" aria-label={t('replay.controls')}>
         <button
           type="button"
-          aria-label="Naar het begin"
+          aria-label={t('replay.first')}
           disabled={step === 0}
           onClick={() => {
             goTo(0)
@@ -140,7 +143,7 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
         </button>
         <button
           type="button"
-          aria-label="Een zet terug"
+          aria-label={t('replay.back')}
           disabled={step === 0}
           onClick={() => {
             goTo(step - 1)
@@ -151,7 +154,7 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
         <button
           type="button"
           className="replay-play"
-          aria-label={playing ? 'Pauzeren' : 'Afspelen'}
+          aria-label={playing ? t('replay.pause') : t('replay.play')}
           disabled={total === 0}
           onClick={togglePlay}
         >
@@ -159,7 +162,7 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
         </button>
         <button
           type="button"
-          aria-label="Een zet verder"
+          aria-label={t('replay.forward')}
           disabled={step === total}
           onClick={() => {
             goTo(step + 1)
@@ -169,7 +172,7 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
         </button>
         <button
           type="button"
-          aria-label="Naar het einde"
+          aria-label={t('replay.last')}
           disabled={step === total}
           onClick={() => {
             goTo(total)
@@ -181,7 +184,7 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
 
       {onClose && (
         <button type="button" className="rematch" onClick={onClose}>
-          Terug
+          {t('replay.close')}
         </button>
       )}
     </section>
