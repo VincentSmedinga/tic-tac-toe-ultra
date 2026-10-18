@@ -1,0 +1,159 @@
+/* The pages of the style guide itself (src/styleguide/*.stories.tsx). The game never loads this. */
+.guide {
+  box-sizing: border-box;
+  max-width: 64rem;
+  margin-inline: auto;
+  padding: 1rem;
+  text-align: start;
+}
+
+.guide h2 {
+  margin-block: 2rem 0.5rem;
+}
+
+.guide-note {
+  margin-block: 0 1rem;
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+
+.guide-shapes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 1rem;
+}
+
+.guide-shapes figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.75rem 0.5rem;
+  background: var(--page);
+  border-radius: var(--radius);
+}
+
+.guide-shape-sizes {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.guide-shapes figcaption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 1rem;
+}
+
+.guide-shapes figcaption small {
+  opacity: 0.7;
+}
+
+.guide-pairs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.guide-pair {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--page);
+  border: 2px solid var(--line);
+  border-radius: 0.5rem;
+}
+
+/* A swatch is a colour next to its name and what it gives against the page. */
+.guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.guide-table th,
+.guide-table td {
+  padding: 0.3rem 0.5rem;
+  text-align: start;
+  border-bottom: 1px solid color-mix(in srgb, currentcolor 20%, transparent);
+}
+
+.guide-table code {
+  font-size: 0.85em;
+}
+
+.guide-swatch {
+  display: inline-block;
+  width: 3rem;
+  height: 1.5rem;
+  vertical-align: middle;
+  border: 1px solid color-mix(in srgb, currentcolor 40%, transparent);
+  border-radius: 0.3rem;
+}
+
+.guide-schemes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 1rem;
+}
+
+/* A scheme is shown on its own page colour, whichever scheme the toolbar has. */
+.guide-scheme {
+  padding: 1rem;
+  background: var(--guide-page);
+  color: var(--guide-text);
+  border-radius: var(--radius);
+}
+
+.guide-scheme h3 {
+  margin-block: 0 0.5rem;
+}
+
+.guide-pass {
+  font-weight: 700;
+}
+
+.guide-fail {
+  font-weight: 700;
+  text-decoration: underline wavy;
+}
+
+.guide-sample {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.guide-radius {
+  display: inline-block;
+  width: 4rem;
+  height: 2.5rem;
+  background: var(--page);
+  border: 2px solid var(--line);
+  vertical-align: middle;
+}
+
+.guide-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.guide-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.guide code {
+  font-size: 0.8em;
+}

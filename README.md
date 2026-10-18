@@ -21,7 +21,7 @@ pnpm dev
 
 ## Deploys
 
-The app is a Cloudflare Worker with static assets: the Worker answers `/api/*` (the rooms of the game come here), the rest is the built app. CI deploys it: every ready pull request gets a Worker of its own as a preview (`https://tic-tac-toe-ultra-pr-<number>.<subdomain>.workers.dev`, commented on the pull request, deleted when the pull request closes), and a merge to `main` goes to production at `https://tic-tac-toe-ultra.<subdomain>.workers.dev`. A draft pull request runs the checks only. Until the one-time setup below is done, the deploy is skipped with a notice.
+The app is a Cloudflare Worker with static assets: the Worker answers `/api/*` (the rooms of the game come here), the rest is the built app. CI deploys it: every ready pull request gets a Worker of its own as a preview (`https://tic-tac-toe-ultra-pr-<number>.<subdomain>.workers.dev`, commented on the pull request, deleted when the pull request closes), and a merge to `main` goes to production at `https://tic-tac-toe-ultra.<subdomain>.workers.dev`. The style guide (Storybook) is deployed the same way, as its own Worker with nothing of the game in it: `https://tic-tac-toe-ultra-styleguide.<subdomain>.workers.dev` for `main`, and a preview per ready pull request. A draft pull request runs the checks only. Until the one-time setup below is done, the deploy is skipped with a notice.
 
 ## One-time setup
 

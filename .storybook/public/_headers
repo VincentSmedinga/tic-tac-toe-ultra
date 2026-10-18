@@ -1,0 +1,8 @@
+# Response headers for the deployed style guide (Cloudflare static assets). It is open to anyone who
+# has the address and holds nothing private; it stays out of search engines all the same. It has no
+# Content-Security-Policy: Storybook's preview frame can't run under the game's.
+/*
+  X-Robots-Tag: noindex, nofollow
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()

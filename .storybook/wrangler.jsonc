@@ -1,0 +1,9 @@
+// The deployed style guide: a Worker of its own with static assets and no code, apart from the
+// game's one (wrangler.jsonc). CI deploys storybook-static with it, as tic-tac-toe-ultra-styleguide
+// for main and tic-tac-toe-ultra-styleguide-pr-<number> for a pull request (--name).
+{
+  "name": "tic-tac-toe-ultra-styleguide",
+  "compatibility_date": "2026-10-18",
+  "assets": { "directory": "../storybook-static" },
+  "workers_dev": true,
+}
