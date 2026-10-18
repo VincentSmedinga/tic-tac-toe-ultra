@@ -12,8 +12,8 @@ async function newPlayer(browser: Browser, locale: string, address = '/'): Promi
 test('an English and a Frisian player play a whole game, each in their own language', async ({
   browser,
 }) => {
-  // Anna's browser is English, so the game is too the first time. Frisian is chosen by hand, and
-  // only offered with ?alle-talen while nobody who speaks it has read it (src/i18n/language.ts).
+  // Anna's browser is English, so the game is too the first time. Bo's is Dutch, and chooses
+  // Frisian by hand.
   const anna = await newPlayer(browser, 'en-GB')
   await expect(anna.locator('html')).toHaveAttribute('lang', 'en')
   await expect(anna).toHaveTitle('Tic-Tac-Toe Ultra')
@@ -24,7 +24,7 @@ test('an English and a Frisian player play a whole game, each in their own langu
   expect(code).toMatch(/^[BCDFGHJKLMNPQRSTVWXZ]{4}$/)
   await anna.getByRole('button', { name: 'cross', exact: true }).click()
 
-  const bo = await newPlayer(browser, 'nl-NL', '/?alle-talen')
+  const bo = await newPlayer(browser, 'nl-NL')
   await bo.getByRole('group', { name: 'Taal' }).getByRole('button', { name: 'Frysk' }).click()
   await expect(bo.locator('html')).toHaveAttribute('lang', 'fy')
   await expect(bo).toHaveTitle('Bûter, Tsiis en Aaien Ultra')
@@ -69,7 +69,7 @@ test('an English and a Frisian player play a whole game, each in their own langu
   await expect(english(1, 1)).toHaveAccessibleName('Row 1, column 1: empty')
   await expect(frisian(1, 1)).toHaveAccessibleName('Rige 1, kolom 1: leech')
 
-  // The choice of language is kept: loaded again, the page is still Frisian, without the parameter.
+  // The choice of language is kept: loaded again, the page is still Frisian.
   await bo.goto(`/kamer/${code}`)
   await expect(bo.locator('html')).toHaveAttribute('lang', 'fy')
   await expect(bo.getByRole('group', { name: 'Spylfjild' })).toBeVisible()

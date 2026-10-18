@@ -111,13 +111,17 @@ describe('the language', () => {
     expect(screen.getByRole('group', { name: 'Thema' })).toBeVisible()
   })
 
-  it('does not offer Frisian while nobody who speaks it has read it', () => {
+  it('follows a browser in Frisian, and offers it next to the other two', () => {
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['fy-NL', 'nl'])
     openAt('/')
-    expect(screen.queryByRole('button', { name: 'Frysk' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Nije keamer' })).toBeVisible()
+    expect(within(group('Taal')).getByRole('button', { name: 'Frysk' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
   })
 
-  it('offers it with ?alle-talen in the address, to read it, and keeps it once chosen', async () => {
-    window.history.pushState(null, '', '/?alle-talen')
+  it('can be chosen in Frisian, which is kept', async () => {
     const { unmount } = render(<App />)
     const user = userEvent.setup()
     await user.click(within(group('Taal')).getByRole('button', { name: 'Frysk' }))
@@ -128,9 +132,8 @@ describe('the language', () => {
     expect(dutchLeaks('fy')).toEqual([])
     unmount()
 
-    // Without the parameter the chosen language is still the page's, and still in the list.
+    // Loaded again, the chosen language is still the page's.
     resetLanguage()
-    window.history.pushState(null, '', '/')
     render(<App />)
     expect(screen.getByRole('button', { name: 'Nije keamer' })).toBeVisible()
     expect(within(group('Taal')).getByRole('button', { name: 'Frysk' })).toHaveAttribute(

@@ -12,10 +12,19 @@
 export const LANGUAGES = [
   { id: 'nl', name: 'Nederlands', locale: 'nl-NL', dir: 'ltr', reviewed: true },
   { id: 'en', name: 'English', locale: 'en-GB', dir: 'ltr', reviewed: true },
-  { id: 'fy', name: 'Frysk', locale: 'fy-NL', dir: 'ltr', reviewed: false },
+  { id: 'fy', name: 'Frysk', locale: 'fy-NL', dir: 'ltr', reviewed: true },
 ] as const
 
 export type LanguageId = (typeof LANGUAGES)[number]['id']
+
+/** What the registry knows about a language. */
+export interface Language {
+  readonly id: LanguageId
+  readonly name: string
+  readonly locale: string
+  readonly dir: 'ltr' | 'rtl'
+  readonly reviewed: boolean
+}
 
 export const DEFAULT_LANGUAGE: LanguageId = 'nl'
 
@@ -38,8 +47,12 @@ export function languageById(id: LanguageId) {
  * The languages the picker shows: the ones that have been read, and all of them when previewing.
  * The language in use always stays in the list, so that a person who chose it can change it back.
  */
-export function offeredLanguages(preview: boolean, current: LanguageId) {
-  return LANGUAGES.filter(({ id, reviewed }) => reviewed || preview || id === current)
+export function offeredLanguages(
+  preview: boolean,
+  current: LanguageId,
+  languages: readonly Language[] = LANGUAGES,
+) {
+  return languages.filter(({ id, reviewed }) => reviewed || preview || id === current)
 }
 
 /** Whether the address asks for every language, to read the ones that are not ready. */
@@ -48,10 +61,13 @@ export function isPreview(search: string = window.location.search): boolean {
 }
 
 /** The first of the browser's languages that we have ("nl-BE" is Dutch), or Dutch. */
-export function matchLanguage(tags: readonly string[]): LanguageId {
+export function matchLanguage(
+  tags: readonly string[],
+  languages: readonly Language[] = LANGUAGES,
+): LanguageId {
   for (const tag of tags) {
     const primary = tag.toLowerCase().split('-')[0]
-    const found = LANGUAGES.find(({ id, reviewed }) => id === primary && reviewed)
+    const found = languages.find(({ id, reviewed }) => id === primary && reviewed)
     if (found) return found.id
   }
   return DEFAULT_LANGUAGE

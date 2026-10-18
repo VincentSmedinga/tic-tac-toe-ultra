@@ -1,13 +1,10 @@
 import type { Dictionary } from './types.ts'
 
 /**
- * UNREVIEWED. The texts of the game in Frisian (Frysk), a first version written by Claude, which
- * nobody who speaks Frisian has read yet. The registry in language.ts therefore marks Frysk as not
- * `reviewed`: it is not offered to players (only with `?alle-talen` in the address, to read it)
- * and the browser's language never picks it. Somebody who speaks Frisian reads every text, in
- * particular the spelling, the words for a game (`spultsje`), a move (`set`) and a seat (`plak`),
- * and the names of the shapes, which the person who drew them is to confirm; then `reviewed`
- * becomes `true` and this notice goes.
+ * The texts of the game in Frisian (Frysk): a first version written by Claude, read through by a
+ * native speaker (Vincent, 2026-10-18), who found nothing to change; the registry in language.ts
+ * therefore has Frysk as `reviewed`. The names of the twelve shapes are still to be confirmed by
+ * the person who drew them.
  */
 export const fy: Dictionary = {
   'app.title': 'Bûter, Tsiis en Aaien Ultra',

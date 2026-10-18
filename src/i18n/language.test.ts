@@ -37,15 +37,28 @@ describe('the languages', () => {
     expect(isLanguage(null)).toBe(false)
   })
 
-  it('offer Frisian only once somebody who speaks it has read it', () => {
-    // Flip `reviewed` in language.ts after that, and change this test with it.
-    expect(LANGUAGES.find(({ id }) => id === 'fy')?.reviewed).toBe(false)
-    expect(offeredLanguages(false, 'nl').map(({ id }) => id)).toEqual(['nl', 'en'])
-    expect(offeredLanguages(true, 'nl').map(({ id }) => id)).toEqual(['nl', 'en', 'fy'])
+  it('are all read by a person who speaks them, and so all offered', () => {
+    expect(LANGUAGES.map(({ reviewed }) => reviewed)).toEqual([true, true, true])
+    expect(offeredLanguages(false, 'nl').map(({ id }) => id)).toEqual(['nl', 'en', 'fy'])
   })
 
-  it('keep the language in use in the list, so that it can be changed back', () => {
-    expect(offeredLanguages(false, 'fy').map(({ id }) => id)).toEqual(['nl', 'en', 'fy'])
+  describe('that nobody has read yet (a new one, say)', () => {
+    // The registry as it will be when a language is added: written, but not read by a person.
+    const unread = [...LANGUAGES.slice(0, 2), { ...LANGUAGES[2], reviewed: false }] as const
+
+    it('are not offered, until the address asks for every language', () => {
+      expect(offeredLanguages(false, 'nl', unread).map(({ id }) => id)).toEqual(['nl', 'en'])
+      expect(offeredLanguages(true, 'nl', unread).map(({ id }) => id)).toEqual(['nl', 'en', 'fy'])
+    })
+
+    it('keep the language in use in the list, so that it can be changed back', () => {
+      expect(offeredLanguages(false, 'fy', unread).map(({ id }) => id)).toEqual(['nl', 'en', 'fy'])
+    })
+
+    it('are not picked from the browser, which goes on to the next language', () => {
+      expect(matchLanguage(['fy-NL', 'en'], unread)).toBe('en')
+      expect(matchLanguage(['fy'], unread)).toBe('nl')
+    })
   })
 
   it('are all previewed with ?alle-talen in the address', () => {
@@ -67,9 +80,9 @@ describe('following the browser', () => {
     expect(matchLanguage([])).toBe('nl')
   })
 
-  it('does not pick Frisian from the browser while it is unread, but goes on to the next', () => {
-    expect(matchLanguage(['fy-NL', 'en'])).toBe('en')
-    expect(matchLanguage(['fy'])).toBe('nl')
+  it('picks Frisian for a browser that asks for it', () => {
+    expect(matchLanguage(['fy-NL', 'en'])).toBe('fy')
+    expect(matchLanguage(['fy'])).toBe('fy')
   })
 })
 
@@ -80,7 +93,7 @@ describe('the language of this device', () => {
     expect(readLanguage(undefined, ['en-GB'])).toBe('nl')
   })
 
-  it('keeps a chosen Frisian, also while it is not offered', () => {
+  it('keeps a chosen Frisian', () => {
     saveLanguage('fy')
     expect(readLanguage(undefined, ['nl'])).toBe('fy')
   })

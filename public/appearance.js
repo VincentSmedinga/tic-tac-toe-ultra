@@ -25,7 +25,7 @@
   const languages = [
     { id: 'nl', title: 'Boter, Kaas en Eieren Ultra', reviewed: true },
     { id: 'en', title: 'Tic-Tac-Toe Ultra', reviewed: true },
-    { id: 'fy', title: 'Bûter, Tsiis en Aaien Ultra', reviewed: false },
+    { id: 'fy', title: 'Bûter, Tsiis en Aaien Ultra', reviewed: true },
   ]
   let chosen = languages[0]
   try {

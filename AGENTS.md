@@ -7,7 +7,7 @@ This file is the way of working for everyone who changes this repository, people
 ## Language
 
 - Code, comments, commit messages, issues and pull requests: English.
-- Everything the players see: in the language they chose, Dutch (the first, and the one that is written first), English or Frisian, from the dictionaries in `src/i18n/` and never written in a component. Short, friendly sentences. Frisian is unreviewed until somebody who speaks it has read it: see docs/plan.md, Languages. Names that people typed are never translated.
+- Everything the players see: in the language they chose, Dutch (the first, and the one that is written first), English or Frisian, from the dictionaries in `src/i18n/` and never written in a component. Short, friendly sentences. A language is only offered once somebody who speaks it has read it (`reviewed` in `src/i18n/language.ts`): see docs/plan.md, Languages. Names that people typed are never translated.
 
 ## Way of working
 
