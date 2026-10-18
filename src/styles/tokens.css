@@ -1,8 +1,12 @@
 /*
- * Design tokens. Each shape has its own marker colour, from the hand-drawn set in
- * docs/reference/shapes.png; the colour belongs to the shape, so the tokens are named after the
- * shape. The dark theme has lighter versions, so that every shape keeps at least 3:1 against the
- * page (checked in src/shapes/shapes.test.tsx).
+ * Design tokens. Each shape has a colour of its own, and the colour belongs to the shape, so the
+ * tokens are named after the shape. The colours start from the markers the shapes were drawn with
+ * (docs/reference/shapes.png and shapes-2.png, named in the comments), but telling twelve shapes
+ * apart at a glance and being colourful come first: every colour stays in the hue family of its
+ * marker (a window of degrees, kept by src/styles/palette.test.ts) and was then moved to be as far
+ * from all the others as it can be. How far, how colourful and how they look with red-green colour
+ * blindness is measured by that test, and why is in docs/plan.md, Shapes and colours.
+ * The dark theme has its own set, lighter, so that every shape keeps at least 3:1 against the page.
  */
 :root {
   --page: #ffffff;
@@ -11,20 +15,18 @@
   --win: #b87900;
   --focus: #1a5fd0;
 
-  --shape-cross: #d93a44; /* vivid red 4 */
-  --shape-circle: #3a86c8; /* royal blue 70 */
-  --shape-square: #2f9e44; /* grass green 47 */
-  --shape-diamond: #6a33a8; /* ultramarine 73 */
-  --shape-star: #5c625f; /* WG8 */
-  --shape-plus: #e0357f; /* vivid pink 6 */
-  --shape-asterisk: #1a8fa8; /* ice blue 65 */
-  --shape-oval: #1d7f5c; /* viridian 54 */
-  --shape-heart: #a3263f; /* wine red 1 */
-  --shape-fort: #2b3a8c; /* prussian blue 69 */
-  /* Orange 23 and lemon yellow 35 are too light for a white page, so the light theme has a darker
-     orange and a gold; the dark theme has the bright ones. */
-  --shape-waves: #c25e0a;
-  --shape-goldbar: #a67c00;
+  --shape-cross: #c21a26; /* vivid red 4 */
+  --shape-circle: #1e78f1; /* royal blue 70 */
+  --shape-square: #2ba65f; /* grass green 47 */
+  --shape-diamond: #661da2; /* ultramarine 73 */
+  --shape-star: #4a4b51; /* WG8 */
+  --shape-plus: #aa2691; /* vivid pink 6 */
+  --shape-asterisk: #1d94af; /* ice blue 65 */
+  --shape-oval: #167f67; /* viridian 54 */
+  --shape-heart: #921937; /* wine red 1 */
+  --shape-fort: #134dc7; /* prussian blue 69 */
+  --shape-waves: #ba6319; /* orange 23 */
+  --shape-goldbar: #ab8c1a; /* lemon yellow 35 */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -35,17 +37,17 @@
     --win: #ffc83d;
     --focus: #8ab4ff;
 
-    --shape-cross: #ff6b72;
-    --shape-circle: #6bb3f0;
-    --shape-square: #62cc76;
-    --shape-diamond: #a06be0;
-    --shape-star: #a2a8a5;
-    --shape-plus: #ff6aa8;
-    --shape-asterisk: #3fb5ce;
-    --shape-oval: #4cc59a;
-    --shape-heart: #e8697f;
-    --shape-fort: #7f93f0;
-    --shape-waves: #ff9a4d;
-    --shape-goldbar: #ffd23f;
+    --shape-cross: #f67564;
+    --shape-circle: #83b9f8;
+    --shape-square: #49eb90;
+    --shape-diamond: #b286f6;
+    --shape-star: #c1b9bb;
+    --shape-plus: #f972d1;
+    --shape-asterisk: #2dddec;
+    --shape-oval: #38a999;
+    --shape-heart: #f35179;
+    --shape-fort: #7e72f8;
+    --shape-waves: #f69a27;
+    --shape-goldbar: #edca3c;
   }
 }

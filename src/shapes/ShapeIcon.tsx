@@ -19,7 +19,7 @@ export function ShapeIcon({ shape, size = 64, decorative = false }: ShapeIconPro
       height={size}
       viewBox="0 0 64 64"
       fill="none"
-      strokeWidth={5}
+      strokeWidth={6.5}
       strokeLinecap="round"
       strokeLinejoin="round"
       style={{ stroke: `var(--shape-${shape})` }}

@@ -7,6 +7,12 @@ export function ShapeGallery() {
   return (
     <section aria-labelledby="shape-gallery-title">
       <h2 id="shape-gallery-title">Vormen</h2>
+      <p>Alle twaalf naast elkaar, zoals ze op het bord staan:</p>
+      <div className="shape-strip" aria-hidden="true">
+        {SHAPES.map(({ id }) => (
+          <ShapeIcon key={id} shape={id} size={36} decorative />
+        ))}
+      </div>
       <div className="shape-gallery">
         {SHAPES.map(({ id, name, marker }) => (
           <figure key={id}>
@@ -22,6 +28,20 @@ export function ShapeGallery() {
           </figure>
         ))}
       </div>
+
+      <details className="shape-pairs">
+        <summary>Alle paren die tegen elkaar kunnen spelen</summary>
+        <div className="shape-pairs-grid" aria-hidden="true">
+          {SHAPES.flatMap((first, index) =>
+            SHAPES.slice(index + 1).map((second) => (
+              <span key={`${first.id}-${second.id}`} className="shape-pair">
+                <ShapeIcon shape={first.id} size={28} decorative />
+                <ShapeIcon shape={second.id} size={28} decorative />
+              </span>
+            )),
+          )}
+        </div>
+      </details>
     </section>
   )
 }
