@@ -63,6 +63,13 @@ describe('App', () => {
     expect(await screen.findByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
   })
 
+  it('opens the statistics from the footer', async () => {
+    openAt('/')
+    await userEvent.setup().click(screen.getByRole('link', { name: 'Statistieken' }))
+    expect(window.location.pathname).toBe('/statistieken')
+    expect(await screen.findByRole('heading', { name: 'Statistieken', level: 2 })).toBeVisible()
+  })
+
   it('no longer has the gallery of all shapes on the start screen', () => {
     openAt('/')
     expect(screen.queryByText('Alle vormen')).not.toBeInTheDocument()

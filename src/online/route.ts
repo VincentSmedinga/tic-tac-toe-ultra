@@ -2,12 +2,13 @@ import { useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
 import { roomCodeSchema } from '../../shared/protocol.ts'
 
-/** Where in the app we are: the start screen, the game on one screen, a room, or played games. */
+/** Where in the app we are: the start screen, the game on one screen, a room, played games, or the statistics. */
 export type Route =
   | { name: 'start'; notice?: 'bad-code' }
   | { name: 'local' }
   | { name: 'room'; code: string }
   | { name: 'games' }
+  | { name: 'stats' }
   /** The replay of one finished game; whether the id is a game is up to the server. */
   | { name: 'game'; id: string }
 
@@ -16,6 +17,7 @@ export function parseRoute(pathname: string): Route {
   const parts = pathname.split('/').filter(Boolean)
   if (parts.length === 1 && parts[0] === 'samen') return { name: 'local' }
   if (parts.length === 1 && parts[0] === 'spellen') return { name: 'games' }
+  if (parts.length === 1 && parts[0] === 'statistieken') return { name: 'stats' }
   if (parts.length === 2 && parts[0] === 'spel') return { name: 'game', id: parts[1] ?? '' }
   if (parts.length === 2 && parts[0] === 'kamer') {
     const code = (parts[1] ?? '').toUpperCase()
