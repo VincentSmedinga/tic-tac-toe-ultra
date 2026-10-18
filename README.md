@@ -2,7 +2,7 @@
 
 Noughts and crosses with many players on one big field, and many more shapes than X and O. A family project.
 
-Version 1 is the game as it exists: 3×3, two players, X and O, played online and live. The game engine is built for more from the start: a bigger field, more players, "k in a row" and more shapes. The twelve shapes are drawn by hand, see [docs/reference/shapes.png](docs/reference/shapes.png) and [docs/reference/shapes-2.png](docs/reference/shapes-2.png).
+You play online and live, each on your own device, in a room with a code, or together on one screen. Whoever makes a room chooses the field (3 to 19, odd) and how many in a row win, and how many people play (2 to 12); everybody chooses their own shape of the twelve. The game's name in Dutch is "Boter, kaas en eieren Ultra". The twelve shapes are drawn by hand, see [docs/reference/shapes.png](docs/reference/shapes.png) and [docs/reference/shapes-2.png](docs/reference/shapes-2.png).
 
 - **Plan and decisions:** [docs/plan.md](docs/plan.md)
 - **Way of working:** [AGENTS.md](AGENTS.md)

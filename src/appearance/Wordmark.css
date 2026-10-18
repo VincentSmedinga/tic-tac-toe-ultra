@@ -17,3 +17,13 @@
 .wordmark-text {
   font-size: clamp(2rem, 9vw, 3.5rem);
 }
+
+/* "Ultra": the little word on its own line under the name, in capitals with room between the letters. */
+.wordmark-ultra {
+  font-size: clamp(1rem, 4.5vw, 1.5rem);
+  font-weight: 800;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  /* The space after the last letter would push the word off the middle. */
+  margin-right: -0.4em;
+}

@@ -15,7 +15,9 @@ beforeEach(() => {
 describe('App', () => {
   it('shows the name of the game with the start screen', () => {
     openAt('/')
-    expect(screen.getByRole('heading', { level: 1, name: 'Boter, kaas en eieren' })).toBeVisible()
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Boter, kaas en eieren Ultra' }),
+    ).toBeVisible()
     expect(screen.getByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
   })
 
