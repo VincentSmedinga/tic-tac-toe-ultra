@@ -2,7 +2,9 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { SHAPE_IDS } from '../../shared/shapes.ts'
 import { contrast, themes } from '../styles/tokens.ts'
+import { LANGUAGES } from '../i18n/language.ts'
 import { ShapeIcon } from './ShapeIcon.tsx'
+import { shapeNamesFor } from './names.ts'
 import { PATHS, SHAPES } from './shapes.ts'
 
 describe('the set of shapes', () => {
@@ -21,7 +23,10 @@ describe('the set of shapes', () => {
       'waves',
       'goldbar',
     ])
-    expect(new Set(SHAPES.map(({ name }) => name)).size).toBe(12)
+    for (const { id } of LANGUAGES) {
+      const { name } = shapeNamesFor(id)
+      expect(new Set(SHAPES.map((shape) => name(shape.id))).size).toBe(12)
+    }
   })
 
   it('has the same ids as the room knows, in the same order', () => {
@@ -52,7 +57,8 @@ describe('the shape colours', () => {
 })
 
 describe('ShapeIcon', () => {
-  it.each(SHAPES)('draws the $name with its own colour and name', ({ id, name }) => {
+  it.each(SHAPES)('draws the $id with its own colour and name', ({ id }) => {
+    const name = shapeNamesFor('nl').name(id)
     render(<ShapeIcon shape={id} />)
     const icon = screen.getByRole('img', { name })
     expect(icon).toHaveStyle({ stroke: `var(--shape-${id})` })

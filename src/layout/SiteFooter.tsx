@@ -1,3 +1,4 @@
+import { useText } from '../i18n/store.ts'
 import { AppearanceControls } from '../appearance/AppearanceControls.tsx'
 import { InstallHint } from '../pwa/InstallHint.tsx'
 import { Link } from '../online/Link.tsx'
@@ -11,13 +12,14 @@ import './SiteFooter.css'
  * footer says how.
  */
 export function SiteFooter({ route }: { route: Route }) {
+  const t = useText()
   return (
     <footer className="site-footer">
       <div className="site-footer-card">
-        <nav className="footer-links" aria-label="Naar een ander scherm">
-          {route.name !== 'start' && <Link to="/">Terug naar het begin</Link>}
-          {route.name !== 'games' && <Link to="/spellen">Gespeelde spellen</Link>}
-          {route.name !== 'stats' && <Link to="/statistieken">Statistieken</Link>}
+        <nav className="footer-links" aria-label={t('footer.links')}>
+          {route.name !== 'start' && <Link to="/">{t('footer.start')}</Link>}
+          {route.name !== 'games' && <Link to="/spellen">{t('games.title')}</Link>}
+          {route.name !== 'stats' && <Link to="/statistieken">{t('stats.title')}</Link>}
         </nav>
         <InstallHint />
         <AppearanceControls />

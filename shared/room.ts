@@ -38,7 +38,7 @@ export const FIELD_LIMITS = { minSide: 3, maxSide: 19, minWin: 3, maxWin: 9 } as
 export const CLASSIC_FIELD: FieldSettings = { width: 3, height: 3, winLength: 3 }
 
 /** The field the start screen offers as ready-made choices, besides choosing your own. */
-export const FIELD_PRESETS: readonly (FieldSettings & { id: string })[] = [
+export const FIELD_PRESETS: readonly (FieldSettings & { id: 'classic' | 'bigger' | 'big' })[] = [
   { id: 'classic', ...CLASSIC_FIELD },
   { id: 'bigger', width: 7, height: 7, winLength: 5 },
   { id: 'big', width: 15, height: 15, winLength: 5 },

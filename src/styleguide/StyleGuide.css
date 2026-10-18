@@ -157,3 +157,7 @@
 .guide code {
   font-size: 0.8em;
 }
+
+.guide-shape-name {
+  display: block;
+}

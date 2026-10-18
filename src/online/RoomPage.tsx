@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
+import { useFormat } from '../i18n/format.ts'
+import { useText } from '../i18n/store.ts'
+import type { PlainKey } from '../i18n/types.ts'
 import type { ClientMessage, StateMessage } from '../../shared/protocol.ts'
 import type { ShapeId } from '../../shared/shapes.ts'
 import { ShapePicker } from '../play/ShapePicker.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
+import { useShapeNames } from '../shapes/names.ts'
 import { fieldLabel } from '../play/field.ts'
-import { nameOf } from '../play/players.ts'
+import { usePlayerNames } from '../play/players.ts'
 import {
   clearLastRoom,
   getName,
@@ -28,31 +32,35 @@ interface RoomPageProps {
   deps?: RoomDeps
 }
 
-const PROBLEMS: Record<RoomProblem, string> = {
-  'unknown-room': 'Deze kamer bestaat niet (meer). Controleer de code, of maak een nieuwe kamer.',
-  'room-full': 'Deze kamer zit vol: alle plekken zijn bezet.',
-  'game-started': 'Het spel in deze kamer is al begonnen, dus je kunt niet meer meedoen.',
-  'not-host': 'Alleen wie de kamer maakte kan het spel starten.',
-  'not-enough-players': 'Er zijn minstens twee spelers nodig.',
-  replaced:
-    'Je speelt al in een ander venster of tabblad. Ga daar verder, of probeer het hier opnieuw.',
-  unreachable: 'De kamer is nu niet te bereiken. Controleer je verbinding en probeer het opnieuw.',
-  'invalid-message': 'Er ging iets mis. Probeer het opnieuw.',
-  'not-joined': 'Er ging iets mis. Probeer het opnieuw.',
-  'waiting-for-opponent': 'Er ging iets mis. Probeer het opnieuw.',
-  'room-damaged': 'Er ging iets mis. Probeer het opnieuw.',
-  'shape-needed': 'Kies eerst een vorm.',
-  'shape-taken': 'Die vorm heeft de ander al. Kies een andere.',
-  'shape-locked': 'Het spel is al begonnen: je vorm kun je nu niet meer veranderen.',
-  'game-over': 'Er ging iets mis. Probeer het opnieuw.',
-  'game-not-over': 'Er ging iets mis. Probeer het opnieuw.',
-  'not-your-turn': 'Er ging iets mis. Probeer het opnieuw.',
-  'out-of-bounds': 'Er ging iets mis. Probeer het opnieuw.',
-  'cell-taken': 'Er ging iets mis. Probeer het opnieuw.',
+/**
+ * What each code of the server (`ErrorCode`, plus the three the app has itself) is called to a
+ * player. The server sends codes and no words, so this is the only place that turns them into text.
+ */
+const PROBLEMS: Record<RoomProblem, PlainKey> = {
+  'unknown-room': 'problem.unknownRoom',
+  'room-full': 'problem.roomFull',
+  'game-started': 'problem.gameStarted',
+  'not-host': 'problem.notHost',
+  'not-enough-players': 'problem.notEnoughPlayers',
+  replaced: 'problem.replaced',
+  unreachable: 'problem.unreachable',
+  'invalid-message': 'problem.generic',
+  'not-joined': 'problem.generic',
+  'waiting-for-opponent': 'problem.generic',
+  'room-damaged': 'problem.generic',
+  'shape-needed': 'problem.shapeNeeded',
+  'shape-taken': 'problem.shapeTaken',
+  'shape-locked': 'problem.shapeLocked',
+  'game-over': 'problem.generic',
+  'game-not-over': 'problem.generic',
+  'not-your-turn': 'problem.generic',
+  'out-of-bounds': 'problem.generic',
+  'cell-taken': 'problem.generic',
 }
 
 /** A room: waiting for the other player, and then the two of you together. */
 export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
+  const t = useText()
   const [identity] = useState(() => ({
     token: getToken(),
     name: sanitizeName(getName()),
@@ -84,16 +92,16 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
     return (
       <div className="room">
         <p className="message" role="alert">
-          {PROBLEMS[problem]}
+          {t(PROBLEMS[problem])}
         </p>
         <div className="actions">
           {canRetry && (
             <button type="button" className="button button-primary" onClick={retry}>
-              Opnieuw proberen
+              {t('common.retry')}
             </button>
           )}
           <Link to="/" className="button">
-            Terug naar het begin
+            {t('footer.start')}
           </Link>
         </div>
       </div>
@@ -104,7 +112,7 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
     if (connection === 'closed') return <Lost onRetry={retry} />
     return (
       <p className="room" role="status">
-        Verbinden met de kamer…
+        {t('room.connecting')}
       </p>
     )
   }
@@ -124,6 +132,8 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
 
 /** The room before the game: the code, who is here, and everybody choosing their shape. */
 function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMessage) => void }) {
+  const t = useText()
+  const { list } = useFormat()
   const mine = state.players.find((player) => player.id === state.you)
   const host = state.players[0]
   const isHost = host?.id === state.you
@@ -134,36 +144,46 @@ function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMes
   // The shapes the others have, so that those can't be picked: with whose they are.
   const taken: Partial<Record<ShapeId, string>> = {}
   for (const player of state.players) {
-    if (player.id !== state.you && player.shape) taken[player.shape] = player.name ?? 'een ander'
+    if (player.id !== state.you && player.shape)
+      taken[player.shape] = player.name ?? t('player.someone')
   }
 
-  const names = (people: StateMessage['players']) =>
-    people.map((player) => player.name ?? 'een speler').join(' en ')
-  let status = 'Wachten op een tweede speler…'
+  let status = t('room.status.waitSecond')
   if (state.players.length >= 2) {
-    if (mine?.shape === undefined) status = 'Kies een vorm om te beginnen.'
-    else if (!everyoneChose) status = `${names(stillChoosing)} kiest nog een vorm…`
-    else if (free > 0 && isHost)
-      status = `${free === 1 ? 'Er is nog 1 plek vrij' : `Er zijn nog ${free.toString()} plekken vrij`}. Start nu, of wacht op meer spelers.`
-    else if (free > 0) status = `Wachten tot ${host?.name ?? 'de eerste speler'} het spel start…`
+    if (mine?.shape === undefined) status = t('room.status.pickShape')
+    else if (!everyoneChose)
+      status = t('room.status.choosing', {
+        names: list(stillChoosing.map((player) => player.name ?? t('player.somePlayer'))),
+        count: stillChoosing.length,
+      })
+    else if (free > 0 && isHost) status = t('room.status.startNow', { count: free })
+    else if (free > 0)
+      status =
+        host?.name === undefined
+          ? t('room.status.waitFirst')
+          : t('room.status.waitHost', { name: host.name })
   } else if (state.seats > 2) {
-    status = 'Wachten op meer spelers…'
+    status = t('room.status.waitMore')
   }
 
   return (
     <>
-      <h2>Kamer</h2>
-      <p className="room-code" aria-label={`Code ${state.code.split('').join(' ')}`}>
+      <h2>{t('room.title')}</h2>
+      <p
+        className="room-code"
+        aria-label={t('room.code', { letters: state.code.split('').join(' ') })}
+      >
         {state.code}
       </p>
       <p className="field-label">
-        Veld: {fieldLabel(state.field)}
-        {state.seats > 2 && ` · ${state.seats.toString()} spelers`}
+        {state.seats > 2
+          ? t('room.fieldSeats', { field: fieldLabel(t, state.field), seats: state.seats })
+          : t('room.field', { field: fieldLabel(t, state.field) })}
       </p>
       {free > 0 && <ShareLink code={state.code} several={state.seats > 2} />}
       <Players state={state} />
       <ShapePicker
-        label="Kies je vorm"
+        label={t('room.pickShape')}
         value={mine?.shape ?? null}
         taken={taken}
         onChange={(shape) => {
@@ -180,7 +200,7 @@ function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMes
             send({ type: 'start' })
           }}
         >
-          Start met {state.players.length.toString()} spelers
+          {t('room.start', { count: state.players.length })}
         </button>
       )}
     </>
@@ -189,15 +209,12 @@ function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMes
 
 /** The connection is gone; it is tried again by itself, and a button does it now. */
 function Lost({ onRetry, connecting = false }: { onRetry: () => void; connecting?: boolean }) {
+  const t = useText()
   return (
     <div className="lost" role="alert">
-      <p>
-        {connecting
-          ? 'Opnieuw verbinden…'
-          : 'De verbinding is verbroken. Er wordt opnieuw geprobeerd.'}
-      </p>
+      <p>{connecting ? t('room.lost.connecting') : t('room.lost.broken')}</p>
       <button type="button" className="button button-primary" onClick={onRetry}>
-        Nu opnieuw verbinden
+        {t('room.lost.retry')}
       </button>
     </div>
   )
@@ -205,15 +222,26 @@ function Lost({ onRetry, connecting = false }: { onRetry: () => void; connecting
 
 /** Who has a seat: their shape (once chosen), their name if they gave one, and which one is you. */
 function Players({ state }: { state: StateMessage }) {
+  const t = useText()
+  const { nameOf } = usePlayerNames()
+  const shapeNames = useShapeNames()
   return (
     <div className="players">
       {state.players.map((player) => {
         const { shape } = player
         const label =
           shape === undefined
-            ? (player.name ?? 'Nieuwe speler')
-            : (player.name ?? nameOf(shape)) +
-              (player.name === undefined ? '' : ` (${nameOf(shape).toLowerCase()})`)
+            ? (player.name ?? t('player.anonymous'))
+            : player.name === undefined
+              ? nameOf(shape)
+              : t('player.withShape', { name: player.name, shape: shapeNames.name(shape) })
+        // What else there is to say about this player, in a row: the dash is punctuation, every
+        // word of it comes from the dictionary.
+        const notes = [
+          player.id === state.you && t('player.you'),
+          shape === undefined && t('player.choosing'),
+          !player.connected && t('player.disconnected'),
+        ].filter(Boolean)
         return (
           <div key={player.id} className="player">
             {shape ? (
@@ -221,12 +249,7 @@ function Players({ state }: { state: StateMessage }) {
             ) : (
               <span className="shape-blank" aria-hidden="true" />
             )}
-            <span>
-              {label}
-              {player.id === state.you && ' – jij'}
-              {shape === undefined && ' – kiest nog'}
-              {!player.connected && ' – niet verbonden'}
-            </span>
+            <span>{[label, ...notes].join(' – ')}</span>
           </div>
         )
       })}
@@ -236,7 +259,7 @@ function Players({ state }: { state: StateMessage }) {
           className="player player-free"
         >
           <span className="shape-blank" aria-hidden="true" />
-          <span>Plek {(state.players.length + index + 1).toString()}: nog vrij</span>
+          <span>{t('room.freeSeat', { number: state.players.length + index + 1 })}</span>
         </div>
       ))}
     </div>
@@ -244,10 +267,11 @@ function Players({ state }: { state: StateMessage }) {
 }
 
 function ShareLink({ code, several }: { code: string; several: boolean }) {
+  const t = useText()
   return (
     <CopyLink
       link={`${window.location.origin}${roomPath(code)}`}
-      lead={`Geef deze code of deze link aan ${several ? 'de andere spelers' : 'je tegenspeler'}:`}
+      lead={t(several ? 'room.share.others' : 'room.share.opponent')}
     />
   )
 }

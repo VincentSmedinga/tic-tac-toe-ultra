@@ -1,12 +1,27 @@
 import { describe, expect, it } from 'vitest'
 import { FIELD_LIMITS, FIELD_PRESETS, isValidField, oddNumbers } from '../../shared/room.ts'
+import { textFor } from '../i18n/store.ts'
 import { fieldLabel, isClassic, longestRow, presetOf, suggestedRow } from './field.ts'
 
 describe('fieldLabel', () => {
+  const nl = textFor('nl')
+
   it('says how big the field is and how many in a row win, in words', () => {
-    expect(fieldLabel({ width: 3, height: 3, winLength: 3 })).toBe('3 × 3, drie op een rij')
-    expect(fieldLabel({ width: 7, height: 5, winLength: 5 })).toBe('7 × 5, vijf op een rij')
-    expect(fieldLabel({ width: 19, height: 19, winLength: 9 })).toBe('19 × 19, negen op een rij')
+    expect(fieldLabel(nl, { width: 3, height: 3, winLength: 3 })).toBe('3 × 3, drie op een rij')
+    expect(fieldLabel(nl, { width: 7, height: 5, winLength: 5 })).toBe('7 × 5, vijf op een rij')
+    expect(fieldLabel(nl, { width: 19, height: 19, winLength: 9 })).toBe(
+      '19 × 19, negen op een rij',
+    )
+  })
+
+  it('says it in the other languages, with their word order', () => {
+    const field = { width: 7, height: 5, winLength: 5 }
+    expect(fieldLabel(textFor('en'), field)).toBe('7 × 5, five in a row')
+    expect(fieldLabel(textFor('fy'), field)).toBe('7 × 5, fiif op in rige')
+  })
+
+  it('writes a row that has no word as a number', () => {
+    expect(fieldLabel(nl, { width: 15, height: 15, winLength: 11 })).toBe('15 × 15, 11 op een rij')
   })
 })
 

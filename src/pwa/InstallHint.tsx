@@ -1,3 +1,4 @@
+import { useText } from '../i18n/store.ts'
 import { dismissTip, install, isStandalone, useCanInstall, useShowIosTip } from './install.ts'
 import './InstallHint.css'
 
@@ -7,6 +8,7 @@ import './InstallHint.css'
  * In the installed app, and in any other browser, there is nothing to see.
  */
 export function InstallHint() {
+  const t = useText()
   const canInstall = useCanInstall()
   const showTip = useShowIosTip()
 
@@ -14,7 +16,7 @@ export function InstallHint() {
     return (
       <div className="install-hint">
         <button type="button" className="install-button" onClick={() => void install()}>
-          Installeer de app
+          {t('install.button')}
         </button>
       </div>
     )
@@ -22,9 +24,9 @@ export function InstallHint() {
   if (showTip) {
     return (
       <div className="install-hint">
-        <p>Tik op Deel en kies Zet op beginscherm.</p>
+        <p>{t('install.ios')}</p>
         <button type="button" className="install-close" onClick={dismissTip}>
-          Niet meer tonen
+          {t('install.dismiss')}
         </button>
       </div>
     )

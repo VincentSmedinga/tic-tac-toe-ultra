@@ -1,6 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setLanguage } from '../i18n/store.ts'
+import { dutchLeaks } from '../i18n/testing.ts'
 import type { GameSummary, GamesPage as Page } from '../../shared/protocol.ts'
 import { getToken } from '../online/identity.ts'
 import type { GamesApi } from './api.ts'
@@ -153,5 +155,79 @@ describe('GamesPage', () => {
 
     await userEvent.setup().click(screen.getByRole('button', { name: 'Opnieuw proberen' }))
     expect(await screen.findByRole('list')).toBeVisible()
+  })
+})
+
+describe.each([
+  {
+    language: 'en',
+    title: 'Games played',
+    loading: 'Fetching games…',
+    empty: 'You have not played an online game on this device yet.',
+    own: 'Your statistics',
+    result: 'Anna (cross) won',
+    draw: 'A draw',
+    field: /field of 5 by 5/,
+    failed: 'The games cannot be fetched just now. Please try again in a moment.',
+    retry: 'Try again',
+    more: 'More games',
+    month: /Oct/,
+  },
+  {
+    language: 'fy',
+    title: 'Spile spultsjes',
+    loading: 'Spultsjes ophelje…',
+    empty: 'Do hast op dit apparaat noch gjin spultsje online spile.',
+    own: 'Dyn statistiken',
+    result: 'Anna (krús) hat wûn',
+    draw: 'Lykspul',
+    field: /fjild fan 5 by 5/,
+    failed: 'De spultsjes binne no net op te heljen. Besykje it sa noch ris.',
+    retry: 'Opnij besykje',
+    more: 'Mear spultsjes',
+    month: /2026/,
+  },
+] as const)('the played games in $language', (text) => {
+  const { language } = text
+
+  it('says it is fetching, and that there are none', async () => {
+    setLanguage(language)
+    render(<GamesPage api={fakeApi([{ games: [] }])} />)
+    expect(screen.getByRole('heading', { name: text.title })).toBeVisible()
+    expect(screen.getByRole('status')).toHaveTextContent(text.loading)
+    expect(await screen.findByText(text.empty)).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('lists the games with the result, the field and the date in the language', async () => {
+    setLanguage(language)
+    const ownStats = {
+      getOwnStats: vi.fn(() =>
+        Promise.resolve({ games: 2, won: 1, lost: 0, drawn: 1, unknown: 0, favourite: null }),
+      ),
+    }
+    const games = [
+      summary(2, { width: 5, height: 5 }),
+      summary(1, { result: { kind: 'draw' }, players: [{ id: 'X' }, { id: 'O', name: 'Bo' }] }),
+    ]
+    render(<GamesPage api={fakeApi([{ games, next: '1' }, { games: [] }])} ownStats={ownStats} />)
+    const [first, second] = await screen.findAllByRole('link', { name: /2026/ })
+    expect(first).toHaveTextContent(text.result)
+    expect(first).toHaveTextContent(text.field)
+    expect(first).toHaveTextContent(text.month)
+    expect(second).toHaveTextContent(text.draw)
+    expect(await screen.findByRole('region', { name: text.own })).toBeVisible()
+    expect(screen.getByRole('button', { name: text.more })).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('says it cannot fetch the games, with a button to try again', async () => {
+    setLanguage(language)
+    const api = fakeApi([])
+    api.listGames.mockRejectedValueOnce(new Error('offline'))
+    render(<GamesPage api={api} />)
+    expect(await screen.findByRole('alert')).toHaveTextContent(text.failed)
+    expect(screen.getByRole('button', { name: text.retry })).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
   })
 })

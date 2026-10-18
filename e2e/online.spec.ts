@@ -3,7 +3,10 @@ import type { Browser, Page } from '@playwright/test'
 
 /** A player in a browser of their own: separate storage, so a separate token. */
 async function newPlayer(browser: Browser, name: string): Promise<Page> {
-  const context = await browser.newContext({ baseURL: test.info().project.use.baseURL })
+  const context = await browser.newContext({
+    baseURL: test.info().project.use.baseURL,
+    locale: 'nl-NL',
+  })
   const page = await context.newPage()
   await page.goto('/')
   await page.getByLabel('Je naam (hoeft niet)').fill(name)
@@ -206,7 +209,7 @@ test('a played game is in the list of both players and opens for anyone with its
     // A few lines about the games of this browser, worked out from the same list.
     const own = player.getByRole('region', { name: 'Jouw statistieken' })
     await expect(own).toContainText(`Je hebt 1 spel gespeeld: ${result}`)
-    await expect(own).toContainText(`vaakst met het ${shape}`)
+    await expect(own).toContainText(`favoriete vorm is ${shape}`)
   }
 
   // The link of the game is the right to see it: a browser that never played gets the replay.

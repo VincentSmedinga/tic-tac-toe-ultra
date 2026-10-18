@@ -1,6 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { setLanguage } from '../i18n/store.ts'
+import { dutchLeaks } from '../i18n/testing.ts'
 import { Game } from './Game.tsx'
 
 /** Opens the game and starts it with the cross and the circle that are ready. */
@@ -387,3 +389,62 @@ describe('Game', () => {
     })
   })
 })
+
+describe.each([
+  {
+    language: 'en',
+    chooses: 'Player 1 chooses a shape',
+    starts: 'Cross starts',
+    empty: 'Row 2, column 2: empty',
+    turn: "It is Circle's turn",
+    won: 'Cross has won!',
+    actions: ['Play again', 'Other shapes', 'Watch again'],
+  },
+  {
+    language: 'fy',
+    chooses: 'Spiler 1 kiest in foarm',
+    starts: 'Krús begjint',
+    empty: 'Rige 2, kolom 2: leech',
+    turn: 'Sirkel is oan de beurt',
+    won: 'Krús hat wûn!',
+    actions: ['Noch ien kear', 'Oare foarmen', 'Sjoch werom'],
+  },
+] as const satisfies readonly Record<string, unknown>[])(
+  'the game on one screen in $language',
+  ({ language, chooses, starts, empty, turn, won, actions }) => {
+    it('chooses, plays and wins in the language, with no Dutch left on the screen', async () => {
+      setLanguage(language)
+      render(<Game />)
+      expect(screen.getByRole('group', { name: chooses })).toBeVisible()
+      expect(dutchLeaks(language)).toEqual([])
+      await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+
+      expect(screen.getByRole('status')).toHaveTextContent(starts)
+      expect(screen.getByRole('button', { name: new RegExp(`^${empty}$`) })).toBeVisible()
+      const user = userEvent.setup()
+      await user.click(
+        screen.getByRole('button', {
+          name: new RegExp(language === 'en' ? '^Row 1, column 1' : '^Rige 1, kolom 1'),
+        }),
+      )
+      expect(screen.getByRole('status')).toHaveTextContent(turn)
+      expect(dutchLeaks(language)).toEqual([])
+
+      for (const [y, x] of [
+        [2, 1],
+        [1, 2],
+        [2, 2],
+        [1, 3],
+      ] as const) {
+        const label =
+          language === 'en'
+            ? `^Row ${y.toString()}, column ${x.toString()}`
+            : `^Rige ${y.toString()}, kolom ${x.toString()}`
+        await user.click(screen.getByRole('button', { name: new RegExp(label) }))
+      }
+      expect(screen.getByRole('status')).toHaveTextContent(won)
+      for (const name of actions) expect(screen.getByRole('button', { name })).toBeVisible()
+      expect(dutchLeaks(language)).toEqual([])
+    })
+  },
+)

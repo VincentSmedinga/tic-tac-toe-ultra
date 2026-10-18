@@ -3,21 +3,21 @@ import type { ShapeId } from '../../shared/shapes.ts'
 /**
  * The shapes a player can have: the sets drawn by hand (docs/reference/shapes.png has the first
  * seven, shapes-2.png adds the other five). A player is assigned one of these; the game engine
- * only knows the player's id. The Dutch names are chosen by the person who drew the shapes.
+ * only knows the player's id. Their names are in the dictionaries (`shape.<id>`), chosen by the person who drew them.
  */
 export const SHAPES = [
-  { id: 'cross', name: 'kruis', marker: 'vivid red 4' },
-  { id: 'circle', name: 'cirkel', marker: 'royal blue 70' },
-  { id: 'square', name: 'vierkant', marker: 'grass green 47' },
-  { id: 'diamond', name: 'ruit', marker: 'ultramarine 73' },
-  { id: 'star', name: 'ster', marker: 'WG8' },
-  { id: 'plus', name: 'plus', marker: 'vivid pink 6' },
-  { id: 'asterisk', name: 'sterretje', marker: 'ice blue 65' },
-  { id: 'oval', name: 'ovaal', marker: 'viridian 54' },
-  { id: 'heart', name: 'hart', marker: 'wine red 1' },
-  { id: 'fort', name: 'fort', marker: 'prussian blue 69' },
-  { id: 'waves', name: 'golven', marker: 'orange 23' },
-  { id: 'goldbar', name: 'goudstaaf', marker: 'lemon yellow 35' },
+  { id: 'cross', marker: 'vivid red 4' },
+  { id: 'circle', marker: 'royal blue 70' },
+  { id: 'square', marker: 'grass green 47' },
+  { id: 'diamond', marker: 'ultramarine 73' },
+  { id: 'star', marker: 'WG8' },
+  { id: 'plus', marker: 'vivid pink 6' },
+  { id: 'asterisk', marker: 'ice blue 65' },
+  { id: 'oval', marker: 'viridian 54' },
+  { id: 'heart', marker: 'wine red 1' },
+  { id: 'fort', marker: 'prussian blue 69' },
+  { id: 'waves', marker: 'orange 23' },
+  { id: 'goldbar', marker: 'lemon yellow 35' },
 ] as const
 
 /** The ids are shared with the room, which has to know which shapes exist (shared/shapes.ts). */

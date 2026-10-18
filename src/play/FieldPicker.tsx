@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useText } from '../i18n/store.ts'
 import { FIELD_LIMITS, FIELD_PRESETS, oddNumbers } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
 import { fieldLabel, longestRow, presetOf, suggestedRow } from './field.ts'
@@ -9,12 +10,6 @@ interface FieldPickerProps {
   onChange: (field: FieldSettings) => void
 }
 
-const PRESET_NAMES: Readonly<Record<string, string>> = {
-  classic: 'Klassiek',
-  bigger: 'Groter',
-  big: 'Groot',
-}
-
 const SIDES = oddNumbers(FIELD_LIMITS.minSide, FIELD_LIMITS.maxSide)
 
 /**
@@ -23,6 +18,7 @@ const SIDES = oddNumbers(FIELD_LIMITS.minSide, FIELD_LIMITS.maxSide)
  * the field is wide or high, so it comes down by itself when the field gets smaller.
  */
 export function FieldPicker({ value, onChange }: FieldPickerProps) {
+  const t = useText()
   // Your own field stays open while it happens to equal a preset, until another preset is tapped.
   const [custom, setCustom] = useState(() => presetOf(value) === null)
   const preset = custom ? null : presetOf(value)
@@ -42,7 +38,7 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
 
   return (
     <fieldset className="field-picker">
-      <legend>Veld</legend>
+      <legend>{t('field.legend')}</legend>
       <div className="field-presets">
         {FIELD_PRESETS.map((option) => (
           <button
@@ -54,8 +50,8 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
               onChange({ width: option.width, height: option.height, winLength: option.winLength })
             }}
           >
-            <span className="field-preset-name">{PRESET_NAMES[option.id]}</span>
-            <span className="field-preset-size">{fieldLabel(option)}</span>
+            <span className="field-preset-name">{t(`field.preset.${option.id}`)}</span>
+            <span className="field-preset-size">{fieldLabel(t, option)}</span>
           </button>
         ))}
         <button
@@ -65,15 +61,15 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
             setCustom(true)
           }}
         >
-          <span className="field-preset-name">Eigen veld</span>
-          <span className="field-preset-size">zelf kiezen</span>
+          <span className="field-preset-name">{t('field.custom')}</span>
+          <span className="field-preset-size">{t('field.customHint')}</span>
         </button>
       </div>
 
       {custom && (
         <div className="field-custom">
           <label>
-            Breedte
+            {t('field.width')}
             <select
               value={value.width}
               onChange={(event) => {
@@ -88,7 +84,7 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
             </select>
           </label>
           <label>
-            Hoogte
+            {t('field.height')}
             <select
               value={value.height}
               onChange={(event) => {
@@ -103,7 +99,7 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
             </select>
           </label>
           <label>
-            Op een rij
+            {t('field.row')}
             <select
               value={value.winLength}
               onChange={(event) => {
@@ -112,7 +108,7 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
             >
               {rows.map((row) => (
                 <option key={row} value={row}>
-                  {row === suggestion ? `${row.toString()} (tip)` : row}
+                  {row === suggestion ? t('field.rowTip', { row }) : row}
                 </option>
               ))}
             </select>
@@ -120,10 +116,10 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
         </div>
       )}
 
-      <p className="field-summary">{fieldLabel(value)}</p>
+      <p className="field-summary">{fieldLabel(t, value)}</p>
       {custom && value.winLength !== suggestion && (
         <p className="field-tip">
-          Tip: op dit veld speelt {suggestion.toString()} op een rij het fijnst.{' '}
+          {t('field.tip', { row: suggestion })}{' '}
           <button
             type="button"
             className="field-tip-button"
@@ -131,7 +127,7 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
               onChange({ ...value, winLength: suggestion })
             }}
           >
-            Neem de tip over
+            {t('field.takeTip')}
           </button>
         </p>
       )}
