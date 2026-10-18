@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { flushSync } from 'react-dom'
 import { roomCodeSchema } from '../../shared/protocol.ts'
 
 /** Where in the app we are: the start screen, the game on one screen, a room, or played games. */
@@ -44,11 +45,25 @@ function subscribe(listener: () => void): () => void {
   }
 }
 
-/** Goes to another address of the app without loading the page again. */
+/**
+ * Goes to another address of the app without loading the page again. Where the browser can, the
+ * old screen slides away and the new one comes in (a view transition, which the style decides
+ * the look of, or switches off); everywhere else the new screen is simply there.
+ */
 export function navigate(path: string): void {
-  window.history.pushState(null, '', path)
-  for (const listener of listeners) listener()
-  window.scrollTo(0, 0)
+  const go = () => {
+    window.history.pushState(null, '', path)
+    for (const listener of listeners) listener()
+    window.scrollTo(0, 0)
+  }
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (!calm && typeof document.startViewTransition === 'function') {
+    document.startViewTransition(() => {
+      flushSync(go)
+    })
+  } else {
+    go()
+  }
 }
 
 function pathname(): string {
