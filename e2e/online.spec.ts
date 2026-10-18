@@ -148,3 +148,30 @@ test('a code that does not exist is refused on the start screen', async ({ brows
   await player.getByRole('button', { name: 'Meedoen' }).click()
   await expect(player.getByRole('alert')).toContainText('Die kamer bestaat niet')
 })
+
+test('a finished game can be watched again, move by move, and gives way to a rematch', async ({
+  browser,
+}) => {
+  const { anna, bo } = await startGame(browser)
+  await cell(anna, 1, 1).click()
+  await cell(bo, 2, 1).click()
+  await cell(anna, 1, 2).click()
+  await cell(bo, 2, 2).click()
+  await cell(anna, 1, 3).click()
+  await expect(bo.getByText('Anna heeft gewonnen!')).toBeVisible()
+
+  await bo.getByRole('button', { name: 'Kijk terug' }).click()
+  await expect(bo.getByText('Zet 0 van 5')).toBeVisible()
+  await expect(cell(bo, 1, 1)).toHaveAccessibleName('Rij 1, kolom 1: leeg')
+  await bo.keyboard.press('ArrowRight')
+  await bo.keyboard.press('ArrowRight')
+  await expect(bo.getByText('Zet 2 van 5')).toBeVisible()
+  await expect(cell(bo, 2, 1)).toHaveAccessibleName('Rij 2, kolom 1: cirkel')
+  await bo.getByRole('button', { name: 'Naar het einde' }).click()
+  await expect(bo.getByText('Anna (kruis) heeft gewonnen!')).toBeVisible()
+
+  // Anna wants another round: the replay gives way to the new game.
+  await anna.getByRole('button', { name: 'Nog een keer' }).click()
+  await expect(bo.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+  await expect(bo.getByText('Jij begint')).toBeVisible()
+})

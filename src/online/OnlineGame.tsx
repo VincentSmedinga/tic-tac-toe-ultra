@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { replayGame } from '../../shared/game/index.ts'
 import type { GameState } from '../../shared/game/index.ts'
 import type { ClientMessage, StateMessage } from '../../shared/protocol.ts'
 import { Board } from '../play/Board.tsx'
 import { nameOf, shapeOf } from '../play/players.ts'
+import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import '../play/Game.css'
 import './Online.css'
@@ -33,6 +35,7 @@ function statusText(state: StateMessage, game: GameState): string {
 
 /** The game of a room: both players, whose turn it is, the board, and a rematch at the end. */
 export function OnlineGame({ state, send }: OnlineGameProps) {
+  const [replaying, setReplaying] = useState(false)
   const replayed = replayGame(state.config, state.moves)
   if (!replayed.ok) {
     // The room only sends moves that replay, so this is a message that came out wrong.
@@ -43,6 +46,19 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
     )
   }
   const game = replayed.state
+  // A rematch started by the other player ends the replay: there is a new game to play.
+  if (replaying && game.status.kind !== 'playing') {
+    return (
+      <Replay
+        config={state.config}
+        moves={state.moves}
+        players={state.players}
+        onClose={() => {
+          setReplaying(false)
+        }}
+      />
+    )
+  }
   const myTurn = game.status.kind === 'playing' && game.status.next === state.you
   const away = state.players.filter((player) => player.id !== state.you && !player.connected)
 
@@ -87,15 +103,26 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
       />
 
       {game.status.kind !== 'playing' && (
-        <button
-          type="button"
-          className="rematch"
-          onClick={() => {
-            send({ type: 'rematch' })
-          }}
-        >
-          Nog een keer
-        </button>
+        <div className="game-actions">
+          <button
+            type="button"
+            className="rematch"
+            onClick={() => {
+              send({ type: 'rematch' })
+            }}
+          >
+            Nog een keer
+          </button>
+          <button
+            type="button"
+            className="rematch rematch-quiet"
+            onClick={() => {
+              setReplaying(true)
+            }}
+          >
+            Kijk terug
+          </button>
+        </div>
       )}
     </section>
   )

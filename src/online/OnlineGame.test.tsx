@@ -144,4 +144,31 @@ describe('OnlineGame', () => {
     render(<OnlineGame state={stateOf([o(0, 0)], 'X')} send={vi.fn()} />)
     expect(screen.getByRole('alert')).toHaveTextContent('Er ging iets mis met het spel')
   })
+
+  describe('looking back', () => {
+    it('is offered after the game, with the names of the players', async () => {
+      render(<OnlineGame state={stateOf(xWins, 'O')} send={vi.fn()} />)
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Kijk terug' }))
+
+      expect(screen.getByRole('region', { name: 'Spel terugkijken' })).toBeVisible()
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Naar het einde' }))
+      expect(
+        within(screen.getByRole('status')).getByText('Anna (kruis) heeft gewonnen!'),
+      ).toBeVisible()
+    })
+
+    it('is not offered while the game is on', () => {
+      render(<OnlineGame state={stateOf([x(0, 0)], 'O')} send={vi.fn()} />)
+      expect(screen.queryByRole('button', { name: 'Kijk terug' })).not.toBeInTheDocument()
+    })
+
+    it('ends when a rematch starts', async () => {
+      const user = userEvent.setup()
+      const { rerender } = render(<OnlineGame state={stateOf(xWins, 'O')} send={vi.fn()} />)
+      await user.click(screen.getByRole('button', { name: 'Kijk terug' }))
+      rerender(<OnlineGame state={stateOf([], 'O', both, 1)} send={vi.fn()} />)
+      expect(screen.queryByRole('region', { name: 'Spel terugkijken' })).not.toBeInTheDocument()
+      expect(screen.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+    })
+  })
 })

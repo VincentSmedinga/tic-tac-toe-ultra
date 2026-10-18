@@ -23,6 +23,15 @@
   width: min(100%, 30rem);
 }
 
+.board[data-dense] {
+  gap: 0.125rem;
+}
+
+.board[data-dense] .cell {
+  border-width: 1px;
+  border-radius: 0.25rem;
+}
+
 .cell {
   /* The cell is square by itself and its icon sits on top of it, out of the flow, so what is in a
      cell can't change its size. An icon in the flow with a percentage height made a cell with a
@@ -81,4 +90,17 @@
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
+}
+
+.rematch-quiet {
+  border: 3px solid var(--text);
+  background: transparent;
+  color: var(--text);
+}
+
+.game-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
 }

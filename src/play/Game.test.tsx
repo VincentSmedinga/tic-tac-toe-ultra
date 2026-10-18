@@ -17,6 +17,15 @@ async function tap(...cells: readonly (readonly [number, number])[]) {
   return user
 }
 
+// The cross wins on the top row.
+const crossWins = [
+  [1, 1],
+  [2, 1],
+  [1, 2],
+  [2, 2],
+  [1, 3],
+] as const
+
 describe('Game', () => {
   it('starts with an empty field and the cross to play', () => {
     render(<Game />)
@@ -54,14 +63,6 @@ describe('Game', () => {
   })
 
   describe('when someone wins', () => {
-    const crossWins = [
-      [1, 1],
-      [2, 1],
-      [1, 2],
-      [2, 2],
-      [1, 3],
-    ] as const
-
     it('says who won and marks the winning line', async () => {
       render(<Game />)
       await tap(...crossWins)
@@ -120,6 +121,28 @@ describe('Game', () => {
     for (const name of screen.getAllByRole('button', { name: /^Rij/ })) {
       expect(name).not.toHaveAttribute('data-winning')
     }
+  })
+
+  describe('looking back', () => {
+    it('is not offered while the game is on', () => {
+      render(<Game />)
+      expect(screen.queryByRole('button', { name: 'Kijk terug' })).not.toBeInTheDocument()
+    })
+
+    it('replays the game just played, and goes back to the end of it', async () => {
+      render(<Game />)
+      const user = await tap(...crossWins)
+      await user.click(screen.getByRole('button', { name: 'Kijk terug' }))
+
+      expect(screen.getByRole('region', { name: 'Spel terugkijken' })).toBeVisible()
+      expect(cell(1, 1)).toHaveAccessibleName('Rij 1, kolom 1: leeg')
+      await user.click(screen.getByRole('button', { name: 'Een zet verder' }))
+      expect(cell(1, 1)).toHaveAccessibleName('Rij 1, kolom 1: kruis')
+
+      await user.click(screen.getByRole('button', { name: 'Terug' }))
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis heeft gewonnen!')
+      expect(screen.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
+    })
   })
 
   it('does not offer a rematch while the game is on', () => {

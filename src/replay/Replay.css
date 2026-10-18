@@ -1,0 +1,64 @@
+.replay-position {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.25rem;
+  width: min(100%, 30rem);
+  font-weight: 600;
+}
+
+.replay-position input {
+  width: 100%;
+  min-height: 2.5rem;
+  accent-color: var(--text);
+}
+
+.replay-controls,
+.replay-speed {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.replay-controls button,
+.replay-speed button {
+  min-width: 3rem;
+  min-height: 3rem;
+  padding: 0.25rem 0.75rem;
+  border: 3px solid var(--line);
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.replay-controls button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.replay-controls .replay-play,
+.replay-speed button[aria-pressed='true'] {
+  border-color: var(--text);
+}
+
+.replay-speed button[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--page);
+}
+
+.replay-controls button:focus-visible,
+.replay-speed button:focus-visible,
+.replay-position input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* The move just played: a darker line and a tint, so it doesn't depend on colour alone. */
+.cell[data-last] {
+  border-color: var(--text);
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
