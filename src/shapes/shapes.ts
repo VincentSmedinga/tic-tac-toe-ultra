@@ -29,8 +29,8 @@ export const PATHS: Record<ShapeId, readonly string[]> = {
   // Four lines that each go a little past the corner, round and round: the corners stay visible.
   square: ['M6 14 L54 11', 'M53 5 L55 53', 'M59 52 L9 54', 'M12 59 L11 9'],
   diamond: ['M28 8 L56 30 L36 56 L8 31 L32 4'],
-  // The line ends past the tip of the lowest-left leg, as a hand that closes the star does.
-  star: ['M15 55 L20 36 L6 24 L24 25 L31 7 L40 25 L58 23 L44 36 L49 54 L32 44 L12 59'],
+  // The line closes by crossing the first one a little below the top tip.
+  star: ['M30 6 L40 25 L58 23 L44 36 L49 54 L32 44 L15 55 L20 36 L6 24 L24 25 L35 12'],
   plus: ['M33 6 L35 58', 'M8 26 L56 27'],
   asterisk: ['M30 7 L33 57', 'M10 16 L55 54', 'M53 13 L14 50'],
   // Upside down, so that the hook where the line closes is at the bottom, inside.
@@ -51,9 +51,9 @@ export const PATHS: Record<ShapeId, readonly string[]> = {
     'M5 48 Q17 38 29 47 T55 45',
   ],
   goldbar: [
-    'M4 30 L46 30 L46 54 L8 54 L8 26',
+    'M8 30 L46 30 L46 54 L8 54 Z',
     'M8 30 L18 18 L56 18 L46 30',
-    'M46 30 L56 18 L56 42 L46 54 L42 58',
+    'M46 30 L56 18 L56 42 L46 54',
   ],
 }
 
