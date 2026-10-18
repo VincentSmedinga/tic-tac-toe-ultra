@@ -1,20 +1,23 @@
 import type { PlayerId } from '../../shared/game/index.ts'
-import { SHAPES, shapeById } from '../shapes/shapes.ts'
+import { isShapeId } from '../../shared/shapes.ts'
+import { shapeById } from '../shapes/shapes.ts'
 import type { ShapeId } from '../shapes/shapes.ts'
 
-/** The two players of classic tic-tac-toe, and the shape each one has. */
-export const PLAYERS: readonly { id: PlayerId; shape: ShapeId }[] = [
-  { id: 'X', shape: 'cross' },
-  { id: 'O', shape: 'circle' },
-]
+/** Games kept before the shapes could be chosen have the players X and O: the cross and the circle. */
+const EARLIER_PLAYERS: ReadonlyMap<string, ShapeId> = new Map([
+  ['X', 'cross'],
+  ['O', 'circle'],
+])
 
-/** The shape of a player: X and O have the cross and the circle, any other player id that is a shape's id has that shape. */
+/**
+ * The shape of a player. A player of the game is its shape, so the id is the shape's id; only a
+ * game that was kept before the shapes could be chosen has the players X and O.
+ */
 export function shapeOf(player: PlayerId): ShapeId {
-  const found = PLAYERS.find(({ id }) => id === player)
-  if (found) return found.shape
-  const shape = SHAPES.find(({ id }) => id === player)
-  if (!shape) throw new RangeError(`unknown player ${player}`)
-  return shape.id
+  if (isShapeId(player)) return player
+  const earlier = EARLIER_PLAYERS.get(player)
+  if (earlier) return earlier
+  throw new RangeError(`unknown player ${player}`)
 }
 
 /** The name of a player's shape, with a capital: "Kruis". */
@@ -26,11 +29,4 @@ export function nameOf(player: PlayerId): string {
 /** What to call a player: the name they typed with their shape, or just the shape ("Anna (kruis)"). */
 export function labelOf(player: PlayerId, typed?: string): string {
   return typed === undefined ? nameOf(player) : `${typed} (${nameOf(player).toLowerCase()})`
-}
-
-/** The players in turn order for a round: every round the other player starts. */
-export function playersForRound(round: number): readonly PlayerId[] {
-  const ids = PLAYERS.map(({ id }) => id)
-  const shift = round % ids.length
-  return [...ids.slice(shift), ...ids.slice(0, shift)]
 }

@@ -104,3 +104,13 @@
   justify-content: center;
   gap: 0.75rem;
 }
+
+.choose-shapes {
+  align-items: stretch;
+  width: min(100%, 30rem);
+  margin-inline: auto;
+}
+
+.choose-shapes .rematch {
+  align-self: center;
+}

@@ -4,15 +4,18 @@
  * site data), so everything falls back to memory, and the game works without it.
  */
 
-import { MAX_NAME_LENGTH, roomCodeSchema, tokenSchema } from '../../shared/protocol.ts'
+import { MAX_NAME_LENGTH, roomCodeSchema, shapeSchema, tokenSchema } from '../../shared/protocol.ts'
+import type { ShapeId } from '../../shared/shapes.ts'
 
 const TOKEN_KEY = 'tic-tac-toe-ultra.token'
 const NAME_KEY = 'tic-tac-toe-ultra.name'
 const ROOM_KEY = 'tic-tac-toe-ultra.room'
+const SHAPE_KEY = 'tic-tac-toe-ultra.shape'
 
 let memoryToken: string | null = null
 let memoryName = ''
 let memoryRoom: string | null = null
+let memoryShape: ShapeId | null = null
 
 function storage(): Storage | null {
   try {
@@ -108,5 +111,29 @@ export function clearLastRoom(): void {
     storage()?.removeItem(ROOM_KEY)
   } catch {
     // Nothing to clear.
+  }
+}
+
+/** The shape this browser played with last, to ask for it again: null when there is none yet. */
+export function getShape(): ShapeId | null {
+  const store = storage()
+  let shape: string | null = memoryShape
+  if (store) {
+    try {
+      shape = store.getItem(SHAPE_KEY)
+    } catch {
+      // Fall back to what was remembered this visit.
+    }
+  }
+  const parsed = shapeSchema.safeParse(shape)
+  return parsed.success ? parsed.data : null
+}
+
+export function setShape(shape: ShapeId): void {
+  memoryShape = shape
+  try {
+    storage()?.setItem(SHAPE_KEY, shape)
+  } catch {
+    // Not remembered, but it still counts for this visit.
   }
 }

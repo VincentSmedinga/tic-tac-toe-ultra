@@ -1,3 +1,5 @@
+import type { ShapeId } from '../../shared/shapes.ts'
+
 /**
  * The shapes a player can have: the sets drawn by hand (docs/reference/shapes.png has the first
  * seven, shapes-2.png adds the other five). A player is assigned one of these; the game engine
@@ -18,7 +20,8 @@ export const SHAPES = [
   { id: 'goldbar', name: 'goudstaaf', marker: 'lemon yellow 35' },
 ] as const
 
-export type ShapeId = (typeof SHAPES)[number]['id']
+/** The ids are shared with the room, which has to know which shapes exist (shared/shapes.ts). */
+export type { ShapeId }
 
 /** The paths of each shape on a 64 × 64 field, drawn with a slight wobble like the originals. */
 export const PATHS: Record<ShapeId, readonly string[]> = {

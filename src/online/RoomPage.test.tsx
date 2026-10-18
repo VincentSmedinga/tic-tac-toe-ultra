@@ -3,7 +3,15 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ServerMessage, StateMessage } from '../../shared/protocol.ts'
 import { roomConfig } from '../../shared/room.ts'
-import { clearLastRoom, getLastRoom, getToken, setLastRoom, setName } from './identity.ts'
+import {
+  clearLastRoom,
+  getLastRoom,
+  getShape,
+  getToken,
+  setLastRoom,
+  setName,
+  setShape,
+} from './identity.ts'
 import { RoomPage } from './RoomPage.tsx'
 import type { RoomDeps } from './useRoom.ts'
 
@@ -55,15 +63,19 @@ function setup(exists: boolean | Error = true) {
   return { sockets, roomExists, deps }
 }
 
+/** The room as a player sees it; the game is there once both seats have a shape. */
 function state(players: StateMessage['players'], you = 'X'): StateMessage {
-  const config = roomConfig(0)
+  const shapes = players.flatMap(({ shape }) => (shape ? [shape] : []))
+  const started = players.length >= 2 && shapes.length === players.length
   return {
     type: 'state',
     code: 'BCDF',
     you,
     round: 0,
     players,
-    config: { ...config, players: [...config.players] },
+    ...(started
+      ? { config: { ...roomConfig(0, shapes), players: [...roomConfig(0, shapes).players] } }
+      : {}),
     moves: [],
   }
 }
@@ -126,7 +138,7 @@ describe('RoomPage', () => {
     it('is remembered once the room has given this player a seat', async () => {
       const { socket } = await connected()
       expect(getLastRoom()).toBeNull()
-      socket.receive(state([{ id: 'X', connected: true }]))
+      socket.receive(state([{ id: 'X', shape: 'cross', connected: true }]))
       await screen.findByText('Wachten op een tweede speler…')
       expect(getLastRoom()).toBe('BCDF')
     })
@@ -158,7 +170,7 @@ describe('RoomPage', () => {
 
     it('is kept when the connection is only lost', async () => {
       const { socket } = await connected()
-      socket.receive(state([{ id: 'X', connected: true }]))
+      socket.receive(state([{ id: 'X', shape: 'cross', connected: true }]))
       await screen.findByText('Wachten op een tweede speler…')
       socket.closeFromServer(1006)
       expect(getLastRoom()).toBe('BCDF')
@@ -169,7 +181,7 @@ describe('RoomPage', () => {
     it('shows the code and the link, and who is here', async () => {
       setName('Anna')
       const { socket } = await connected()
-      socket.receive(state([{ id: 'X', name: 'Anna', connected: true }]))
+      socket.receive(state([{ id: 'X', shape: 'cross', name: 'Anna', connected: true }]))
 
       expect(await screen.findByLabelText('Code B C D F')).toHaveTextContent('BCDF')
       expect(screen.getByText(`${window.location.origin}/kamer/BCDF`)).toBeVisible()
@@ -179,7 +191,7 @@ describe('RoomPage', () => {
 
     it('shows a player without a name by their shape', async () => {
       const { socket } = await connected()
-      socket.receive(state([{ id: 'X', connected: true }]))
+      socket.receive(state([{ id: 'X', shape: 'cross', connected: true }]))
       expect(await screen.findByText('Kruis – jij')).toBeVisible()
     })
 
@@ -187,7 +199,7 @@ describe('RoomPage', () => {
       const user = userEvent.setup()
       const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue()
       const { socket } = await connected()
-      socket.receive(state([{ id: 'X', connected: true }]))
+      socket.receive(state([{ id: 'X', shape: 'cross', connected: true }]))
 
       await user.click(await screen.findByRole('button', { name: 'Kopieer link' }))
       expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/kamer/BCDF`)
@@ -198,7 +210,7 @@ describe('RoomPage', () => {
       const user = userEvent.setup()
       vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValue(new Error('no'))
       const { socket } = await connected()
-      socket.receive(state([{ id: 'X', connected: true }]))
+      socket.receive(state([{ id: 'X', shape: 'cross', connected: true }]))
 
       await user.click(await screen.findByRole('button', { name: 'Kopieer link' }))
       expect(await screen.findByText(/Kopiëren lukt niet/)).toBeVisible()
@@ -208,13 +220,13 @@ describe('RoomPage', () => {
   describe('when the second player joins', () => {
     it('shows the board and who is who, as soon as the second player is there', async () => {
       const { socket } = await connected()
-      socket.receive(state([{ id: 'X', name: 'Anna', connected: true }]))
+      socket.receive(state([{ id: 'X', shape: 'cross', name: 'Anna', connected: true }]))
       await screen.findByText('Wachten op een tweede speler…')
 
       socket.receive(
         state([
-          { id: 'X', name: 'Anna', connected: true },
-          { id: 'O', connected: true },
+          { id: 'X', shape: 'cross', name: 'Anna', connected: true },
+          { id: 'O', shape: 'circle', connected: true },
         ]),
       )
       expect(await screen.findByRole('group', { name: 'Speelveld' })).toBeVisible()
@@ -227,11 +239,73 @@ describe('RoomPage', () => {
       const { socket } = await connected()
       socket.receive(
         state([
-          { id: 'X', connected: true },
-          { id: 'O', connected: false },
+          { id: 'X', shape: 'cross', connected: true },
+          { id: 'O', shape: 'circle', connected: false },
         ]),
       )
       expect(await screen.findByText(/Cirkel is even weg/)).toBeVisible()
+    })
+  })
+
+  describe('choosing a shape', () => {
+    const anna = { id: 'X', name: 'Anna', connected: true } as const
+    const bo = { id: 'O', name: 'Bo', connected: true } as const
+
+    it('is possible from the first moment, alone in the room, and is sent to the room', async () => {
+      const { socket } = await connected()
+      socket.receive(state([anna]))
+      expect(await screen.findByRole('group', { name: 'Kies je vorm' })).toBeVisible()
+      expect(screen.getByText('Wachten op een tweede speler…')).toBeVisible()
+
+      await userEvent.setup().click(screen.getByRole('button', { name: 'hart' }))
+      expect(socket.sent.at(-1)).toEqual({ type: 'choose', shape: 'heart' })
+    })
+
+    it('shows the shape that is chosen, and that somebody who has not chosen is still choosing', async () => {
+      const { socket } = await connected()
+      socket.receive(state([{ ...anna, shape: 'star' }, bo]))
+      expect(await screen.findByText('Anna (ster) – jij')).toBeVisible()
+      expect(screen.getByText('Bo – kiest nog')).toBeVisible()
+      expect(screen.getByRole('button', { name: 'ster' })).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    it('does not show the board until both have chosen, and says who it waits for', async () => {
+      const { socket } = await connected()
+      socket.receive(state([{ ...anna, shape: 'star' }, bo]))
+      expect(await screen.findByText('Bo kiest nog een vorm…')).toBeVisible()
+      expect(screen.queryByRole('group', { name: 'Speelveld' })).not.toBeInTheDocument()
+
+      socket.receive(
+        state([
+          { ...anna, shape: 'star' },
+          { ...bo, shape: 'heart' },
+        ]),
+      )
+      expect(await screen.findByRole('group', { name: 'Speelveld' })).toBeVisible()
+      expect(screen.queryByRole('group', { name: 'Kies je vorm' })).not.toBeInTheDocument()
+    })
+
+    it('asks you to choose when it is you who has not', async () => {
+      const { socket } = await connected()
+      socket.receive(state([{ ...anna, shape: 'star' }, bo], 'O'))
+      expect(await screen.findByText('Kies een vorm om te beginnen.')).toBeVisible()
+    })
+
+    it('does not let you take the shape of the other, and says whose it is', async () => {
+      const { socket } = await connected()
+      socket.receive(state([{ ...anna, shape: 'star' }, bo], 'O'))
+      const taken = await screen.findByRole('button', { name: 'ster, van Anna' })
+      expect(taken).toBeDisabled()
+    })
+
+    it('asks for the shape this browser had last time when it joins, and remembers the one it has', async () => {
+      setShape('fort')
+      const { socket } = await connected()
+      expect(socket.sent).toEqual([{ type: 'join', token: getToken(), shape: 'fort' }])
+
+      socket.receive(state([{ ...anna, shape: 'oval' }]))
+      await screen.findByText('Wachten op een tweede speler…')
+      expect(getShape()).toBe('oval')
     })
   })
 
@@ -298,8 +372,8 @@ describe('RoomPage', () => {
       socket.open()
       socket.receive(
         state([
-          { id: 'X', connected: true },
-          { id: 'O', connected: true },
+          { id: 'X', shape: 'cross', connected: true },
+          { id: 'O', shape: 'circle', connected: true },
         ]),
       )
       return { ...world, socket }

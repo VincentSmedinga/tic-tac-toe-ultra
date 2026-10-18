@@ -75,6 +75,18 @@ describe('GamesPage', () => {
     expect(second).toHaveTextContent('Gelijkspel')
   })
 
+  it('shows the shapes the players chose, also in games kept before shapes could be chosen', async () => {
+    const chosen = summary(2, {
+      players: [{ id: 'star', name: 'Anna' }, { id: 'heart' }],
+      result: { kind: 'won', winner: 'heart' },
+    })
+    render(<GamesPage api={fakeApi([{ games: [chosen, summary(1)] }])} />)
+    const [first, second] = await screen.findAllByRole('link', { name: /2026/ })
+    expect(first).toHaveTextContent('Anna (ster)')
+    expect(first).toHaveTextContent('Hart heeft gewonnen')
+    expect(second).toHaveTextContent('Anna (kruis)')
+  })
+
   it('names the size of a field that is not the classic one', async () => {
     render(<GamesPage api={fakeApi([{ games: [summary(1, { width: 12, height: 10 })] }])} />)
     expect(await screen.findByText(/veld van 12 bij 10/)).toBeVisible()
