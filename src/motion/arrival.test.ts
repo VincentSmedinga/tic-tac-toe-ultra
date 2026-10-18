@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { closureOf } from '../shapes/closure.ts'
+import { isRing } from '../shapes/closure.ts'
 import { strokeLengths } from '../shapes/length.ts'
 import { SHAPES } from '../shapes/shapes.ts'
+import type { ShapeId } from '../shapes/shapes.ts'
 import {
   ARRIVAL_VARIANTS,
   MAX_ARRIVAL_MS,
@@ -108,48 +109,24 @@ describe('arrivalPlan', () => {
 })
 
 describe('arrivalPlan of a shape that closes on itself', () => {
-  const plan = (id: 'circle' | 'oval' | 'diamond' | 'square', seed: number, move = 0) =>
-    arrivalPlan(seed, move, strokeLengths(id), closureOf(id))
   const seeds = Array.from({ length: 200 }, (_, seed) => seed)
+  const plan = (id: ShapeId, seed: number, move = 0) =>
+    arrivalPlan(seed, move, strokeLengths(id), isRing(id))
 
-  it('is still the same plan for the same seed, and others for other seeds', () => {
-    for (const id of ['circle', 'oval', 'diamond', 'square'] as const) {
-      expect(plan(id, 7, 2)).toEqual(plan(id, 7, 2))
-      expect(new Set(seeds.map((seed) => JSON.stringify(plan(id, seed)))).size).toBeGreaterThan(150)
+  it('writes the circle, the oval and the diamond with the clock or against it, nothing else', () => {
+    for (const id of ['circle', 'oval', 'diamond'] as const) {
+      const strokes = seeds.map((seed) => plan(id, seed).strokes)
+      // One line, from one end to the other: only the direction is chosen.
+      for (const stroke of strokes) expect(stroke).toHaveLength(1)
+      expect(new Set(strokes.map(([stroke]) => stroke?.reverse))).toEqual(new Set([true, false]))
+      expect(JSON.stringify(strokes)).not.toContain('from')
     }
   })
 
-  it('starts the circle and the oval at another point each time, within the line but not in the hook', () => {
-    for (const id of ['circle', 'oval'] as const) {
-      const closure = closureOf(id)
-      if (closure?.kind !== 'loop') throw new Error('a loop')
-      const starts = seeds.map((seed) => plan(id, seed).strokes[0]?.from ?? NaN)
-      for (const from of starts) {
-        expect(from).toBeGreaterThanOrEqual(0)
-        expect(from).toBeLessThan(closure.until)
-      }
-      expect(new Set(starts).size).toBeGreaterThan(150)
-      // All round the line, not only in one part of it.
-      expect(Math.min(...starts)).toBeLessThan(0.1)
-      expect(Math.max(...starts)).toBeGreaterThan(closure.until - 0.1)
-    }
-  })
-
-  it('goes round the circle both ways', () => {
-    const reversed = seeds.map((seed) => plan('circle', seed).strokes[0]?.reverse)
-    expect(new Set(reversed)).toEqual(new Set([true, false]))
-  })
-
-  it('puts the diamond down on each of its four corners now and then, and on nothing else', () => {
-    const closure = closureOf('diamond')
-    if (closure?.kind !== 'corners') throw new Error('corners')
-    const starts = seeds.map((seed) => plan('diamond', seed).strokes[0]?.from)
-    expect(new Set(starts)).toEqual(new Set(closure.at))
-  })
-
-  it('goes round the square from any stroke, either way, every stroke in the same direction', () => {
+  it('goes round the square from any of its four sides, either way: eight ways to start', () => {
     const plans = seeds.map((seed) => plan('square', seed).strokes)
-    expect(new Set(plans.map((strokes) => strokes[0]?.path))).toEqual(new Set([0, 1, 2, 3]))
+    const starts = plans.map(([first]) => `${String(first?.path)}${first?.reverse ? '-' : '+'}`)
+    expect(new Set(starts).size).toBe(8)
     for (const strokes of plans) {
       const reverse = strokes[0]?.reverse
       expect(strokes.every((stroke) => stroke.reverse === reverse)).toBe(true)
@@ -158,11 +135,11 @@ describe('arrivalPlan of a shape that closes on itself', () => {
         expect(path).toBe(((strokes[0]?.path ?? 0) + i * step) % 4)
       })
     }
-    expect(new Set(plans.map((strokes) => strokes[0]?.reverse))).toEqual(new Set([true, false]))
   })
 
-  it('takes as long as any shape, never the variant of the move before, and starts at once', () => {
+  it('is the same plan for the same seed, and takes as long as any shape', () => {
     for (const id of ['circle', 'oval', 'diamond', 'square'] as const) {
+      expect(plan(id, 7, 2)).toEqual(plan(id, 7, 2))
       for (const seed of seeds) {
         const first = plan(id, seed, 3)
         expect(first.variant).not.toBe(plan(id, seed, 2).variant)
@@ -173,21 +150,10 @@ describe('arrivalPlan of a shape that closes on itself', () => {
     }
   })
 
-  it('does not change the rhythm of a plan: only where it starts', () => {
-    const [bare, closed] = [arrivalPlan(5, 1, strokeLengths('diamond')), plan('diamond', 5, 1)]
-    expect(closed.variant).toBe(bare.variant)
-    expect(closed.strokes.map(({ delay, duration }) => [delay, duration])).toEqual(
-      bare.strokes.map(({ delay, duration }) => [delay, duration]),
-    )
-  })
-
-  it('leaves shapes that do not close alone: no point to start from', () => {
-    for (const id of ['cross', 'star', 'waves'] as const) {
-      expect(
-        arrivalPlan(3, 0, strokeLengths(id), closureOf(id)).strokes.every(
-          (s) => s.from === undefined,
-        ),
-      ).toBe(true)
-    }
+  it('does not change the rhythm of the square: only the order and the direction of its strokes', () => {
+    const lengths = strokeLengths('square')
+    const [bare, round] = [arrivalPlan(5, 1, lengths), arrivalPlan(5, 1, lengths, true)]
+    expect(round.variant).toBe(bare.variant)
+    expect(round.easing).toBe(bare.easing)
   })
 })
