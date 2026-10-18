@@ -1,7 +1,9 @@
 /* The pages of the style guide itself (src/styleguide/*.stories.tsx). The game never loads this. */
 .guide {
+  box-sizing: border-box;
   max-width: 64rem;
   margin-inline: auto;
+  padding: 1rem;
   text-align: start;
 }
 
@@ -150,4 +152,8 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+.guide code {
+  font-size: 0.8em;
 }

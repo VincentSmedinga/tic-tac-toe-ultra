@@ -154,7 +154,7 @@ const isSize = (name: string) => name.startsWith('--size')
 const isRadius = (name: string) => name.includes('radius')
 
 /** Radius, type and the rest of the tokens, with their value in the look that is on. */
-export const Shape: Story = {
+export const TypeAndRadius: Story = {
   name: 'Radius en letters',
   render: function Render() {
     const values = useComputedTokens(OTHER_TOKENS)
