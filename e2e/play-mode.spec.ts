@@ -15,6 +15,14 @@ async function newPlayer(browser: Browser, name: string, address = '/'): Promise
   return page
 }
 
+/** What the tests measure of an element; the e2e project has no DOM types of its own. */
+interface Box {
+  scrollWidth: number
+  clientWidth: number
+  scrollHeight: number
+  clientHeight: number
+}
+
 const cell = (page: Page, row: number, col: number) =>
   page.getByRole('button', { name: new RegExp(`^Rij ${row.toString()}, kolom ${col.toString()}:`) })
 
@@ -48,10 +56,12 @@ test('one player plays in the full screen mode, the other does not see it, and b
   const frame = anna.locator('.board-frame')
   expect(
     await frame.evaluate(
-      (el) => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight,
+      (el: Box) => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight,
     ),
   ).toBe(false)
-  expect(await anna.locator('html').evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(false)
+  expect(await anna.locator('html').evaluate((el: Box) => el.scrollHeight > el.clientHeight)).toBe(
+    false,
+  )
   const board = await anna.locator('.board').boundingBox()
   expect(board?.width).toBeGreaterThan(412 * 0.85)
   await expect(bo.locator('html')).not.toHaveAttribute('data-play-mode')
@@ -101,10 +111,12 @@ test('a field that is too big keeps its cells and scrolls in its frame, while th
 
   await anna.getByRole('button', { name: 'Volledig scherm' }).click()
   const frame = anna.locator('.board-frame')
-  expect(await frame.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true)
+  expect(await frame.evaluate((el: Box) => el.scrollWidth > el.clientWidth)).toBe(true)
   const first = await anna.locator('.cell').first().boundingBox()
   expect(first?.width).toBeGreaterThanOrEqual(43.5)
-  expect(await anna.locator('html').evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(false)
+  expect(await anna.locator('html').evaluate((el: Box) => el.scrollHeight > el.clientHeight)).toBe(
+    false,
+  )
 })
 
 test('asks the browser for the real full screen where it has it, and ends both together', async ({
