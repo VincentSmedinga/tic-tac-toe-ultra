@@ -24,9 +24,13 @@
 }
 
 .cell {
+  /* The cell is square by itself and its icon sits on top of it, out of the flow, so what is in a
+     cell can't change its size. An icon in the flow with a percentage height made a cell with a
+     shape taller than an empty one in Safari. */
+  position: relative;
   aspect-ratio: 1;
   min-width: 0;
-  padding: 12%;
+  padding: 0;
   border: 3px solid var(--line);
   border-radius: 0.75rem;
   background: transparent;
@@ -37,8 +41,11 @@
 }
 
 .cell svg {
-  /* Inline, an icon leaves room below it for descenders and makes a filled cell taller. */
-  display: block;
+  position: absolute;
+  inset: 0;
+  width: 76%;
+  height: 76%;
+  margin: auto;
 }
 
 .cell[aria-disabled='true'] {
