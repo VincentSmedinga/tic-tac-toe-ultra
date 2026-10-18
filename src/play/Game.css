@@ -36,6 +36,11 @@
   touch-action: manipulation;
 }
 
+.cell svg {
+  /* Inline, an icon leaves room below it for descenders and makes a filled cell taller. */
+  display: block;
+}
+
 .cell[aria-disabled='true'] {
   cursor: default;
 }
@@ -44,10 +49,11 @@
   border-color: var(--text);
 }
 
-/* The winning line has a thick border as well as a colour, so it doesn't depend on colour alone. */
+/* The winning line gets a thick ring as well as a colour, so it doesn't depend on colour alone.
+   The ring is a shadow, so marking it doesn't move anything. */
 .cell[data-winning] {
-  border: 6px solid var(--win);
-  padding: calc(12% - 3px);
+  border-color: var(--win);
+  box-shadow: 0 0 0 3px var(--win);
 }
 
 .cell:focus-visible,
