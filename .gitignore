@@ -1,0 +1,28 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Cloudflare local state and local secrets
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+.env*
+
+# Storybook
+storybook-static/
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
+
+# Editors and OS
+.idea/
+.DS_Store
+
+# Worktrees the Claude desktop app creates for background tasks
+.claude/worktrees/
+
+# Personal Claude Code settings
+.claude/settings.local.json
