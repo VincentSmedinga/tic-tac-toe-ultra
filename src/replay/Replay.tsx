@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { replayGame, stateAfter } from '../../shared/game/index.ts'
 import type { GameConfig, Move } from '../../shared/game/index.ts'
 import { Board } from '../play/Board.tsx'
-import { nameOf, shapeOf } from '../play/players.ts'
+import { labelOf, shapeOf } from '../play/players.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import './Replay.css'
 
@@ -72,10 +72,7 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
 
   const game = stateAfter(replayed.state, step)
   const last = step > 0 ? moves[step - 1] : undefined
-  const who = (id: string) => {
-    const typed = players.find((player) => player.id === id)?.name
-    return typed === undefined ? nameOf(id) : `${typed} (${nameOf(id).toLowerCase()})`
-  }
+  const who = (id: string) => labelOf(id, players.find((player) => player.id === id)?.name)
 
   const goTo = (to: number) => {
     setAutoplay(false)

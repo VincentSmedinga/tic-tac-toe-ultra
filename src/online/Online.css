@@ -212,3 +212,8 @@
   font-family: ui-monospace, monospace;
   letter-spacing: 0.2em;
 }
+
+.start-more {
+  margin: 0;
+  text-align: center;
+}

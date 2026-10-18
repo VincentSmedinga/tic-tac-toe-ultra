@@ -1,14 +1,21 @@
 import { useSyncExternalStore } from 'react'
 import { roomCodeSchema } from '../../shared/protocol.ts'
 
-/** Where in the app we are: the start screen, the game on one screen, or a room. */
+/** Where in the app we are: the start screen, the game on one screen, a room, or played games. */
 export type Route =
-  { name: 'start'; notice?: 'bad-code' } | { name: 'local' } | { name: 'room'; code: string }
+  | { name: 'start'; notice?: 'bad-code' }
+  | { name: 'local' }
+  | { name: 'room'; code: string }
+  | { name: 'games' }
+  /** The replay of one finished game; whether the id is a game is up to the server. */
+  | { name: 'game'; id: string }
 
 /** Reads an address of the app; anything it doesn't know is the start screen. */
 export function parseRoute(pathname: string): Route {
   const parts = pathname.split('/').filter(Boolean)
   if (parts.length === 1 && parts[0] === 'samen') return { name: 'local' }
+  if (parts.length === 1 && parts[0] === 'spellen') return { name: 'games' }
+  if (parts.length === 2 && parts[0] === 'spel') return { name: 'game', id: parts[1] ?? '' }
   if (parts.length === 2 && parts[0] === 'kamer') {
     const code = (parts[1] ?? '').toUpperCase()
     return roomCodeSchema.safeParse(code).success
@@ -20,6 +27,10 @@ export function parseRoute(pathname: string): Route {
 
 export function roomPath(code: string): string {
   return `/kamer/${code}`
+}
+
+export function gamePath(id: string): string {
+  return `/spel/${encodeURIComponent(id)}`
 }
 
 const listeners = new Set<() => void>()

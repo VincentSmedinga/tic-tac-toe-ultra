@@ -1,3 +1,5 @@
+import { GamePage } from './games/GamePage.tsx'
+import { GamesPage } from './games/GamesPage.tsx'
 import { Game } from './play/Game.tsx'
 import { Link } from './online/Link.tsx'
 import { RoomPage } from './online/RoomPage.tsx'
@@ -19,6 +21,8 @@ export function App() {
         </>
       )}
       {route.name === 'room' && <RoomPage key={route.code} code={route.code} />}
+      {route.name === 'games' && <GamesPage />}
+      {route.name === 'game' && <GamePage key={route.id} id={route.id} />}
     </main>
   )
 }
