@@ -3,6 +3,8 @@ import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { Cell, GameState } from '../../shared/game/index.ts'
 import { CLASSIC_FIELD, DEFAULT_PLAYERS, PLAYER_LIMITS, roomConfig } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
+import { useText } from '../i18n/store.ts'
+import type { Text } from '../i18n/types.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { SHAPES } from '../shapes/shapes.ts'
@@ -10,7 +12,8 @@ import type { ShapeId } from '../shapes/shapes.ts'
 import { Board } from './Board.tsx'
 import { FieldPicker } from './FieldPicker.tsx'
 import { fieldLabel } from './field.ts'
-import { nameOf, shapeOf } from './players.ts'
+import { usePlayerNames, shapeOf } from './players.ts'
+import type { PlayerNames } from './players.ts'
 import { ShapePicker } from './ShapePicker.tsx'
 import './Game.css'
 
@@ -40,20 +43,23 @@ function reducer(state: State, action: Action): State {
   return result.ok ? { ...state, game: result.state } : state
 }
 
-function describe(game: GameState): { player: string | null; text: string } {
+function describe(
+  t: Text,
+  { nameOf }: PlayerNames,
+  game: GameState,
+): { player: string | null; text: string } {
   const { status } = game
   switch (status.kind) {
     case 'won':
-      return { player: status.winner, text: `${nameOf(status.winner)} heeft gewonnen!` }
+      return { player: status.winner, text: t('status.won', { name: nameOf(status.winner) }) }
     case 'draw':
-      return { player: null, text: 'Gelijkspel! Niemand heeft gewonnen.' }
+      return { player: null, text: t('status.draw') }
     case 'playing':
       return {
         player: status.next,
-        text:
-          game.moveCount === 0
-            ? `${nameOf(status.next)} begint`
-            : `${nameOf(status.next)} is aan de beurt`,
+        text: t(game.moveCount === 0 ? 'status.starts' : 'status.turn', {
+          name: nameOf(status.next),
+        }),
       }
   }
 }
@@ -88,6 +94,7 @@ function defaultShapes(count: number): ShapeId[] {
 
 /** Everybody chooses a shape, the cross and the circle being ready for the first two players. */
 function ChooseShapes({ onStart }: { onStart: (shapes: Shapes, field: FieldSettings) => void }) {
+  const t = useText()
   const [shapes, setShapes] = useState<ShapeId[]>(defaultShapes(DEFAULT_PLAYERS))
   const [field, setField] = useState<FieldSettings>(CLASSIC_FIELD)
 
@@ -101,9 +108,9 @@ function ChooseShapes({ onStart }: { onStart: (shapes: Shapes, field: FieldSetti
   }
 
   return (
-    <section className="game choose-shapes" aria-label="Vormen kiezen">
+    <section className="game choose-shapes" aria-label={t('play.chooseShapes')}>
       <div className="player-count-row">
-        <label htmlFor="local-player-count">Aantal spelers</label>
+        <label htmlFor="local-player-count">{t('play.playerCount')}</label>
         <select
           id="local-player-count"
           className="player-count"
@@ -125,11 +132,11 @@ function ChooseShapes({ onStart }: { onStart: (shapes: Shapes, field: FieldSetti
       {shapes.map((shape, index) => (
         <ShapePicker
           key={index}
-          label={`Speler ${(index + 1).toString()} kiest een vorm`}
+          label={t('play.playerChooses', { number: index + 1 })}
           value={shape}
           taken={Object.fromEntries(
             shapes.flatMap((other, otherIndex) =>
-              otherIndex === index ? [] : [[other, `speler ${(otherIndex + 1).toString()}`]],
+              otherIndex === index ? [] : [[other, t('play.takenBy', { number: otherIndex + 1 })]],
             ),
           )}
           onChange={(chosen) => {
@@ -145,7 +152,7 @@ function ChooseShapes({ onStart }: { onStart: (shapes: Shapes, field: FieldSetti
           onStart(shapes, field)
         }}
       >
-        Start
+        {t('play.start')}
       </button>
     </section>
   )
@@ -162,7 +169,8 @@ function Play({
 }) {
   const [{ game }, dispatch] = useReducer(reducer, undefined, () => newGame(0, shapes, field))
   const [replaying, setReplaying] = useState(false)
-  const { player, text } = describe(game)
+  const t = useText()
+  const { player, text } = describe(t, usePlayerNames(), game)
 
   if (replaying && game.status.kind !== 'playing') {
     return (
@@ -177,12 +185,12 @@ function Play({
   }
 
   return (
-    <section className="game" aria-label="Boter, Kaas en Eieren Ultra">
+    <section className="game" aria-label={t('app.title')}>
       <p className="game-status" role="status">
         {player !== null && <ShapeIcon shape={shapeOf(player)} size={32} decorative />}
         <span>{text}</span>
       </p>
-      <p className="field-label">{fieldLabel(field)}</p>
+      <p className="field-label">{fieldLabel(t, field)}</p>
       <Board
         game={game}
         onPlay={(cell) => {
@@ -198,10 +206,10 @@ function Play({
               dispatch({ type: 'rematch', shapes, field })
             }}
           >
-            Nog een keer
+            {t('play.rematch')}
           </button>
           <button type="button" className="rematch rematch-quiet" onClick={onChooseAgain}>
-            Andere vormen
+            {t('play.otherShapes')}
           </button>
           <button
             type="button"
@@ -210,7 +218,7 @@ function Play({
               setReplaying(true)
             }}
           >
-            Kijk terug
+            {t('play.replay')}
           </button>
         </div>
       )}

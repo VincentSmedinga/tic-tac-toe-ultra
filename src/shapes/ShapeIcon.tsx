@@ -2,7 +2,8 @@ import { useLayoutEffect, useRef } from 'react'
 import type { ArrivalPlan } from '../motion/arrival.ts'
 import { playArrival } from '../motion/play.ts'
 import type { MotionMode } from '../motion/play.ts'
-import { PATHS, shapeById } from './shapes.ts'
+import { useShapeNames } from './names.ts'
+import { PATHS } from './shapes.ts'
 import type { ShapeId } from './shapes.ts'
 
 interface ShapeIconProps {
@@ -20,7 +21,7 @@ interface ShapeIconProps {
 
 /** A shape in its own colour (the `--shape-*` tokens), named for screen readers. */
 export function ShapeIcon({ shape, size = 64, decorative = false, arrival }: ShapeIconProps) {
-  const { name } = shapeById(shape)
+  const name = useShapeNames().name(shape)
   const svg = useRef<SVGSVGElement>(null)
   const plan = arrival?.plan
   const mode = arrival?.mode

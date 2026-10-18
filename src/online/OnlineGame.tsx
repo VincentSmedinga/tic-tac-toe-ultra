@@ -2,9 +2,13 @@ import { useState } from 'react'
 import { replayGame } from '../../shared/game/index.ts'
 import type { GameState } from '../../shared/game/index.ts'
 import type { ClientMessage, StateMessage } from '../../shared/protocol.ts'
+import { useFormat } from '../i18n/format.ts'
+import { useText } from '../i18n/store.ts'
+import type { Text } from '../i18n/types.ts'
 import { Board } from '../play/Board.tsx'
 import { fieldLabel } from '../play/field.ts'
-import { nameOf, shapeOf } from '../play/players.ts'
+import { usePlayerNames, shapeOf } from '../play/players.ts'
+import type { PlayerNames } from '../play/players.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import type { StartedState } from './started.ts'
@@ -17,7 +21,7 @@ interface OnlineGameProps {
 }
 
 /** The name a player goes by: the one they typed, or their shape ("Kruis"). `shape` is the player of the game. */
-function displayName(state: StateMessage, shape: string): string {
+function displayName(state: StateMessage, { nameOf }: PlayerNames, shape: string): string {
   return state.players.find((player) => player.shape === shape)?.name ?? nameOf(shape)
 }
 
@@ -27,21 +31,26 @@ function myShapeOf(state: StateMessage): string | undefined {
 }
 
 /** What the status line says, from the point of view of the player who reads it. */
-function statusText(state: StateMessage, game: GameState): string {
+function statusText(t: Text, names: PlayerNames, state: StateMessage, game: GameState): string {
   const { status } = game
-  if (status.kind === 'draw') return 'Gelijkspel! Niemand heeft gewonnen.'
+  if (status.kind === 'draw') return t('status.draw')
   if (status.kind === 'won') {
     return status.winner === myShapeOf(state)
-      ? 'Je hebt gewonnen!'
-      : `${displayName(state, status.winner)} heeft gewonnen!`
+      ? t('status.youWon')
+      : t('status.won', { name: displayName(state, names, status.winner) })
   }
   const starts = game.moveCount === 0
-  if (status.next === myShapeOf(state)) return starts ? 'Jij begint' : 'Jij bent aan de beurt'
-  return `${displayName(state, status.next)} ${starts ? 'begint' : 'is aan de beurt'}`
+  if (status.next === myShapeOf(state)) return t(starts ? 'status.youStart' : 'status.yourTurn')
+  return t(starts ? 'status.starts' : 'status.turn', {
+    name: displayName(state, names, status.next),
+  })
 }
 
 /** The game of a room: both players, whose turn it is, the board, and a rematch at the end. */
 export function OnlineGame({ state, send }: OnlineGameProps) {
+  const t = useText()
+  const { list } = useFormat()
+  const names = usePlayerNames()
   // The round whose replay is open, so a rematch can't leave it open for the next round.
   const [replayRound, setReplayRound] = useState<number | null>(null)
   const replayed = replayGame(state.config, state.moves)
@@ -49,7 +58,7 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
     // The room only sends moves that replay, so this is a message that came out wrong.
     return (
       <p className="message" role="alert">
-        Er ging iets mis met het spel. Ga terug naar het begin en maak een nieuwe kamer.
+        {t('online.broken')}
       </p>
     )
   }
@@ -73,15 +82,16 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
   const away = state.players.filter((player) => player.id !== state.you && !player.connected)
 
   return (
-    <section className="game online-game" aria-label="Online spel">
+    <section className="game online-game" aria-label={t('online.label')}>
       <div className="players players-row">
         {state.players.map((player) =>
           player.shape === undefined ? null : (
             <div key={player.id} className="player" data-you={player.id === state.you || undefined}>
               <ShapeIcon shape={player.shape} size={28} decorative />
               <span>
-                {displayName(state, player.shape)}
-                {player.id === state.you && ' (jij)'}
+                {player.id === state.you
+                  ? t('player.youShort', { name: displayName(state, names, player.shape) })
+                  : displayName(state, names, player.shape)}
               </span>
             </div>
           ),
@@ -90,8 +100,10 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
 
       {away.length > 0 && (
         <p className="message" role="status">
-          {away.map((player) => displayName(state, player.shape ?? '')).join(' en ')} is even weg…
-          Het spel wacht op terugkomst.
+          {t('online.away', {
+            names: list(away.map((player) => displayName(state, names, player.shape ?? ''))),
+            count: away.length,
+          })}
         </p>
       )}
 
@@ -103,10 +115,10 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
             decorative
           />
         )}
-        <span>{statusText(state, game)}</span>
+        <span>{statusText(t, names, state, game)}</span>
       </p>
 
-      <p className="field-label">{fieldLabel(state.field)}</p>
+      <p className="field-label">{fieldLabel(t, state.field)}</p>
 
       <Board
         game={game}
@@ -125,7 +137,7 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
               send({ type: 'rematch' })
             }}
           >
-            Nog een keer
+            {t('play.rematch')}
           </button>
           <button
             type="button"
@@ -134,7 +146,7 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
               setReplayRound(state.round)
             }}
           >
-            Kijk terug
+            {t('play.replay')}
           </button>
         </div>
       )}

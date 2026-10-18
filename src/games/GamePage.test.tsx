@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { setLanguage } from '../i18n/store.ts'
+import { dutchLeaks } from '../i18n/testing.ts'
 import type { StoredGame } from '../../shared/protocol.ts'
 import type { RoomApi } from '../online/api.ts'
 import type { GamesApi } from './api.ts'
@@ -105,5 +107,65 @@ describe('GamePage', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent('kamer lukt nu niet')
       expect(window.location.pathname).toBe(`/spel/${GAME.id}`)
     })
+  })
+})
+
+describe.each([
+  {
+    language: 'en',
+    loading: 'Fetching the game…',
+    title: /Game of .*2026/,
+    replay: 'Watching a game again',
+    won: 'Anna (cross) has won!',
+    again: 'Play again',
+    share: 'Show this game to someone else with this link:',
+    copy: 'Copy link',
+    missing: /does not exist/,
+    failed: /cannot be fetched/,
+  },
+  {
+    language: 'fy',
+    loading: 'Spultsje ophelje…',
+    title: /Spultsje fan .*2026/,
+    replay: 'Spultsje werom sjen',
+    won: 'Anna (krús) hat wûn!',
+    again: 'Spylje opnij',
+    share: 'Lit dit spultsje oan immen oars sjen mei dizze link:',
+    copy: 'Kopiearje link',
+    missing: /bestiet net/,
+    failed: /net op te heljen/,
+  },
+] as const)('the page of a game in $language', (text) => {
+  const { language } = text
+
+  it('shows the replay, the buttons and the link in the language', async () => {
+    setLanguage(language)
+    const { games, rooms } = apis()
+    render(<GamePage id={GAME.id} api={games} rooms={rooms} />)
+    expect(screen.getByRole('status')).toHaveTextContent(text.loading)
+    expect(await screen.findByRole('region', { name: text.replay })).toBeVisible()
+    expect(screen.getByRole('heading', { name: text.title })).toBeVisible()
+    expect(screen.getByRole('button', { name: text.again })).toBeVisible()
+    expect(screen.getByText(text.share)).toBeVisible()
+    expect(screen.getByRole('button', { name: text.copy })).toBeVisible()
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: language === 'en' ? 'To the end' : 'Nei it ein' }))
+    expect(screen.getByRole('status')).toHaveTextContent(text.won)
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('says so when there is no such game, or it cannot be fetched', async () => {
+    setLanguage(language)
+    const { games, rooms } = apis(null)
+    const { unmount } = render(<GamePage id="zzzzzzzzzzzzzzzz" api={games} rooms={rooms} />)
+    expect(await screen.findByRole('alert')).toHaveTextContent(text.missing)
+    expect(dutchLeaks(language)).toEqual([])
+    unmount()
+
+    vi.mocked(games.getGame).mockRejectedValueOnce(new Error('offline'))
+    render(<GamePage id={GAME.id} api={games} rooms={rooms} />)
+    expect(await screen.findByRole('alert')).toHaveTextContent(text.failed)
+    expect(dutchLeaks(language)).toEqual([])
   })
 })

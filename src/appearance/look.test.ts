@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { textFor } from '../i18n/store.ts'
 import { DEFAULT_LOOK, LOOKS, applyLook, isLook, readLook, saveLook } from './look.ts'
 
 afterEach(() => {
@@ -10,7 +11,11 @@ afterEach(() => {
 describe('the looks', () => {
   it('are three, each with a Dutch name for the menu', () => {
     expect(LOOKS.map(({ id }) => id)).toEqual(['drawn', 'playful', 'calm'])
-    expect(LOOKS.map(({ name }) => name)).toEqual(['Getekend', 'Speels', 'Rustig'])
+    expect(LOOKS.map(({ id }) => textFor('nl')(`look.${id}.name`))).toEqual([
+      'Getekend',
+      'Speels',
+      'Rustig',
+    ])
   })
 
   it('know which text is one', () => {

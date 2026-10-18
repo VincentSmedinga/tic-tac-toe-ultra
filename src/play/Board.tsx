@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Cell, GameState } from '../../shared/game/index.ts'
+import { useText } from '../i18n/store.ts'
 import { arrivalEnd } from '../motion/arrival.ts'
 import { GENTLE_MS } from '../motion/play.ts'
 import { useMotion } from '../motion/preference.ts'
 import { newSeed } from '../motion/random.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
-import { shapeById } from '../shapes/shapes.ts'
+import { useShapeNames } from '../shapes/names.ts'
 import { boardLines } from './lines.ts'
 import { shapeOf } from './players.ts'
 import { useArrival } from './useArrival.ts'
@@ -41,6 +42,8 @@ export function Board({
   focusable = true,
   seed,
 }: BoardProps) {
+  const t = useText()
+  const shapes = useShapeNames()
   const { width, height } = game.config
   const grid = useRef<HTMLDivElement>(null)
   const frame = useRef<HTMLDivElement>(null)
@@ -118,11 +121,11 @@ export function Board({
         ref={grid}
         className="board"
         role="group"
-        aria-label="Speelveld"
+        aria-label={t('board.label')}
         aria-describedby="board-hint"
       >
         <span id="board-hint" className="sr-only">
-          Ga met de pijltjestoetsen over het veld.
+          {t('board.hint')}
         </span>
         {/* The lines between the cells, behind them: a picture, not part of the field. Each line
             comes straight and as a hand draws it; the look shows the one it draws with. */}
@@ -151,14 +154,14 @@ export function Board({
           const y = Math.floor(index / width)
           const open = playing && player === null
           const plan = arrivals.get(index)
-          const content = player === null ? 'leeg' : shapeById(shapeOf(player)).name
+          const content = player === null ? t('board.empty') : shapes.name(shapeOf(player))
           return (
             <button
               key={index}
               type="button"
               className="cell"
               data-index={index}
-              aria-label={`Rij ${(y + 1).toString()}, kolom ${(x + 1).toString()}: ${content}`}
+              aria-label={t('board.cell', { row: y + 1, column: x + 1, content })}
               aria-disabled={!open}
               tabIndex={focusable && index === active ? 0 : -1}
               data-winning={winning.has(`${x.toString()},${y.toString()}`) || undefined}

@@ -1,6 +1,8 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { setLanguage } from '../i18n/store.ts'
+import { dutchLeaks } from '../i18n/testing.ts'
 import type { ServerMessage, StateMessage } from '../../shared/protocol.ts'
 import { roomConfig } from '../../shared/room.ts'
 import {
@@ -620,5 +622,132 @@ describe('RoomPage', () => {
     socket.receive('not json')
     socket.receive(JSON.stringify({ type: 'surprise' }))
     expect(screen.getByRole('status')).toHaveTextContent('Verbinden met de kamer')
+  })
+})
+
+describe.each([
+  {
+    language: 'en',
+    connecting: 'Connecting to the room',
+    waiting: 'Waiting for a second player…',
+    code: 'Code B C D F',
+    free: 'Seat 3: still free',
+    field: /Field: 7 × 7, five in a row · 4 players/,
+    others: 'Cas is still choosing a shape…',
+    youAre: 'Anna (cross) – you',
+    start: 'Start with 2 players',
+    pick: 'Choose your shape',
+    full: 'This room is full: all the seats are taken.',
+    retry: 'Try again',
+    gone: 'Circle is away for a moment… The game is waiting for them to come back.',
+    youStart: 'You start',
+    theirMove: "It is Circle's turn",
+    won: 'You have won!',
+    lost: 'Anna has won!',
+    actions: ['Play again', 'Watch again'],
+  },
+  {
+    language: 'fy',
+    connecting: 'Ferbine mei de keamer',
+    waiting: 'Wachtsje op in twadde spiler…',
+    code: 'Koade B C D F',
+    free: 'Plak 3: noch frij',
+    field: /Fjild: 7 × 7, fiif op in rige · 4 spilers/,
+    others: 'Cas kiest noch in foarm…',
+    youAre: 'Anna (krús) – do',
+    start: 'Start mei 2 spilers',
+    pick: 'Kies dyn foarm',
+    full: 'Dizze keamer sit fol: alle plakken binne beset.',
+    retry: 'Opnij besykje',
+    gone: 'Sirkel is efkes fuort… It spultsje wachtet op weromkomst.',
+    youStart: 'Do begjinst',
+    theirMove: 'Sirkel is oan de beurt',
+    won: 'Do hast wûn!',
+    lost: 'Anna hat wûn!',
+    actions: ['Noch ien kear', 'Sjoch werom'],
+  },
+] as const)('the room in $language', (text) => {
+  const { language } = text
+  const anna = { id: 'X', name: 'Anna', shape: 'cross', connected: true } as const
+  const bo = { id: 'O', shape: 'circle', connected: true } as const
+  const cas = { id: '3', name: 'Cas', connected: true } as const
+  const field = { width: 7, height: 7, winLength: 5 }
+
+  it('says it is connecting, then shows the lobby in the language', async () => {
+    setLanguage(language)
+    const { socket } = await connected()
+    socket.receive(state([anna]))
+    expect(await screen.findByText(text.waiting)).toBeVisible()
+    expect(screen.getByLabelText(text.code)).toBeVisible()
+    expect(screen.getByRole('group', { name: text.pick })).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('shows the free seats, the field with the seats, who is still choosing and the start button', async () => {
+    setLanguage(language)
+    const { socket } = await connected()
+    socket.receive(state([anna, bo, cas], 'X', field, 4))
+    expect(await screen.findByText(text.free.replace('3', '4'))).toBeVisible()
+    expect(screen.getByText(text.field)).toBeVisible()
+    expect(screen.getByText(text.others)).toBeVisible()
+    expect(screen.getByText(text.youAre)).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+
+    socket.receive(state([anna, bo], 'X', field, 4))
+    expect(await screen.findByRole('button', { name: text.start })).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('says what is wrong with the room in the language, with a button that is in it too', async () => {
+    setLanguage(language)
+    const { socket } = await connected()
+    socket.receive({ type: 'error', error: 'room-full' })
+    expect(await screen.findByRole('alert')).toHaveTextContent(text.full)
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('offers trying again in the language when the join could not be read', async () => {
+    setLanguage(language)
+    const { socket } = await connected()
+    socket.receive({ type: 'error', error: 'invalid-message' })
+    expect(await screen.findByRole('button', { name: text.retry })).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('says who won, to the winner and to the other, with the rematch and the replay', async () => {
+    setLanguage(language)
+    const { socket } = await connected()
+    const moves = [
+      { player: 'cross', x: 0, y: 0 },
+      { player: 'circle', x: 0, y: 1 },
+      { player: 'cross', x: 1, y: 0 },
+      { player: 'circle', x: 1, y: 1 },
+      { player: 'cross', x: 2, y: 0 },
+    ]
+    socket.receive({ ...state([anna, bo]), moves })
+    expect(await screen.findByText(text.won)).toBeVisible()
+    for (const name of text.actions) expect(screen.getByRole('button', { name })).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+
+    socket.receive({ ...state([anna, bo], 'O'), moves })
+    expect(await screen.findByText(text.lost)).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('plays the online game in the language: who starts, whose turn it is, and who is away', async () => {
+    setLanguage(language)
+    const { socket } = await connected()
+    const you = { ...anna }
+    socket.receive(state([you, { ...bo, name: undefined }]))
+    expect(await screen.findByText(text.youStart)).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+
+    socket.receive({
+      ...state([you, { ...bo, connected: false }]),
+      moves: [{ player: 'cross', x: 0, y: 0 }],
+    })
+    expect(await screen.findByText(text.gone)).toBeVisible()
+    expect(screen.getByText(text.theirMove)).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
   })
 })

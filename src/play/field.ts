@@ -1,18 +1,29 @@
 import { FIELD_LIMITS, FIELD_PRESETS } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
+import type { Text } from '../i18n/types.ts'
 
-/** What a row of this many is called: "drie op een rij". Every row a room allows is odd. */
-const ROW_WORDS: Readonly<Record<number, string>> = {
-  3: 'drie',
-  5: 'vijf',
-  7: 'zeven',
-  9: 'negen',
+/**
+ * What a row of this many is called: "drie op een rij". Every row a room allows is odd; the usual
+ * ones are written out, each as a whole text, and the others are the number in a text.
+ */
+export function rowLabel(t: Text, winLength: number): string {
+  switch (winLength) {
+    case 3:
+      return t('field.inARow.3')
+    case 5:
+      return t('field.inARow.5')
+    case 7:
+      return t('field.inARow.7')
+    case 9:
+      return t('field.inARow.9')
+    default:
+      return t('field.inARow.other', { row: winLength })
+  }
 }
 
 /** "7 × 7, vijf op een rij": how big the field is and how many in a row win. */
-export function fieldLabel({ width, height, winLength }: FieldSettings): string {
-  const row = ROW_WORDS[winLength] ?? winLength.toString()
-  return `${width.toString()} × ${height.toString()}, ${row} op een rij`
+export function fieldLabel(t: Text, { width, height, winLength }: FieldSettings): string {
+  return t('field.label', { width, height, row: rowLabel(t, winLength) })
 }
 
 export function isClassic(field: FieldSettings): boolean {

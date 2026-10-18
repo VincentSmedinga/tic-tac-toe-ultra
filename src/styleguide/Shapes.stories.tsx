@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { LANGUAGES } from '../i18n/language.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
+import { shapeNamesFor } from '../shapes/names.ts'
 import { SHAPES } from '../shapes/shapes.ts'
+import type { ShapeId } from '../shapes/shapes.ts'
 import './StyleGuide.css'
 
 const meta = {
@@ -11,7 +14,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** All twelve shapes, large and at the smallest sizes they are used at, with the marker each was drawn with. */
+/** All twelve shapes, large and at the smallest sizes they are used at, with the marker each was drawn with and their names in every language (the unreviewed ones too, for the person who drew them to confirm). */
 export const Gallery: Story = {
   render: () => (
     <section className="guide" aria-labelledby="gallery-title">
@@ -25,7 +28,7 @@ export const Gallery: Story = {
         ))}
       </div>
       <div className="guide-shapes">
-        {SHAPES.map(({ id, name, marker }) => (
+        {SHAPES.map(({ id, marker }) => (
           <figure key={id}>
             <ShapeIcon shape={id} size={80} />
             <div className="guide-shape-sizes">
@@ -33,7 +36,12 @@ export const Gallery: Story = {
               <ShapeIcon shape={id} size={20} decorative />
             </div>
             <figcaption>
-              {name}
+              {' '}
+              {LANGUAGES.map(({ id: language }) => (
+                <span key={language} lang={language} className="guide-shape-name">
+                  {shapeNamesFor(language).name(id)}
+                </span>
+              ))}
               <small>{marker}</small>
             </figcaption>
           </figure>
@@ -46,6 +54,7 @@ export const Gallery: Story = {
 /** Every pair of shapes that can play against each other: twelve shapes make 66 pairs. */
 export const Pairs: Story = {
   render: () => {
+    const nameOf = (id: ShapeId) => shapeNamesFor('nl').name(id)
     const pairs = SHAPES.flatMap((first, index) =>
       SHAPES.slice(index + 1).map((second) => [first, second] as const),
     )
@@ -58,7 +67,7 @@ export const Pairs: Story = {
             <li
               key={`${first.id}-${second.id}`}
               className="guide-pair"
-              aria-label={`${first.name} tegen ${second.name}`}
+              aria-label={`${nameOf(first.id)} tegen ${nameOf(second.id)}`}
             >
               <ShapeIcon shape={first.id} size={28} decorative />
               <ShapeIcon shape={second.id} size={28} decorative />

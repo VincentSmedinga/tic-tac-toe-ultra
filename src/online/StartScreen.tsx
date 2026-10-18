@@ -9,6 +9,9 @@ import {
   ROOM_CODE_LENGTH,
 } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
+import { Rich } from '../i18n/Rich.tsx'
+import { useText } from '../i18n/store.ts'
+import type { PlainKey } from '../i18n/types.ts'
 import { FieldPicker } from '../play/FieldPicker.tsx'
 import { isClassic } from '../play/field.ts'
 import type { RoomApi } from './api.ts'
@@ -32,17 +35,15 @@ function cleanCode(text: string): string {
 
 /** Where you start: a new room, a room of someone else, or the game on one screen. */
 export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
+  const t = useText()
   const [name, setNameState] = useState(getName)
   const [code, setCode] = useState('')
   // Which choice a message is about, so that it shows in that choice and not somewhere else.
-  const [message, setMessage] = useState<{ card: 'create' | 'join'; text: string } | null>(
-    notice === 'bad-code'
-      ? {
-          card: 'join',
-          text: 'Dat is geen geldige code. Vraag de code opnieuw aan degene die de kamer maakte.',
-        }
-      : null,
-  )
+  // The message is kept as its key, so that it changes language with the page.
+  const [message, setMessage] = useState<{
+    card: 'create' | 'join'
+    key: PlainKey | 'start.codeLength'
+  } | null>(notice === 'bad-code' ? { card: 'join', key: 'start.badCode' } : null)
   const [busy, setBusy] = useState(false)
   const [field, setField] = useState<FieldSettings>(CLASSIC_FIELD)
   const [players, setPlayers] = useState(DEFAULT_PLAYERS)
@@ -75,10 +76,7 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
     try {
       navigate(roomPath(await api.createRoom({ ...field, players })))
     } catch {
-      setMessage({
-        card: 'create',
-        text: 'Het maken van een kamer lukt nu niet. Probeer het zo nog eens.',
-      })
+      setMessage({ card: 'create', key: 'common.createRoomFailed' })
       setBusy(false)
     }
   }
@@ -86,10 +84,7 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
   async function join(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!roomCodeSchema.safeParse(code).success) {
-      setMessage({
-        card: 'join',
-        text: `Een code heeft ${ROOM_CODE_LENGTH.toString()} letters, zonder klinkers.`,
-      })
+      setMessage({ card: 'join', key: 'start.codeLength' })
       return
     }
     setBusy(true)
@@ -100,12 +95,9 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
         navigate(roomPath(code))
         return
       }
-      setMessage({ card: 'join', text: 'Die kamer bestaat niet. Controleer de code.' })
+      setMessage({ card: 'join', key: 'start.noSuchRoom' })
     } catch {
-      setMessage({
-        card: 'join',
-        text: 'Het zoeken naar de kamer lukt nu niet. Probeer het zo nog eens.',
-      })
+      setMessage({ card: 'join', key: 'start.searchFailed' })
     }
     setBusy(false)
   }
@@ -113,7 +105,9 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
   const alert = (card: 'create' | 'join') =>
     message?.card === card && (
       <p className="message" role="alert">
-        {message.text}
+        {message.key === 'start.codeLength'
+          ? t('start.codeLength', { length: ROOM_CODE_LENGTH })
+          : t(message.key)}
       </p>
     )
 
@@ -121,21 +115,23 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
     <div className="start">
       {resume !== null && (
         <section className="choice choice-primary" aria-labelledby="resume-title">
-          <h2 id="resume-title">Je speelt nog mee</h2>
+          <h2 id="resume-title">{t('start.resume.title')}</h2>
           <p>
-            Je zit in kamer <strong className="resume-code">{resume}</strong>. Daar ga je verder
-            waar je was.
+            <Rich
+              text="start.resume.body"
+              values={{ code: <strong className="resume-code">{resume}</strong> }}
+            />
           </p>
           <Link to={roomPath(resume)} className="button button-primary">
-            Terug naar kamer {resume}
+            {t('start.resume.link', { code: resume })}
           </Link>
         </section>
       )}
 
       <section className="choice choice-name" aria-labelledby="who-title">
-        <h2 id="who-title">Wie ben je?</h2>
+        <h2 id="who-title">{t('start.who.title')}</h2>
         <div className="field">
-          <label htmlFor="player-name">Je naam (hoeft niet)</label>
+          <label htmlFor="player-name">{t('start.who.name')}</label>
           <input
             id="player-name"
             name="given-name"
@@ -153,15 +149,13 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
         </div>
       </section>
 
-      <p className="start-lead">Kies hoe je wilt spelen:</p>
+      <p className="start-lead">{t('start.lead')}</p>
 
       <section className="choice choice-primary" aria-labelledby="create-title">
-        <h2 id="create-title">Een nieuwe kamer starten</h2>
-        <p>
-          Je krijgt een code die je aan de anderen geeft. Jullie spelen elk op je eigen apparaat.
-        </p>
+        <h2 id="create-title">{t('start.create.title')}</h2>
+        <p>{t('start.create.body')}</p>
         <div className="player-count-row">
-          <label htmlFor="player-count">Aantal spelers</label>
+          <label htmlFor="player-count">{t('play.playerCount')}</label>
           <select
             id="player-count"
             className="player-count"
@@ -181,7 +175,7 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
           </select>
         </div>
         {players > 2 && isClassic(field) && (
-          <p className="field-tip">Met meer dan twee spelers is een groter veld leuker.</p>
+          <p className="field-tip">{t('start.create.biggerIsNicer')}</p>
         )}
         <FieldPicker value={field} onChange={setField} />
         <button
@@ -192,17 +186,17 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
             void createRoom()
           }}
         >
-          Nieuwe kamer
+          {t('start.create.button')}
         </button>
         {alert('create')}
       </section>
 
       <section className="choice" aria-labelledby="join-title">
-        <h2 id="join-title">Meedoen met een code</h2>
-        <p>Heeft iemand een kamer gemaakt? Vul de code van vier letters in.</p>
+        <h2 id="join-title">{t('start.join.title')}</h2>
+        <p>{t('start.join.body')}</p>
         <form className="join" onSubmit={(event) => void join(event)}>
           <div className="field">
-            <label htmlFor="room-code">Code van de kamer</label>
+            <label htmlFor="room-code">{t('start.join.code')}</label>
             <input
               id="room-code"
               className="code-input"
@@ -220,17 +214,17 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
             />
           </div>
           <button type="submit" className="button" disabled={busy}>
-            Meedoen
+            {t('start.join.button')}
           </button>
         </form>
         {alert('join')}
       </section>
 
       <section className="choice" aria-labelledby="local-title">
-        <h2 id="local-title">Samen op één scherm</h2>
-        <p>Twee spelers op dit apparaat, om de beurt.</p>
+        <h2 id="local-title">{t('start.local.title')}</h2>
+        <p>{t('start.local.body')}</p>
         <Link to="/samen" className="button">
-          Samen spelen
+          {t('start.local.button')}
         </Link>
       </section>
     </div>

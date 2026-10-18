@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { StoredGame } from '../../shared/protocol.ts'
 import type { FieldSettings } from '../../shared/room.ts'
+import { useFormat } from '../i18n/format.ts'
+import { useText } from '../i18n/store.ts'
 import { CopyLink } from '../online/CopyLink.tsx'
 import { roomApi } from '../online/api.ts'
 import type { RoomApi } from '../online/api.ts'
@@ -17,12 +19,12 @@ interface GamePageProps {
   rooms?: RoomApi
 }
 
-const WHEN = new Intl.DateTimeFormat('nl-NL', { dateStyle: 'long', timeStyle: 'short' })
-
 type Loaded = { status: 'loading' | 'missing' | 'failed' } | { status: 'ready'; game: StoredGame }
 
 /** A finished game at its own address: anyone who has the link can watch it, move by move. */
 export function GamePage({ id, api = gamesApi, rooms = roomApi }: GamePageProps) {
+  const t = useText()
+  const { dateTime } = useFormat()
   const [loaded, setLoaded] = useState<Loaded>({ status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const [again, setAgain] = useState<'idle' | 'busy' | 'failed'>('idle')
@@ -55,19 +57,18 @@ export function GamePage({ id, api = gamesApi, rooms = roomApi }: GamePageProps)
 
   return (
     <div className="game-page">
-      {loaded.status === 'loading' && <p role="status">Spel ophalen…</p>}
+      {loaded.status === 'loading' && <p role="status">{t('gamePage.loading')}</p>}
 
       {loaded.status === 'missing' && (
         <p className="message" role="alert">
-          Dit spel bestaat niet (meer), of de link klopt niet. Vraag de link nog eens aan degene die
-          hem deelde.
+          {t('gamePage.missing')}
         </p>
       )}
 
       {loaded.status === 'failed' && (
         <>
           <p className="message" role="alert">
-            Het spel is nu niet op te halen. Probeer het zo nog eens.
+            {t('gamePage.failed')}
           </p>
           <button
             type="button"
@@ -77,14 +78,14 @@ export function GamePage({ id, api = gamesApi, rooms = roomApi }: GamePageProps)
               setAttempt((count) => count + 1)
             }}
           >
-            Opnieuw proberen
+            {t('common.retry')}
           </button>
         </>
       )}
 
       {loaded.status === 'ready' && (
         <>
-          <h2>Spel van {WHEN.format(loaded.game.finishedAt)}</h2>
+          <h2>{t('gamePage.title', { date: dateTime(loaded.game.finishedAt, 'long') })}</h2>
           <Replay
             config={loaded.game.config}
             moves={loaded.game.moves}
@@ -99,16 +100,16 @@ export function GamePage({ id, api = gamesApi, rooms = roomApi }: GamePageProps)
               void playAgain({ width, height, winLength })
             }}
           >
-            Speel opnieuw
+            {t('gamePage.again')}
           </button>
           {again === 'failed' && (
             <p className="message" role="alert">
-              Het maken van een kamer lukt nu niet. Probeer het zo nog eens.
+              {t('common.createRoomFailed')}
             </p>
           )}
           <CopyLink
             link={`${window.location.origin}${gamePath(loaded.game.id)}`}
-            lead="Laat dit spel aan iemand anders zien met deze link:"
+            lead={t('gamePage.share')}
           />
         </>
       )}

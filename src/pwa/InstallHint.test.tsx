@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { setLanguage } from '../i18n/store.ts'
 import { InstallHint } from './InstallHint.tsx'
 import { forgetTip, listenForInstallPrompt } from './install.ts'
 
@@ -159,5 +160,18 @@ describe('InstallHint where the browser can install the app', () => {
       window.dispatchEvent(new Event('appinstalled'))
     })
     expect(screen.queryByRole('button', { name: 'Installeer de app' })).not.toBeInTheDocument()
+  })
+})
+
+describe('InstallHint in the other languages', () => {
+  it.each([
+    ['en', 'Tap Share and choose Add to Home Screen.', 'Do not show again'],
+    ['fy', 'Tik op Diel en kies Set op it startskerm.', 'Net mear sjen litte'],
+  ] as const)('says where to tap, and how to close it, in %s', (language, tip, close) => {
+    setLanguage(language)
+    device(SAFARI_IPHONE, 5)
+    render(<InstallHint />)
+    expect(screen.getByText(tip)).toBeVisible()
+    expect(screen.getByRole('button', { name: close })).toBeVisible()
   })
 })

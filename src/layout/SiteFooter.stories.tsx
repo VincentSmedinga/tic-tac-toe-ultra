@@ -7,13 +7,13 @@ const meta = {
   title: 'Onderdelen/Voet',
   component: SiteFooter,
   parameters: { layout: 'fullscreen' },
-  // The footer reads the look and light or dark when it is shown, so it starts afresh when the
+  // The footer reads the look, light or dark and the language when it is shown, so it starts afresh when the
   // toolbar changes them; and what it changes itself, the toolbar follows (see .storybook/preview.tsx).
   render: function Render(args) {
-    const [{ look, scheme }] = useGlobals()
+    const [{ look, scheme, language }] = useGlobals()
     return (
       <Screen>
-        <SiteFooter key={`${String(look)}-${String(scheme)}`} {...args} />
+        <SiteFooter key={`${String(look)}-${String(scheme)}-${String(language)}`} {...args} />
       </Screen>
     )
   },

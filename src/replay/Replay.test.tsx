@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { setLanguage } from '../i18n/store.ts'
+import { dutchLeaks } from '../i18n/testing.ts'
 import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { GameConfig, Move } from '../../shared/game/index.ts'
 import { MAX_ARRIVAL_MS } from '../motion/arrival.ts'
@@ -303,5 +305,73 @@ describe('Replay', () => {
         screen.getByText(`Zet ${moves.length.toString()} van ${moves.length.toString()}`),
       ).toBeInTheDocument()
     })
+  })
+})
+
+describe.each([
+  {
+    language: 'en',
+    label: 'Watching a game again',
+    begins: 'The game begins: Anna (cross) goes first',
+    controls: ['To the start', 'One move back', 'Play', 'One move forward', 'To the end'],
+    pause: 'Pause',
+    position: 'Move 0 of 5',
+    moved: 'Move 2 of 5',
+    plays: 'Bo (circle) plays',
+    won: 'Anna (cross) has won!',
+    close: 'Back',
+    invalid: 'This game cannot be watched again.',
+  },
+  {
+    language: 'fy',
+    label: 'Spultsje werom sjen',
+    begins: 'It spultsje begjint: Anna (krús) is de earste',
+    controls: ['Nei it begjin', 'Ien set werom', 'Ofspylje', 'Ien set fierder', 'Nei it ein'],
+    pause: 'Pauzearje',
+    position: 'Set 0 fan 5',
+    moved: 'Set 2 fan 5',
+    plays: 'Bo (sirkel) sette',
+    won: 'Anna (krús) hat wûn!',
+    close: 'Werom',
+    invalid: 'Dit spultsje kin net werom sjoen wurde.',
+  },
+] as const)('the replay in $language', (text) => {
+  const { language } = text
+  const players = [
+    { id: 'X', name: 'Anna' },
+    { id: 'O', name: 'Bo' },
+  ]
+
+  it('names the controls, the position and every step in the language', async () => {
+    setLanguage(language)
+    render(<Replay config={CLASSIC} moves={X_WINS} players={players} onClose={() => undefined} />)
+    expect(screen.getByRole('region', { name: text.label })).toBeVisible()
+    expect(status()).toHaveTextContent(text.begins)
+    for (const name of text.controls) expect(screen.getByRole('button', { name })).toBeVisible()
+    expect(screen.getByLabelText(text.position)).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: text.controls[3] }))
+    await user.click(screen.getByRole('button', { name: text.controls[3] }))
+    expect(screen.getByLabelText(text.moved)).toBeVisible()
+    expect(status()).toHaveTextContent(text.plays)
+    await user.click(screen.getByRole('button', { name: text.controls[4] }))
+    expect(status()).toHaveTextContent(text.won)
+    expect(screen.getByRole('button', { name: text.close })).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('names play and pause, and says a game cannot be watched when it does not replay', () => {
+    setLanguage(language)
+    vi.useFakeTimers()
+    const { unmount } = render(<Replay config={CLASSIC} moves={X_WINS} />)
+    fireEvent.click(screen.getByRole('button', { name: text.controls[2] }))
+    expect(screen.getByRole('button', { name: text.pause })).toBeVisible()
+    unmount()
+
+    render(<Replay config={CLASSIC} moves={[{ player: 'X', x: 9, y: 9 }]} />)
+    expect(screen.getByRole('alert')).toHaveTextContent(text.invalid)
+    expect(dutchLeaks(language)).toEqual([])
   })
 })
