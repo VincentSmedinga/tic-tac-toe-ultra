@@ -8,6 +8,42 @@
   margin: 1rem auto;
 }
 
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
+  border: 3px solid var(--line);
+  border-radius: 1rem;
+}
+
+.choice h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.choice p {
+  margin: 0;
+}
+
+/* The way to start is the one to find first: a stronger outline. */
+.choice-primary {
+  border-color: var(--text);
+}
+
+/* The name is a small matter beside the three ways to play. */
+.choice-name {
+  border-style: dashed;
+}
+
+.start-lead {
+  margin: 0.5rem 0 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -20,6 +56,8 @@
 
 .field input {
   box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
   min-height: 3rem;
   padding: 0 0.75rem;
   border: 3px solid var(--line);
@@ -42,12 +80,14 @@
 
 .join {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 0.75rem;
 }
 
 .join .field {
-  flex: 1;
+  flex: 1 1 8rem;
+  min-width: 0;
 }
 
 .button {

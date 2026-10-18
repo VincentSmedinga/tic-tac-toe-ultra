@@ -26,9 +26,13 @@ function cleanCode(text: string): string {
 export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
   const [name, setNameState] = useState(getName)
   const [code, setCode] = useState('')
-  const [message, setMessage] = useState<string | null>(
+  // Which choice a message is about, so that it shows in that choice and not somewhere else.
+  const [message, setMessage] = useState<{ card: 'create' | 'join'; text: string } | null>(
     notice === 'bad-code'
-      ? 'Dat is geen geldige code. Vraag de code opnieuw aan je tegenspeler.'
+      ? {
+          card: 'join',
+          text: 'Dat is geen geldige code. Vraag de code opnieuw aan je tegenspeler.',
+        }
       : null,
   )
   const [busy, setBusy] = useState(false)
@@ -36,11 +40,14 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
   async function createRoom() {
     setBusy(true)
     setMessage(null)
-    setName(name.trim())
+    setName(name)
     try {
       navigate(roomPath(await api.createRoom()))
     } catch {
-      setMessage('Het maken van een kamer lukt nu niet. Probeer het zo nog eens.')
+      setMessage({
+        card: 'create',
+        text: 'Het maken van een kamer lukt nu niet. Probeer het zo nog eens.',
+      })
       setBusy(false)
     }
   }
@@ -48,84 +55,117 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
   async function join(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!roomCodeSchema.safeParse(code).success) {
-      setMessage(`Een code heeft ${ROOM_CODE_LENGTH.toString()} letters, zonder klinkers.`)
+      setMessage({
+        card: 'join',
+        text: `Een code heeft ${ROOM_CODE_LENGTH.toString()} letters, zonder klinkers.`,
+      })
       return
     }
     setBusy(true)
     setMessage(null)
-    setName(name.trim())
+    setName(name)
     try {
       if (await api.roomExists(code)) {
         navigate(roomPath(code))
         return
       }
-      setMessage('Die kamer bestaat niet. Controleer de code.')
+      setMessage({ card: 'join', text: 'Die kamer bestaat niet. Controleer de code.' })
     } catch {
-      setMessage('Het zoeken naar de kamer lukt nu niet. Probeer het zo nog eens.')
+      setMessage({
+        card: 'join',
+        text: 'Het zoeken naar de kamer lukt nu niet. Probeer het zo nog eens.',
+      })
     }
     setBusy(false)
   }
 
+  const alert = (card: 'create' | 'join') =>
+    message?.card === card && (
+      <p className="message" role="alert">
+        {message.text}
+      </p>
+    )
+
   return (
     <div className="start">
-      <div className="field">
-        <label htmlFor="player-name">Je naam (hoeft niet)</label>
-        <input
-          id="player-name"
-          type="text"
-          autoComplete="nickname"
-          maxLength={MAX_NAME_LENGTH}
-          value={name}
-          onChange={(event) => {
-            setNameState(event.target.value)
-          }}
-        />
-      </div>
-
-      <button
-        type="button"
-        className="button button-primary"
-        disabled={busy}
-        onClick={() => {
-          void createRoom()
-        }}
-      >
-        Nieuwe kamer
-      </button>
-
-      <form className="join" onSubmit={(event) => void join(event)}>
+      <section className="choice choice-name" aria-labelledby="who-title">
+        <h2 id="who-title">Wie ben je?</h2>
         <div className="field">
-          <label htmlFor="room-code">Meedoen met een code</label>
+          <label htmlFor="player-name">Je naam (hoeft niet)</label>
           <input
-            id="room-code"
-            className="code-input"
+            id="player-name"
+            name="given-name"
             type="text"
-            inputMode="text"
-            autoCapitalize="characters"
-            autoComplete="off"
-            spellCheck={false}
-            maxLength={ROOM_CODE_LENGTH}
-            placeholder="BCDF"
-            value={code}
+            // "given-name" is what makes Safari offer the name from the Contacts app.
+            autoComplete="given-name"
+            autoCapitalize="words"
+            enterKeyHint="done"
+            maxLength={MAX_NAME_LENGTH}
+            value={name}
             onChange={(event) => {
-              setCode(cleanCode(event.target.value))
+              setNameState(event.target.value)
             }}
           />
         </div>
-        <button type="submit" className="button" disabled={busy}>
-          Meedoen
-        </button>
-      </form>
+      </section>
 
-      {message !== null && (
-        <p className="message" role="alert">
-          {message}
+      <p className="start-lead">Kies hoe je wilt spelen:</p>
+
+      <section className="choice choice-primary" aria-labelledby="create-title">
+        <h2 id="create-title">Een nieuwe kamer starten</h2>
+        <p>
+          Je krijgt een code die je aan je tegenspeler geeft. Jullie spelen elk op je eigen
+          apparaat.
         </p>
-      )}
+        <button
+          type="button"
+          className="button button-primary"
+          disabled={busy}
+          onClick={() => {
+            void createRoom()
+          }}
+        >
+          Nieuwe kamer
+        </button>
+        {alert('create')}
+      </section>
 
-      <Link to="/samen" className="button button-quiet">
-        Samen op één scherm
-      </Link>
+      <section className="choice" aria-labelledby="join-title">
+        <h2 id="join-title">Meedoen met een code</h2>
+        <p>Heeft iemand een kamer gemaakt? Vul de code van vier letters in.</p>
+        <form className="join" onSubmit={(event) => void join(event)}>
+          <div className="field">
+            <label htmlFor="room-code">Code van de kamer</label>
+            <input
+              id="room-code"
+              className="code-input"
+              type="text"
+              inputMode="text"
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              maxLength={ROOM_CODE_LENGTH}
+              placeholder="BCDF"
+              value={code}
+              onChange={(event) => {
+                setCode(cleanCode(event.target.value))
+              }}
+            />
+          </div>
+          <button type="submit" className="button" disabled={busy}>
+            Meedoen
+          </button>
+        </form>
+        {alert('join')}
+      </section>
+
+      <section className="choice" aria-labelledby="local-title">
+        <h2 id="local-title">Samen op één scherm</h2>
+        <p>Twee spelers op dit apparaat, om de beurt.</p>
+        <Link to="/samen" className="button">
+          Samen spelen
+        </Link>
+      </section>
 
       <details>
         <summary>Alle vormen</summary>
