@@ -16,18 +16,55 @@
   font-weight: 600;
 }
 
+.board-frame {
+  /* How big a cell is at the very least, so that it stays big enough to tap, and the gap between. */
+  --cell-min: 2.75rem;
+  --gap: 0.5rem;
+  /* What the field would get if it were scaled to the room that is left: not wider than the screen
+     or the look allows, nor higher than the screen. */
+  --fit: min(
+    100%,
+    var(--board-max, 34rem),
+    calc(max(16rem, 100dvh - 22rem) * var(--columns) / var(--rows))
+  );
+
+  box-sizing: border-box;
+  width: 100%;
+  max-height: max(18rem, calc(100dvh - 20rem));
+  margin-inline: auto;
+  /* A field that doesn't fit is scrolled inside here, with a finger, and the page stays where it is. */
+  overflow: auto;
+  overscroll-behavior: contain;
+  /* The cells' focus ring and the winning ring are drawn outside them: room for it. */
+  padding: 0.5rem;
+}
+
 .board {
   display: grid;
   grid-template-columns: repeat(var(--columns), 1fr);
-  gap: 0.5rem;
-  width: min(100%, 30rem);
+  gap: var(--gap);
+  /* Never narrower than the cells and the gaps between them need to stay as big as --cell-min. */
+  width: max(
+    var(--fit),
+    calc(var(--columns) * var(--cell-min) + (var(--columns) - 1) * var(--gap))
+  );
+  margin-inline: auto;
 }
 
-.board[data-dense] {
-  gap: 0.125rem;
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-.board[data-dense] .cell {
+.board-frame[data-dense] {
+  --gap: 0.125rem;
+}
+
+.board-frame[data-dense] .cell {
   border-width: 1px;
   border-radius: 0.25rem;
 }
@@ -113,4 +150,11 @@
 
 .choose-shapes .rematch {
   align-self: center;
+}
+
+/* How big the field is, and how many in a row win: a line under the title of the room or the game. */
+.field-label {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
 }

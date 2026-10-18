@@ -60,10 +60,9 @@ legend,
   width: 100%;
 }
 
-/* The board takes the room that is left: not wider than the screen, nor higher than it. */
-.board {
-  width: min(100%, 34rem, max(16rem, calc(100dvh - 22rem)));
-  margin-inline: auto;
+/* A look can make the board bigger or smaller (`--board-max`); what a board does is in Game.css. */
+.board-frame {
+  --board-max: 34rem;
 }
 
 /*

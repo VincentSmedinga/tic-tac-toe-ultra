@@ -156,8 +156,8 @@ html[data-look='drawn'] .cell:nth-child(5n) {
   border-radius: 9px 16px 13px 8px / 15px 9px 8px 13px;
 }
 
-html[data-look='drawn'] .board {
-  gap: 0.6rem;
+html[data-look='drawn'] .board-frame:not([data-dense]) {
+  --gap: 0.6rem;
 }
 
 html[data-look='drawn'] .cell[data-winning] {
