@@ -44,7 +44,7 @@ export const browserDeps: RoomDeps = {
  * message the room could not read (a join with a name or a token it refuses would otherwise leave
  * the page waiting for ever).
  */
-const STOPS_THE_GAME: readonly ErrorCode[] = ['room-full', 'invalid-message']
+const STOPS_THE_GAME: readonly ErrorCode[] = ['room-full', 'game-started', 'invalid-message']
 
 interface HookState {
   connection: Connection
@@ -65,7 +65,12 @@ type HookAction =
 export const RECONNECT_DELAYS_MS = [500, 1000, 2000, 4000, 8000]
 
 /** Problems that trying again won't solve: the room is gone or full, or this player is elsewhere. */
-const FINAL_PROBLEMS: readonly RoomProblem[] = ['unknown-room', 'room-full', 'replaced']
+const FINAL_PROBLEMS: readonly RoomProblem[] = [
+  'unknown-room',
+  'room-full',
+  'game-started',
+  'replaced',
+]
 
 const START: HookState = { connection: 'connecting', state: null, problem: null }
 

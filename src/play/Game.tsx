@@ -1,10 +1,11 @@
 import { useReducer, useState } from 'react'
 import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { Cell, GameState } from '../../shared/game/index.ts'
-import { CLASSIC_FIELD, roomConfig } from '../../shared/room.ts'
+import { CLASSIC_FIELD, DEFAULT_PLAYERS, PLAYER_LIMITS, roomConfig } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
+import { SHAPES } from '../shapes/shapes.ts'
 import type { ShapeId } from '../shapes/shapes.ts'
 import { Board } from './Board.tsx'
 import { FieldPicker } from './FieldPicker.tsx'
@@ -13,8 +14,8 @@ import { nameOf, shapeOf } from './players.ts'
 import { ShapePicker } from './ShapePicker.tsx'
 import './Game.css'
 
-/** The two shapes of a game on one screen, in the order of the players: the first one starts. */
-type Shapes = readonly [ShapeId, ShapeId]
+/** The shapes of a game on one screen, in the order of the players: the first one starts. */
+type Shapes = readonly ShapeId[]
 
 interface State {
   /** Which round of the evening this is; the starting player alternates with it. */
@@ -80,31 +81,68 @@ export function Game() {
   )
 }
 
-/** Both players choose a shape, the cross and the circle being ready for whoever doesn't care. */
+/** The shapes that are ready for this many players: the first ones, for whoever doesn't care. */
+function defaultShapes(count: number): ShapeId[] {
+  return SHAPES.slice(0, count).map(({ id }) => id)
+}
+
+/** Everybody chooses a shape, the cross and the circle being ready for the first two players. */
 function ChooseShapes({ onStart }: { onStart: (shapes: Shapes, field: FieldSettings) => void }) {
-  const [first, setFirst] = useState<ShapeId>('cross')
-  const [second, setSecond] = useState<ShapeId>('circle')
+  const [shapes, setShapes] = useState<ShapeId[]>(defaultShapes(DEFAULT_PLAYERS))
   const [field, setField] = useState<FieldSettings>(CLASSIC_FIELD)
+
+  // More players get the first shapes that are free, fewer players leave the last ones out.
+  const setCount = (count: number) => {
+    setShapes((current) => {
+      if (count <= current.length) return current.slice(0, count)
+      const free = SHAPES.map(({ id }) => id).filter((id) => !current.includes(id))
+      return [...current, ...free.slice(0, count - current.length)]
+    })
+  }
+
   return (
     <section className="game choose-shapes" aria-label="Vormen kiezen">
-      <ShapePicker
-        label="Speler 1 kiest een vorm"
-        value={first}
-        taken={{ [second]: 'speler 2' }}
-        onChange={setFirst}
-      />
-      <ShapePicker
-        label="Speler 2 kiest een vorm"
-        value={second}
-        taken={{ [first]: 'speler 1' }}
-        onChange={setSecond}
-      />
+      <div className="field">
+        <label htmlFor="local-player-count">Aantal spelers</label>
+        <select
+          id="local-player-count"
+          className="player-count"
+          value={shapes.length}
+          onChange={(event) => {
+            setCount(Number(event.target.value))
+          }}
+        >
+          {Array.from(
+            { length: PLAYER_LIMITS.max - PLAYER_LIMITS.min + 1 },
+            (_, index) => PLAYER_LIMITS.min + index,
+          ).map((count) => (
+            <option key={count} value={count}>
+              {count}
+            </option>
+          ))}
+        </select>
+      </div>
+      {shapes.map((shape, index) => (
+        <ShapePicker
+          key={index}
+          label={`Speler ${(index + 1).toString()} kiest een vorm`}
+          value={shape}
+          taken={Object.fromEntries(
+            shapes.flatMap((other, otherIndex) =>
+              otherIndex === index ? [] : [[other, `speler ${(otherIndex + 1).toString()}`]],
+            ),
+          )}
+          onChange={(chosen) => {
+            setShapes((current) => current.map((old, at) => (at === index ? chosen : old)))
+          }}
+        />
+      ))}
       <FieldPicker value={field} onChange={setField} />
       <button
         type="button"
         className="rematch"
         onClick={() => {
-          onStart([first, second], field)
+          onStart(shapes, field)
         }}
       >
         Start
@@ -139,7 +177,7 @@ function Play({
   }
 
   return (
-    <section className="game" aria-label="Boter, kaas en eieren">
+    <section className="game" aria-label="Boter, kaas en eieren Ultra">
       <p className="game-status" role="status">
         {player !== null && <ShapeIcon shape={shapeOf(player)} size={32} decorative />}
         <span>{text}</span>

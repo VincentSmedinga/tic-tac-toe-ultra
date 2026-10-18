@@ -221,3 +221,24 @@
   border: 3px dashed var(--line);
   border-radius: 0.5rem;
 }
+
+.player-count {
+  box-sizing: border-box;
+  min-width: 6rem;
+  min-height: 3rem;
+  padding: 0 0.75rem;
+  border: 3px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page);
+  color: inherit;
+  font: inherit;
+}
+
+.player-count:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.player-free {
+  opacity: 0.65;
+}

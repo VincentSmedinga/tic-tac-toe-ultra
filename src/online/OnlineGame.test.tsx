@@ -23,6 +23,7 @@ function stateOf(moves: Move[], you: string, players: Players = both, round = 0)
     code: 'BCDF',
     you,
     field: { width: 3, height: 3, winLength: 3 },
+    seats: 2,
     round,
     players,
     config: { ...config, players: [...config.players] },
@@ -60,6 +61,68 @@ describe('OnlineGame', () => {
     )
     expect(screen.getByText('7 × 5, vijf op een rij')).toBeVisible()
     expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(35)
+  })
+
+  describe('with three players', () => {
+    const three = (moves: Move[], you: string): StartedState => {
+      const config = { width: 7, height: 7, winLength: 5, players: ['cross', 'circle', 'star'] }
+      return {
+        ...stateOf([], you),
+        field: { width: 7, height: 7, winLength: 5 },
+        seats: 3,
+        players: [
+          { id: 'X', name: 'Anna', shape: 'cross', connected: true },
+          { id: 'O', name: 'Bo', shape: 'circle', connected: true },
+          { id: '3', shape: 'star', connected: true },
+        ],
+        config,
+        moves,
+      }
+    }
+
+    it('shows all of them, and whose turn it is by the name of the one who plays next', () => {
+      render(<OnlineGame state={three([x(0, 0)], '3')} send={vi.fn()} />)
+      expect(document.querySelectorAll('.players-row .player')).toHaveLength(3)
+      expect(screen.getByText('Ster (jij)')).toBeVisible()
+      expect(screen.getByText('Bo is aan de beurt')).toBeVisible()
+    })
+
+    it('lets the player whose turn it is play, and nobody else', async () => {
+      const send = vi.fn()
+      const user = userEvent.setup()
+      const { rerender } = render(<OnlineGame state={three([x(0, 0), o(1, 0)], '3')} send={send} />)
+      expect(screen.getByText('Jij bent aan de beurt')).toBeVisible()
+      await user.click(cell(3, 3))
+      expect(send).toHaveBeenCalledWith({ type: 'move', x: 2, y: 2 })
+
+      send.mockClear()
+      rerender(<OnlineGame state={three([x(0, 0), o(1, 0)], 'X')} send={send} />)
+      await user.click(cell(3, 3))
+      expect(send).not.toHaveBeenCalled()
+    })
+
+    it('tells the one who won, by name, to the others', () => {
+      const star = (col: number, row: number): Move => ({ player: 'star', x: col, y: row })
+      const moves = [
+        x(0, 0),
+        o(0, 1),
+        star(0, 2),
+        x(1, 0),
+        o(1, 1),
+        star(1, 2),
+        x(2, 0),
+        o(2, 1),
+        star(2, 2),
+        x(3, 0),
+        o(3, 1),
+        star(3, 2),
+        x(6, 6),
+        o(5, 5),
+        star(4, 2),
+      ]
+      render(<OnlineGame state={three(moves, 'X')} send={vi.fn()} />)
+      expect(screen.getByText('Ster heeft gewonnen!')).toBeVisible()
+    })
   })
 
   describe('whose turn it is', () => {
