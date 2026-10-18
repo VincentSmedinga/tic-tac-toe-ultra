@@ -4,6 +4,8 @@
  * site data), so everything falls back to memory, and the game works without it.
  */
 
+import { MAX_NAME_LENGTH, tokenSchema } from '../../shared/protocol.ts'
+
 const TOKEN_KEY = 'tic-tac-toe-ultra.token'
 const NAME_KEY = 'tic-tac-toe-ultra.name'
 
@@ -24,7 +26,8 @@ export function getToken(): string {
   if (store) {
     try {
       let token = store.getItem(TOKEN_KEY)
-      if (token === null) {
+      // Whatever is in storage may be anything: a token the room would refuse is made again.
+      if (token === null || !tokenSchema.safeParse(token).success) {
         token = crypto.randomUUID()
         store.setItem(TOKEN_KEY, token)
       }
@@ -35,6 +38,20 @@ export function getToken(): string {
   }
   memoryToken ??= crypto.randomUUID()
   return memoryToken
+}
+
+/**
+ * A name as the room accepts it: no control, invisible or unassigned characters (a pasted
+ * zero-width space, say), no spaces around it, and not longer than a name may be (cut between
+ * characters, never in the middle of one).
+ */
+export function sanitizeName(name: string): string {
+  let result = ''
+  for (const character of name.replace(/\p{C}/gu, '').trim()) {
+    if ((result + character).length > MAX_NAME_LENGTH) break
+    result += character
+  }
+  return result.trim()
 }
 
 export function getName(): string {
@@ -50,9 +67,10 @@ export function getName(): string {
 }
 
 export function setName(name: string): void {
-  memoryName = name
+  const clean = sanitizeName(name)
+  memoryName = clean
   try {
-    storage()?.setItem(NAME_KEY, name)
+    storage()?.setItem(NAME_KEY, clean)
   } catch {
     // Not remembered, but it still counts for this visit.
   }

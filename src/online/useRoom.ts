@@ -38,8 +38,12 @@ export const browserDeps: RoomDeps = {
   },
 }
 
-/** What stops the game for a player, as opposed to a mistake with one move. */
-const STOPS_THE_GAME: readonly ErrorCode[] = ['room-full']
+/**
+ * What stops the game for a player, as opposed to a mistake with one move: a full room, and a
+ * message the room could not read (a join with a name or a token it refuses would otherwise leave
+ * the page waiting for ever).
+ */
+const STOPS_THE_GAME: readonly ErrorCode[] = ['room-full', 'invalid-message']
 
 interface HookState {
   connection: Connection

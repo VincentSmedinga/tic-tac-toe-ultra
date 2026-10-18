@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { StateMessage } from '../../shared/protocol.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { nameOf, shapeOf } from '../play/players.ts'
-import { getName, getToken } from './identity.ts'
+import { getName, getToken, sanitizeName } from './identity.ts'
 import { Link } from './Link.tsx'
 import { browserDeps, useRoom } from './useRoom.ts'
 import type { RoomDeps, RoomProblem } from './useRoom.ts'
@@ -32,12 +32,13 @@ const PROBLEMS: Record<RoomProblem, string> = {
 
 /** A room: waiting for the other player, and then the two of you together. */
 export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
-  const [identity] = useState(() => ({ token: getToken(), name: getName().trim() }))
+  const [identity] = useState(() => ({ token: getToken(), name: sanitizeName(getName()) }))
   const { connection, state, problem, retry } = useRoom(code, identity, deps)
 
   if (problem !== null) {
     // Trying again only helps when the problem is the connection, not the room.
-    const canRetry = problem === 'replaced' || problem === 'unreachable'
+    const canRetry =
+      problem === 'replaced' || problem === 'unreachable' || problem === 'invalid-message'
     return (
       <div className="room">
         <p className="message" role="alert">

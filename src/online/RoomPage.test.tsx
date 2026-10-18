@@ -106,6 +106,21 @@ describe('RoomPage', () => {
     expect(socket.sent).toEqual([{ type: 'join', token: getToken(), name: 'Anna' }])
   })
 
+  it('cleans a name from storage that the room would refuse, instead of waiting for ever', async () => {
+    window.localStorage.setItem('tic-tac-toe-ultra.name', 'An\u200Bna\u0007')
+    window.localStorage.setItem('tic-tac-toe-ultra.token', 'short')
+    const { socket } = await connected()
+    expect(socket.sent).toEqual([{ type: 'join', token: getToken(), name: 'Anna' }])
+    expect(getToken()).not.toBe('short')
+  })
+
+  it('says so, with a way to try again, when the room cannot read the join', async () => {
+    const { socket } = await connected()
+    socket.receive({ type: 'error', error: 'invalid-message' })
+    expect(await screen.findByRole('alert')).toHaveTextContent('Er ging iets mis')
+    expect(screen.getByRole('button', { name: 'Opnieuw proberen' })).toBeVisible()
+  })
+
   describe('while waiting for a second player', () => {
     it('shows the code and the link, and who is here', async () => {
       setName('Anna')
