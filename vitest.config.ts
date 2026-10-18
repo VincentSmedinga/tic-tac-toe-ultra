@@ -3,6 +3,13 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    // The Worker imports Cloudflare's module, which only exists in their runtime.
+    alias: {
+      'cloudflare:workers': new URL('./server/testing/cloudflare-workers-stub.ts', import.meta.url)
+        .pathname,
+    },
+  },
   test: {
     // The server and shared folders fill up in later issues.
     passWithNoTests: true,
