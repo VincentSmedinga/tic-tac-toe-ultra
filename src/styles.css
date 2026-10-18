@@ -1,4 +1,8 @@
 @import './styles/tokens.css';
+@import './styles/stijl-gedeeld.css';
+@import './styles/stijl-a.css';
+@import './styles/stijl-b.css';
+@import './styles/stijl-c.css';
 
 :root {
   color-scheme: light dark;

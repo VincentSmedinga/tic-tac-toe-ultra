@@ -1,0 +1,197 @@
+@import '@fontsource/patrick-hand/latin-400.css';
+
+/*
+ * Style A, "Getekend": warm and a bit handmade. Paper behind, white cards on it, lines like a
+ * marker, a little crooked, never the same twice (the corners differ from cell to cell), and the
+ * shapes of the game scattered faintly over the paper.
+ */
+html[data-stijl='a'] {
+  --font-body: 'Patrick Hand', 'Segoe Print', system-ui, sans-serif;
+  --size-lead: clamp(1.25rem, 4.6vw, 1.5rem);
+  --backdrop: #f3ead4;
+  --wallpaper-opacity: 0.2;
+  --ink: var(--text);
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .2 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-stijl='a'] {
+    --backdrop: #2b2720;
+    --wallpaper-opacity: 0.24;
+  }
+}
+
+html[data-stijl='a'] body {
+  background: var(--paper-grain), var(--backdrop);
+}
+
+/* The title, with a marker line under it that is not quite straight. */
+html[data-stijl='a'] .wordmark-text {
+  padding-bottom: 0.2em;
+  font-size: clamp(2.4rem, 11vw, 4rem);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 12' preserveAspectRatio='none'%3E%3Cpath d='M3 7 C40 2 82 11 122 6 S200 3 240 8 S285 5 297 6' stroke='%23b87900' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")
+    bottom / 100% 0.28em no-repeat;
+}
+
+html[data-stijl='a'] h2,
+html[data-stijl='a'] legend {
+  font-size: 1.5rem;
+  font-weight: 400;
+  /* A highlighter pen over the lower half of the words. */
+  background: linear-gradient(
+    transparent 58%,
+    color-mix(in srgb, var(--shape-goldbar) 55%, transparent) 58%
+  );
+  padding-inline: 0.25em;
+  width: fit-content;
+  align-self: center;
+  margin-inline: auto;
+}
+
+html[data-stijl='a'] .choice,
+html[data-stijl='a'] .game-item,
+html[data-stijl='a'] .message,
+html[data-stijl='a'] .shape-picker-grid,
+html[data-stijl='a'] .share {
+  background: var(--page);
+  border: 3px solid var(--ink);
+  border-radius: 14px 30px 16px 28px / 28px 14px 30px 16px;
+  box-shadow: 4px 5px 0 var(--ink);
+}
+
+html[data-stijl='a'] .shape-picker-grid {
+  padding: 0.75rem;
+}
+
+html[data-stijl='a'] .choice:nth-of-type(odd),
+html[data-stijl='a'] .game-list li:nth-child(odd) .game-item {
+  transform: rotate(-0.5deg);
+}
+
+html[data-stijl='a'] .choice:nth-of-type(even),
+html[data-stijl='a'] .game-list li:nth-child(even) .game-item {
+  transform: rotate(0.4deg);
+}
+
+html[data-stijl='a'] .button,
+html[data-stijl='a'] .rematch,
+html[data-stijl='a'] .replay-controls button,
+html[data-stijl='a'] .replay-speed button {
+  border: 3px solid var(--ink);
+  border-radius: 12px 22px 14px 20px / 20px 12px 22px 14px;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-title);
+  font-size: 1.25rem;
+  font-weight: 400;
+  box-shadow: 3px 4px 0 var(--ink);
+}
+
+html[data-stijl='a'] .button-primary,
+html[data-stijl='a'] .rematch,
+html[data-stijl='a'] .replay-speed button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--page);
+}
+
+html[data-stijl='a'] .rematch-quiet {
+  background: var(--page);
+  color: var(--ink);
+}
+
+html[data-stijl='a'] .button-quiet {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-stijl='a'] .button:active,
+html[data-stijl='a'] .rematch:active {
+  box-shadow: 1px 1px 0 var(--ink);
+  transform: translate(2px, 3px);
+}
+
+html[data-stijl='a'] .field input {
+  border: 3px solid var(--ink);
+  border-radius: 10px 18px 12px 16px / 16px 10px 18px 12px;
+  background: var(--page);
+  font-size: 1.25rem;
+}
+
+html[data-stijl='a'] .room-code {
+  font-family: var(--font-title);
+  font-size: clamp(3.5rem, 18vw, 5.5rem);
+  font-weight: 400;
+  letter-spacing: 0.2em;
+}
+
+html[data-stijl='a'] .game-status {
+  font-size: 1.75rem;
+  font-weight: 400;
+  justify-content: center;
+}
+
+/* Every cell is a little different: the corners are not the same twice. */
+html[data-stijl='a'] .cell,
+html[data-stijl='a'] .shape-choice {
+  border: 3px solid var(--ink);
+  border-radius: 14px 9px 16px 8px / 9px 15px 8px 14px;
+  background: var(--page);
+}
+
+html[data-stijl='a'] .cell:nth-child(2n) {
+  border-radius: 8px 15px 9px 14px / 16px 8px 14px 9px;
+}
+
+html[data-stijl='a'] .cell:nth-child(3n) {
+  border-radius: 12px 12px 7px 16px / 8px 14px 14px 9px;
+}
+
+html[data-stijl='a'] .cell:nth-child(5n) {
+  border-radius: 9px 16px 13px 8px / 15px 9px 8px 13px;
+}
+
+html[data-stijl='a'] .board {
+  gap: 0.6rem;
+}
+
+html[data-stijl='a'] .cell[data-winning] {
+  border-color: var(--win);
+}
+
+html[data-stijl='a'] .shape-choice {
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+
+html[data-stijl='a'] .shape-choice[aria-pressed='true'] {
+  border-color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+html[data-stijl='a'] .player,
+html[data-stijl='a'] .players {
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-stijl='a']::view-transition-old(root) {
+    animation: 180ms ease-in both fade-out;
+  }
+
+  html[data-stijl='a']::view-transition-new(root) {
+    animation: 260ms ease-out both fade-in;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
