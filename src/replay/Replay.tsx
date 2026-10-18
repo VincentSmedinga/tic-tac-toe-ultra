@@ -157,7 +157,7 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
           disabled={total === 0}
           onClick={togglePlay}
         >
-          <Glyph kind={playing ? 'pause' : 'play'} />
+          <Glyph kind={playing ? 'pause' : 'play'} size={32} />
         </button>
         <button
           type="button"
@@ -209,25 +209,37 @@ function noop() {
   // A replay can't be played.
 }
 
-/** The picture on a control: the same simple shapes as on a tape deck, drawn with the text colour. */
-function Glyph({ kind }: { kind: 'first' | 'back' | 'play' | 'pause' | 'forward' | 'last' }) {
+/**
+ * The picture on a control, in the way of every player: a step has one triangle and a bar (◀| and
+ * |▶), a jump to the start or the end has two (|◀◀ and ▶▶|), and play, alone, is a plain triangle
+ * (two bars while it plays), on a round button of its own, so that none of them can be taken for
+ * another, with small buttons and without colour.
+ */
+function Glyph({
+  kind,
+  size = 24,
+}: {
+  kind: 'first' | 'back' | 'play' | 'pause' | 'forward' | 'last'
+  size?: number
+}) {
   const paths = {
-    first: 'M5 5v14M19 5L9 12l10 7z',
-    back: 'M17 5L7 12l10 7z',
-    play: 'M7 4l13 8-13 8z',
-    pause: 'M7 4v16M17 4v16',
-    forward: 'M7 5l10 7-10 7z',
-    last: 'M19 5v14M5 5l10 7L5 19z',
+    first: 'M4 5v14M15 6L8 12l7 6zM22 6l-7 6 7 6z',
+    back: 'M19 5v14M15 5L5 12l10 7z',
+    play: 'M8 4l13 8-13 8z',
+    pause: 'M8 5v14M16 5v14',
+    forward: 'M5 5v14M9 5l10 7-10 7z',
+    last: 'M20 5v14M2 6l7 6-7 6zM9 6l7 6-7 6z',
   }
+  const jump = kind === 'first' || kind === 'last'
   return (
     <svg
       aria-hidden="true"
-      width="24"
-      height="24"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill={kind === 'pause' ? 'none' : 'currentColor'}
       stroke="currentColor"
-      strokeWidth="3"
+      strokeWidth={kind === 'pause' ? 4 : jump ? 2.5 : 3}
       strokeLinecap="round"
       strokeLinejoin="round"
     >
