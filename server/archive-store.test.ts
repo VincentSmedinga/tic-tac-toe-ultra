@@ -97,6 +97,19 @@ describe('the archive store', () => {
     expect(store.get(WON.id)).toBeNull()
   })
 
+  it('does not read a game whose JSON is broken, instead of failing', () => {
+    store.save(WON, 1)
+    database.prepare('UPDATE games SET data = \'{"id":\'').run()
+    expect(store.get(WON.id)).toBeNull()
+  })
+
+  it('skips a broken game in a list and still lists the others', () => {
+    store.save({ ...WON, id: 'broken-broken-br', owners: ['hash-x'] }, 1)
+    store.save({ ...WON, id: 'fine-fine-fine-f', owners: ['hash-x'] }, 2)
+    database.prepare("UPDATE games SET data = 'not json' WHERE id = 'broken-broken-br'").run()
+    expect(store.list('hash-x', 10).games.map(({ id }) => id)).toEqual(['fine-fine-fine-f'])
+  })
+
   it('can be opened again on the same storage', () => {
     store.save(WON, 1)
     const again = new ArchiveStore(sqlOver(database))

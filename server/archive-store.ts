@@ -89,8 +89,15 @@ export class ArchiveStore {
   }
 }
 
+/** A game as it was stored; null when what is in storage is no game (broken JSON, wrong shape). */
 function parseGame(data: string): StoredGame | null {
-  const parsed = storedGameSchema.safeParse(JSON.parse(data))
+  let json: unknown
+  try {
+    json = JSON.parse(data)
+  } catch {
+    return null
+  }
+  const parsed = storedGameSchema.safeParse(json)
   return parsed.success ? parsed.data : null
 }
 
