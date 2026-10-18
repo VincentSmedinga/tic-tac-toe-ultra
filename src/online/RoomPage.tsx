@@ -4,6 +4,7 @@ import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { nameOf, shapeOf } from '../play/players.ts'
 import { getName, getToken, sanitizeName } from './identity.ts'
 import { Link } from './Link.tsx'
+import { OnlineGame } from './OnlineGame.tsx'
 import { browserDeps, useRoom } from './useRoom.ts'
 import type { RoomDeps, RoomProblem } from './useRoom.ts'
 import './Online.css'
@@ -33,9 +34,11 @@ const PROBLEMS: Record<RoomProblem, string> = {
 /** A room: waiting for the other player, and then the two of you together. */
 export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
   const [identity] = useState(() => ({ token: getToken(), name: sanitizeName(getName()) }))
-  const { connection, state, problem, retry } = useRoom(code, identity, deps)
+  const { connection, state, problem, retry, send } = useRoom(code, identity, deps)
 
-  if (problem !== null) {
+  // While a connection that was lost is tried again, the game stays on screen; only a problem
+  // that trying again won't solve (or one before the room ever answered) takes the page.
+  if (problem !== null && (state === null || problem !== 'unreachable')) {
     // Trying again only helps when the problem is the connection, not the room.
     const canRetry =
       problem === 'replaced' || problem === 'unreachable' || problem === 'invalid-message'
@@ -70,14 +73,10 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
   const together = state.players.length >= 2
   return (
     <div className="room">
-      {connection === 'closed' && <Lost onRetry={retry} />}
+      {connection !== 'open' && <Lost onRetry={retry} connecting={connection === 'connecting'} />}
 
       {together ? (
-        <>
-          <h2>Jullie zijn er allebei!</h2>
-          <Players state={state} />
-          <p>Het online bord is nog in aanbouw.</p>
-        </>
+        <OnlineGame state={state} send={send} />
       ) : (
         <>
           <h2>Kamer</h2>
@@ -97,12 +96,17 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
   )
 }
 
-function Lost({ onRetry }: { onRetry: () => void }) {
+/** The connection is gone; it is tried again by itself, and a button does it now. */
+function Lost({ onRetry, connecting = false }: { onRetry: () => void; connecting?: boolean }) {
   return (
     <div className="lost" role="alert">
-      <p>De verbinding is verbroken.</p>
+      <p>
+        {connecting
+          ? 'Opnieuw verbinden…'
+          : 'De verbinding is verbroken. Er wordt opnieuw geprobeerd.'}
+      </p>
       <button type="button" className="button button-primary" onClick={onRetry}>
-        Opnieuw verbinden
+        Nu opnieuw verbinden
       </button>
     </div>
   )
