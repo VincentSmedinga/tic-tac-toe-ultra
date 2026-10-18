@@ -1,15 +1,14 @@
-import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import './Wordmark.css'
 
-/** The name of the game as a title, "Boter, Kaas en Eieren Ultra", with three of the shapes in it. */
+/**
+ * The name of the game as a title, "Boter, Kaas en Eieren Ultra", with the app icon to the left of
+ * it, as high as the title's two lines. The icon is the picture in `public/icon.svg`, the same one
+ * that is on the home screen (see scripts/icons.ts), in the same dark square in every look.
+ */
 export function Wordmark() {
   return (
     <h1 className="wordmark">
-      <span className="wordmark-shapes" aria-hidden="true">
-        <ShapeIcon shape="cross" size="1em" decorative />
-        <ShapeIcon shape="circle" size="1em" decorative />
-        <ShapeIcon shape="heart" size="1em" decorative />
-      </span>
+      <img className="wordmark-logo" src="/icon.svg" alt="" width="512" height="512" />
       <span className="wordmark-text">Boter, Kaas en Eieren Ultra</span>
     </h1>
   )

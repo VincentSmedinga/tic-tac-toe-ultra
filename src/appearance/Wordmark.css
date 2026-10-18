@@ -1,21 +1,29 @@
 .wordmark {
+  /* A look sets the size of the title; the icon is as high as its two lines. */
+  --title-size: clamp(1.6rem, 8vw, 3.25rem);
+  --title-lines: 1.05;
+
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
+  justify-content: center;
+  gap: 0.5em;
   margin: 0 0 1rem;
+  font-size: var(--title-size);
+  line-height: var(--title-lines);
   text-align: center;
-  line-height: 1.05;
 }
 
-.wordmark-shapes {
-  display: flex;
-  gap: 0.25em;
-  font-size: clamp(1.75rem, 7vw, 2.75rem);
+/* The same dark square with its own colours in every look and scheme; the phone rounds the icon on
+   a home screen, so it is rounded here too. A look may give it an edge or a shadow, nothing else. */
+.wordmark-logo {
+  flex: none;
+  width: calc(2em * var(--title-lines));
+  height: calc(2em * var(--title-lines));
+  border-radius: 22%;
 }
 
 .wordmark-text {
-  font-size: clamp(2rem, 9vw, 3.5rem);
-  /* The title breaks into lines of about the same length, not one long line and a short one. */
+  /* The title breaks into lines of about the same length, not one long line and a short one, and
+     stays on two lines beside the icon, never under it. */
   text-wrap: balance;
 }
