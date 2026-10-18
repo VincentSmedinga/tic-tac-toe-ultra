@@ -23,7 +23,7 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
-main {
+.app {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -31,9 +31,9 @@ main {
   width: min(100%, 40rem);
   min-height: 100dvh;
   margin-inline: auto;
-  /* Room for the notch, and for the switch between the styles at the bottom. */
+  /* Room for the notch and the home bar. */
   padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-    calc(4rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   text-align: center;
 }
 
@@ -47,18 +47,37 @@ legend,
   font-family: var(--font-title);
 }
 
-main > :not(.wallpaper):not(.appearance) {
+/* The screen takes the room that is left, which pushes the footer to the bottom of the page. */
+.app > main {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
 }
 
-main > .wordmark {
-  width: auto;
+.app > main > * {
+  width: 100%;
 }
 
 /* The board takes the room that is left: not wider than the screen, nor higher than it. */
 .board {
   width: min(100%, 34rem, max(16rem, calc(100dvh - 22rem)));
   margin-inline: auto;
+}
+
+/*
+ * A button is as wide as what is on it, never stretched over the row or the card it is in
+ * (the tiles of the shape picker and the cells of the board are not buttons in this sense: they
+ * fill their grid).
+ */
+.button,
+.rematch {
+  box-sizing: border-box;
+  align-self: center;
+  width: auto;
+  max-width: 100%;
+  padding-inline: 1.75rem;
 }
 
 /* Touch targets of 48 px at least, and hover only where there is hover. */

@@ -1,0 +1,38 @@
+.site-footer {
+  box-sizing: border-box;
+  /* The footer sits at the bottom of the screen, also when the screen above it is short. */
+  margin-top: auto;
+  padding-top: 2rem;
+  width: 100%;
+}
+
+.site-footer-card {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem 1.5rem;
+}
+
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  font-family: var(--font-title);
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.footer-links a:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}

@@ -48,4 +48,21 @@ describe('App', () => {
     window.dispatchEvent(new PopStateEvent('popstate'))
     expect(await screen.findByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
   })
+
+  it('has the same footer on every screen, with a link to the played games', async () => {
+    openAt('/')
+    const user = userEvent.setup()
+    expect(screen.getByRole('region', { name: 'Uiterlijk' })).toBeVisible()
+    await user.click(screen.getByRole('link', { name: 'Gespeelde spellen' }))
+    expect(window.location.pathname).toBe('/spellen')
+    expect(await screen.findByRole('heading', { name: 'Gespeelde spellen' })).toBeVisible()
+    expect(screen.getByRole('region', { name: 'Uiterlijk' })).toBeVisible()
+    await user.click(screen.getByRole('link', { name: 'Terug naar het begin' }))
+    expect(await screen.findByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
+  })
+
+  it('no longer has the gallery of all shapes on the start screen', () => {
+    openAt('/')
+    expect(screen.queryByText('Alle vormen')).not.toBeInTheDocument()
+  })
 })

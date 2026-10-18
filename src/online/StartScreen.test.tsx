@@ -187,10 +187,4 @@ describe('StartScreen', () => {
       )
     })
   })
-
-  it('leads to the games that were played', async () => {
-    render(<StartScreen api={fakeApi()} />)
-    await userEvent.setup().click(screen.getByRole('link', { name: 'Gespeelde spellen' }))
-    expect(window.location.pathname).toBe('/spellen')
-  })
 })

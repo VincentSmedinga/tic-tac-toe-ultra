@@ -113,10 +113,6 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
       ) : (
         <Lobby state={state} send={send} />
       )}
-
-      <Link to="/" className="button button-quiet">
-        Terug naar het begin
-      </Link>
     </div>
   )
 }

@@ -213,11 +213,6 @@
   letter-spacing: 0.2em;
 }
 
-.start-more {
-  margin: 0;
-  text-align: center;
-}
-
 /* Where the shape of a player will come: nothing is chosen yet. */
 .shape-blank {
   box-sizing: border-box;

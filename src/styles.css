@@ -13,7 +13,3 @@ body {
   background: var(--page);
   color: var(--text);
 }
-
-main {
-  padding: 1rem;
-}

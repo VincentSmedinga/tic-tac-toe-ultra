@@ -229,21 +229,9 @@ html[data-look='playful'] .replay-position label {
   background: var(--page);
 }
 
-html[data-look='playful'] .appearance-toggle {
+html[data-look='playful'] .site-footer-card {
+  background: var(--page);
   border: 4px solid var(--edge);
-  font-weight: 700;
-  box-shadow: 0 5px 0 var(--edge);
-  transition:
-    transform 80ms,
-    box-shadow 80ms;
-}
-
-html[data-look='playful'] .appearance-toggle[aria-expanded='true'] {
-  box-shadow: 0 1px 0 var(--edge);
-  transform: translateY(4px);
-}
-
-html[data-look='playful'] .appearance-panel {
-  border: 4px solid var(--edge);
+  border-radius: 1.5rem;
   box-shadow: 0 7px 0 var(--edge);
 }

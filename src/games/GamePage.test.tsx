@@ -57,10 +57,6 @@ describe('GamePage', () => {
     render(<GamePage id="zzzzzzzzzzzzzzzz" api={games} rooms={rooms} />)
     expect(await screen.findByRole('alert')).toHaveTextContent('bestaat niet')
     expect(screen.queryByRole('region', { name: 'Spel terugkijken' })).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Alle gespeelde spellen' })).toHaveAttribute(
-      'href',
-      '/spellen',
-    )
   })
 
   it('says so when the game cannot be fetched, and tries again on request', async () => {

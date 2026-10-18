@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { MAX_NAME_LENGTH, roomCodeSchema } from '../../shared/protocol.ts'
 import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from '../../shared/room.ts'
-import { ShapeGallery } from '../shapes/ShapeGallery.tsx'
 import type { RoomApi } from './api.ts'
 import { roomApi } from './api.ts'
 import { clearLastRoom, getLastRoom, getName, setName } from './identity.ts'
@@ -200,17 +199,6 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
           Samen spelen
         </Link>
       </section>
-
-      <p className="start-more">
-        <Link to="/spellen" className="button button-quiet">
-          Gespeelde spellen
-        </Link>
-      </p>
-
-      <details>
-        <summary>Alle vormen</summary>
-        <ShapeGallery />
-      </details>
     </div>
   )
 }

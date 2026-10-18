@@ -26,7 +26,6 @@ test('a person chooses a theme and light or dark, which is there at once and aft
   page,
 }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: 'Uiterlijk' }).click()
   await page.getByRole('button', { name: 'Speels' }).click()
   await page.getByRole('button', { name: 'Donker' }).click()
   await expect(html(page)).toHaveAttribute('data-look', 'playful')
@@ -55,13 +54,26 @@ test('every look paints its own background, and the page never scrolls sideways'
     ['Rustig', /^none$/],
   ] as const
   for (const [look, background] of backgrounds) {
-    await page.getByRole('button', { name: 'Uiterlijk' }).click()
     await page.getByRole('button', { name: look }).click()
-    await page.getByRole('button', { name: 'Uiterlijk' }).click()
     await expect(page.locator('body'), look).toHaveCSS('background-image', background)
     const wider = await page.evaluate(
       'document.documentElement.scrollWidth > document.documentElement.clientWidth',
     )
     expect(wider, `${look} scrolls sideways`).toBe(false)
   }
+})
+
+test('the controls for the look are in the footer, after the screen and never over it', async ({
+  page,
+}) => {
+  await page.goto('/')
+  const footer = page.getByRole('contentinfo')
+  await expect(footer.getByRole('region', { name: 'Uiterlijk' })).toBeVisible()
+  await expect(footer.getByRole('link', { name: 'Gespeelde spellen' })).toBeVisible()
+  // Nothing is fixed to the screen: the controls scroll with the page, below the last button.
+  await expect(footer.getByRole('button', { name: 'Rustig' })).toHaveCSS('position', 'static')
+  await expect(page.getByRole('region', { name: 'Uiterlijk' })).toHaveCSS('position', 'static')
+  const lastButton = await page.getByRole('button', { name: 'Meedoen' }).boundingBox()
+  const controls = await footer.getByRole('region', { name: 'Uiterlijk' }).boundingBox()
+  expect(controls && lastButton && controls.y > lastButton.y + lastButton.height).toBe(true)
 })

@@ -1,0 +1,9 @@
+/* How the game looks: two groups of buttons, side by side where there is room. */
+.appearance {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 1rem;
+  width: 100%;
+  font-family: var(--font-title);
+  font-size: 1rem;
+}
