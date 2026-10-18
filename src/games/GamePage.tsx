@@ -3,7 +3,6 @@ import type { StoredGame } from '../../shared/protocol.ts'
 import { CopyLink } from '../online/CopyLink.tsx'
 import { roomApi } from '../online/api.ts'
 import type { RoomApi } from '../online/api.ts'
-import { Link } from '../online/Link.tsx'
 import { gamePath, navigate, roomPath } from '../online/route.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { gamesApi } from './api.ts'
@@ -111,15 +110,6 @@ export function GamePage({ id, api = gamesApi, rooms = roomApi }: GamePageProps)
           />
         </>
       )}
-
-      <div className="actions">
-        <Link to="/spellen" className="button">
-          Alle gespeelde spellen
-        </Link>
-        <Link to="/" className="button button-quiet">
-          Terug naar het begin
-        </Link>
-      </div>
     </div>
   )
 }

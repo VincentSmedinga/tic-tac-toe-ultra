@@ -1,0 +1,213 @@
+@import '@fontsource/patrick-hand/latin-400.css';
+
+/*
+ * Style A, "Getekend": warm and a bit handmade. Paper behind, white cards on it, lines like a
+ * marker, a little crooked, never the same twice (the corners differ from cell to cell), and the
+ * shapes of the game scattered faintly over the paper.
+ */
+html[data-look='drawn'] {
+  --font-body: 'Patrick Hand', 'Segoe Print', system-ui, sans-serif;
+  --size-lead: clamp(1.25rem, 4.6vw, 1.5rem);
+  --backdrop: #f3ead4;
+  --chrome: #f3ead4;
+  --wallpaper-opacity: 0.2;
+  --ink: var(--text);
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .2 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+html[data-look='drawn'][data-scheme='dark'] {
+  --backdrop: #2b2720;
+  --chrome: #2b2720;
+  --wallpaper-opacity: 0.24;
+}
+
+html[data-look='drawn'] body {
+  background: var(--paper-grain), var(--backdrop);
+}
+
+/* The title, with a marker line under it that is not quite straight. */
+html[data-look='drawn'] .wordmark-text {
+  padding-bottom: 0.2em;
+  font-size: clamp(2.4rem, 11vw, 4rem);
+  /* Patrick Hand has one weight only: the titles get a stroke of their own colour to be heavier. */
+  -webkit-text-stroke: 0.05em currentColor;
+  paint-order: stroke fill;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 12' preserveAspectRatio='none'%3E%3Cpath d='M3 7 C40 2 82 11 122 6 S200 3 240 8 S285 5 297 6' stroke='%23b87900' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")
+    bottom / 100% 0.28em no-repeat;
+}
+
+html[data-look='drawn'] h2,
+html[data-look='drawn'] legend {
+  font-size: 1.625rem;
+  font-weight: 400;
+  -webkit-text-stroke: 0.045em currentColor;
+  paint-order: stroke fill;
+  /* A highlighter pen over the lower half of the words. */
+  background: linear-gradient(
+    transparent 58%,
+    color-mix(in srgb, var(--shape-goldbar) 55%, transparent) 58%
+  );
+  padding-inline: 0.25em;
+  width: fit-content;
+  align-self: center;
+  margin-inline: auto;
+}
+
+html[data-look='drawn'] .choice,
+html[data-look='drawn'] .game-item,
+html[data-look='drawn'] .message,
+html[data-look='drawn'] .shape-picker-grid,
+html[data-look='drawn'] .share {
+  background: var(--page);
+  border: 3px solid var(--ink);
+  border-radius: 14px 30px 16px 28px / 28px 14px 30px 16px;
+  box-shadow: 4px 5px 0 var(--ink);
+}
+
+html[data-look='drawn'] .shape-picker-grid {
+  padding: 0.75rem;
+}
+
+html[data-look='drawn'] .choice:nth-of-type(odd),
+html[data-look='drawn'] .game-list li:nth-child(odd) .game-item {
+  transform: rotate(-0.5deg);
+}
+
+html[data-look='drawn'] .choice:nth-of-type(even),
+html[data-look='drawn'] .game-list li:nth-child(even) .game-item {
+  transform: rotate(0.4deg);
+}
+
+html[data-look='drawn'] .button,
+html[data-look='drawn'] .rematch,
+html[data-look='drawn'] .replay-controls button,
+html[data-look='drawn'] .replay-speed button {
+  border: 3px solid var(--ink);
+  border-radius: 12px 22px 14px 20px / 20px 12px 22px 14px;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-title);
+  font-size: 1.25rem;
+  font-weight: 400;
+  box-shadow: 3px 4px 0 var(--ink);
+}
+
+html[data-look='drawn'] .button-primary,
+html[data-look='drawn'] .rematch,
+html[data-look='drawn'] .replay-speed button[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--page);
+}
+
+html[data-look='drawn'] .rematch-quiet {
+  background: var(--page);
+  color: var(--ink);
+}
+
+html[data-look='drawn'] .button-quiet {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+html[data-look='drawn'] .button:active,
+html[data-look='drawn'] .rematch:active {
+  box-shadow: 1px 1px 0 var(--ink);
+  transform: translate(2px, 3px);
+}
+
+html[data-look='drawn'] .field input {
+  border: 3px solid var(--ink);
+  border-radius: 10px 18px 12px 16px / 16px 10px 18px 12px;
+  background: var(--page);
+  font-size: 1.25rem;
+}
+
+html[data-look='drawn'] .room-code {
+  font-family: var(--font-title);
+  font-size: clamp(3.5rem, 18vw, 5.5rem);
+  font-weight: 400;
+  letter-spacing: 0.2em;
+}
+
+html[data-look='drawn'] .game-status {
+  font-size: 1.75rem;
+  font-weight: 400;
+  justify-content: center;
+}
+
+/* Every cell is a little different: the corners are not the same twice. */
+html[data-look='drawn'] .cell,
+html[data-look='drawn'] .shape-choice {
+  border: 3px solid var(--ink);
+  border-radius: 14px 9px 16px 8px / 9px 15px 8px 14px;
+  background: var(--page);
+}
+
+html[data-look='drawn'] .cell:nth-child(2n) {
+  border-radius: 8px 15px 9px 14px / 16px 8px 14px 9px;
+}
+
+html[data-look='drawn'] .cell:nth-child(3n) {
+  border-radius: 12px 12px 7px 16px / 8px 14px 14px 9px;
+}
+
+html[data-look='drawn'] .cell:nth-child(5n) {
+  border-radius: 9px 16px 13px 8px / 15px 9px 8px 13px;
+}
+
+html[data-look='drawn'] .board {
+  gap: 0.6rem;
+}
+
+html[data-look='drawn'] .cell[data-winning] {
+  border-color: var(--win);
+}
+
+html[data-look='drawn'] .shape-choice {
+  font-family: var(--font-body);
+  font-size: 1rem;
+}
+
+html[data-look='drawn'] .shape-choice[aria-pressed='true'] {
+  border-color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+html[data-look='drawn'] .player,
+html[data-look='drawn'] .players {
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-look='drawn']::view-transition-old(root) {
+    animation: 180ms ease-in both fade-out;
+  }
+
+  html[data-look='drawn']::view-transition-new(root) {
+    animation: 260ms ease-out both fade-in;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+html[data-look='drawn'] .site-footer-card {
+  background: var(--page);
+  border: 3px solid var(--ink);
+  border-radius: 14px 30px 16px 28px / 28px 14px 30px 16px;
+  box-shadow: 4px 5px 0 var(--ink);
+}
+
+html[data-look='drawn'] .footer-links a {
+  font-size: 1.375rem;
+}

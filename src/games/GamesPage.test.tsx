@@ -134,10 +134,4 @@ describe('GamesPage', () => {
     await userEvent.setup().click(screen.getByRole('button', { name: 'Opnieuw proberen' }))
     expect(await screen.findByRole('list')).toBeVisible()
   })
-
-  it('leads back to the start', async () => {
-    render(<GamesPage api={fakeApi([{ games: [] }])} />)
-    await userEvent.setup().click(await screen.findByRole('link', { name: 'Terug naar het begin' }))
-    expect(window.location.pathname).toBe('/')
-  })
 })

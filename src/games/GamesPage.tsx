@@ -123,10 +123,6 @@ export function GamesPage({ api = gamesApi }: GamesPageProps) {
           De volgende spellen zijn nu niet op te halen. Probeer het zo nog eens.
         </p>
       )}
-
-      <Link to="/" className="button button-quiet">
-        Terug naar het begin
-      </Link>
     </div>
   )
 }

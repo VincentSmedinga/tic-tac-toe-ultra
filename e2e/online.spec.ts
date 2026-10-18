@@ -216,7 +216,7 @@ test('a played game is in the list of both players and opens for anyone with its
   await expect(guest.getByText('Anna (kruis) heeft gewonnen!')).toBeVisible()
 
   // The guest's own list has nothing: what a browser played is for that browser.
-  await guest.getByRole('link', { name: 'Alle gespeelde spellen' }).click()
+  await guest.getByRole('link', { name: 'Gespeelde spellen' }).click()
   await expect(guest.getByText(/nog geen spel online gespeeld/)).toBeVisible()
 
   // A link that is no game says so, and playing again from a game makes a room.

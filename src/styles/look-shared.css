@@ -1,0 +1,118 @@
+/*
+ * What the three styles have in common (issue #32, still a prototype): everything centred on the
+ * screen, a fluid type scale, a board that is as big as the room that is left (width and height),
+ * and screens that slide. The looks themselves (look-drawn.css, look-playful.css and
+ * look-calm.css) only change tokens and add their own paint, each under its own `data-look`; light
+ * and dark is `data-scheme` on the same element, set before the first paint by public/appearance.js.
+ *
+ * The shapes always sit on `--page`, whatever is behind it (`--backdrop`), so that the colours
+ * keep the contrast they were tested for in tokens.test.ts and palette.test.ts.
+ */
+:root {
+  --font-body: system-ui, sans-serif;
+  --font-title: var(--font-body);
+  --radius: 0.75rem;
+  --size-lead: clamp(1.125rem, 4vw, 1.375rem);
+}
+
+body {
+  background: var(--backdrop, var(--page));
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--size-lead);
+  -webkit-text-size-adjust: 100%;
+}
+
+.app {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 40rem);
+  min-height: 100dvh;
+  margin-inline: auto;
+  /* Room for the notch and the home bar. */
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  text-align: center;
+}
+
+h1,
+h2,
+legend,
+.button,
+.rematch,
+.game-status,
+.room-code {
+  font-family: var(--font-title);
+}
+
+/* The screen takes the room that is left, which pushes the footer to the bottom of the page. */
+.app > main {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.app > main > * {
+  width: 100%;
+}
+
+/* The board takes the room that is left: not wider than the screen, nor higher than it. */
+.board {
+  width: min(100%, 34rem, max(16rem, calc(100dvh - 22rem)));
+  margin-inline: auto;
+}
+
+/*
+ * A button is as wide as what is on it, never stretched over the row or the card it is in
+ * (the tiles of the shape picker and the cells of the board are not buttons in this sense: they
+ * fill their grid).
+ */
+.button,
+.rematch {
+  box-sizing: border-box;
+  align-self: center;
+  width: auto;
+  max-width: 100%;
+  padding-inline: 1.75rem;
+}
+
+/* Touch targets of 48 px at least, and hover only where there is hover. */
+.button,
+.rematch,
+.replay-controls button,
+.replay-speed button {
+  min-height: 3rem;
+}
+
+a {
+  color: inherit;
+}
+
+/* The screens slide: the old one goes left, the new one comes from the right. */
+@keyframes slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(-3rem);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(3rem);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 220ms ease-in both slide-out;
+  }
+
+  ::view-transition-new(root) {
+    animation: 280ms ease-out both slide-in;
+  }
+}

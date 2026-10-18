@@ -1,0 +1,237 @@
+@import '@fontsource/fredoka/latin-500.css';
+@import '@fontsource/fredoka/latin-700.css';
+
+/*
+ * Style B, "Speels": bright and bold. A colourful sky behind big rounded cards with a thick edge
+ * and a hard shadow, chunky buttons that go down when they are pressed, and the shapes of the
+ * game all over the background, in full colour.
+ */
+html[data-look='playful'] {
+  --font-body: 'Fredoka', ui-rounded, system-ui, sans-serif;
+  --size-lead: clamp(1.25rem, 4.6vw, 1.5rem);
+  --backdrop: linear-gradient(165deg, #ffe58a 0%, #ffb8d9 48%, #9fd4ff 100%);
+  --chrome: #ffe58a;
+  --wallpaper-opacity: 0.55;
+  --ink: #1b1b1f;
+  --edge: #1b1b1f;
+  --accent: #ffd23f;
+  --on-accent: #1b1b1f;
+}
+
+html[data-look='playful'][data-scheme='dark'] {
+  --backdrop: linear-gradient(165deg, #2b1a5e 0%, #5a1d57 52%, #0f3a66 100%);
+  --chrome: #2b1a5e;
+  --wallpaper-opacity: 0.4;
+  --edge: #000000;
+  --ink: #f2f2f4;
+}
+
+html[data-look='playful'] body {
+  min-height: 100dvh;
+  background: var(--backdrop) fixed;
+}
+
+html[data-look='playful'] .wordmark-text {
+  font-size: clamp(2.2rem, 10vw, 3.75rem);
+  font-weight: 700;
+  /* A thick outline in the colour of the edge, so the title stands on any colour behind it. */
+  color: #ffffff;
+  -webkit-text-stroke: 0.09em var(--edge);
+  paint-order: stroke fill;
+  text-shadow: 0 0.07em 0 var(--edge);
+}
+
+html[data-look='playful'] h2,
+html[data-look='playful'] legend {
+  font-size: 1.625rem;
+  font-weight: 700;
+}
+
+html[data-look='playful'] .choice,
+html[data-look='playful'] .game-item,
+html[data-look='playful'] .message,
+html[data-look='playful'] .share,
+html[data-look='playful'] .shape-picker-grid,
+html[data-look='playful'] .lost {
+  background: var(--page);
+  border: 4px solid var(--edge);
+  border-radius: 1.5rem;
+  box-shadow: 0 7px 0 var(--edge);
+}
+
+html[data-look='playful'] .shape-picker-grid,
+html[data-look='playful'] .share {
+  padding: 0.75rem;
+}
+
+html[data-look='playful'] .choice-primary {
+  background: color-mix(in srgb, var(--page) 88%, var(--accent));
+}
+
+html[data-look='playful'] .button,
+html[data-look='playful'] .rematch,
+html[data-look='playful'] .replay-controls button,
+html[data-look='playful'] .replay-speed button {
+  min-height: 3.5rem;
+  border: 4px solid var(--edge);
+  border-radius: 999px;
+  background: var(--page);
+  color: var(--ink);
+  font-family: var(--font-title);
+  font-size: 1.25rem;
+  font-weight: 700;
+  box-shadow: 0 5px 0 var(--edge);
+  transition:
+    transform 80ms,
+    box-shadow 80ms;
+}
+
+html[data-look='playful'] .button-primary,
+html[data-look='playful'] .rematch {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+html[data-look='playful'] .rematch-quiet,
+html[data-look='playful'] .replay-speed button[aria-pressed='true'] {
+  background: var(--page);
+  color: var(--ink);
+}
+
+html[data-look='playful'] .replay-speed button[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+html[data-look='playful'] .button-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: #1b1b1f;
+  box-shadow: none;
+  text-decoration: underline;
+}
+
+html[data-look='playful'][data-scheme='dark'] .button-quiet {
+  color: #f2f2f4;
+}
+
+html[data-look='playful'] .button:active:not(:disabled),
+html[data-look='playful'] .rematch:active,
+html[data-look='playful'] .replay-controls button:active:not(:disabled) {
+  box-shadow: 0 1px 0 var(--edge);
+  transform: translateY(4px);
+}
+
+html[data-look='playful'] .field input {
+  border: 4px solid var(--edge);
+  border-radius: 1rem;
+  background: var(--page);
+  font-size: 1.25rem;
+}
+
+html[data-look='playful'] .room-code {
+  font-size: clamp(3.5rem, 18vw, 5.5rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+}
+
+html[data-look='playful'] .game-status {
+  justify-content: center;
+  padding: 0.5rem 1.25rem;
+  border: 4px solid var(--edge);
+  border-radius: 999px;
+  background: var(--page);
+  font-size: 1.5rem;
+  font-weight: 700;
+  box-shadow: 0 5px 0 var(--edge);
+}
+
+html[data-look='playful'] .board {
+  gap: 0.6rem;
+}
+
+html[data-look='playful'] .cell,
+html[data-look='playful'] .shape-choice {
+  border: 4px solid var(--edge);
+  border-radius: 1.25rem;
+  background: var(--page);
+  box-shadow: 0 4px 0 var(--edge);
+}
+
+html[data-look='playful'] .cell:not([aria-disabled='true']):hover {
+  border-color: var(--edge);
+  transform: translateY(-2px);
+}
+
+html[data-look='playful'] .cell[data-winning] {
+  border-color: var(--win);
+  box-shadow:
+    0 4px 0 var(--edge),
+    0 0 0 4px var(--win);
+}
+
+html[data-look='playful'] .shape-choice {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+html[data-look='playful'] .shape-choice[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 4px 0 var(--edge);
+  border-color: var(--edge);
+}
+
+html[data-look='playful'] .player,
+html[data-look='playful'] .players {
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html[data-look='playful']::view-transition-old(root) {
+    animation: 200ms ease-in both slide-out;
+  }
+
+  html[data-look='playful']::view-transition-new(root) {
+    animation: 300ms cubic-bezier(0.2, 1.3, 0.5, 1) both slide-in;
+  }
+}
+
+html[data-look='playful'] .start-lead {
+  width: fit-content;
+  align-self: center;
+  padding: 0.25rem 1.25rem;
+  border: 4px solid var(--edge);
+  border-radius: 999px;
+  background: var(--page);
+  font-family: var(--font-title);
+  font-weight: 700;
+  box-shadow: 0 4px 0 var(--edge);
+}
+
+/* Pages made of loose text are one card, so that the wallpaper doesn't run behind the words. */
+html[data-look='playful'] .games,
+html[data-look='playful'] .game-page,
+html[data-look='playful'] .room {
+  box-sizing: border-box;
+  padding: 1rem;
+  border: 4px solid var(--edge);
+  border-radius: 1.5rem;
+  background: var(--page);
+  box-shadow: 0 7px 0 var(--edge);
+}
+
+html[data-look='playful'] .replay-position label {
+  align-self: center;
+  padding: 0.125rem 0.875rem;
+  border-radius: 999px;
+  background: var(--page);
+}
+
+html[data-look='playful'] .site-footer-card {
+  background: var(--page);
+  border: 4px solid var(--edge);
+  border-radius: 1.5rem;
+  box-shadow: 0 7px 0 var(--edge);
+}
