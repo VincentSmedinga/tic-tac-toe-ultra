@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { replayGame } from './game/index.ts'
 import type { Stats, StoredGame } from './protocol.ts'
 import { statsSchema } from './protocol.ts'
-import { WEEKS, computeStats } from './stats.ts'
+import { WEEKS, computeOwnStats, computeStats } from './stats.ts'
 
 // Dutch time is two hours ahead of UTC until the clocks change on 25 October 2026.
 const at = (day: number, hour: number, minute = 0): number =>
@@ -300,5 +300,56 @@ describe('statistics', () => {
       wins: 2,
     })
     expect(run(computeStats([win('a', 1), lose('b', 2), win('c', 3)], NOW))?.wins).toBe(1)
+  })
+})
+
+describe('the statistics of one browser', () => {
+  it('count nothing when it played nothing', () => {
+    expect(computeOwnStats([])).toEqual({
+      games: 0,
+      won: 0,
+      lost: 0,
+      drawn: 0,
+      unknown: 0,
+      favourite: null,
+    })
+  })
+
+  it('count the games it won, lost and drew, as the player it was in each', () => {
+    // TOP_ROW: X wins; DIAGONAL: the circle wins; DRAW: nobody; BIG: the heart wins.
+    expect(
+      computeOwnStats([
+        { game: TOP_ROW, player: 'X' },
+        { game: DIAGONAL, player: 'cross' },
+        { game: DRAW, player: 'star' },
+        { game: BIG, player: 'heart' },
+      ]),
+    ).toEqual({
+      games: 4,
+      won: 2,
+      lost: 1,
+      drawn: 1,
+      unknown: 0,
+      // The X of the old game is the cross, which is the shape it played most.
+      favourite: { shape: 'cross', games: 2 },
+    })
+  })
+
+  it('count a game of which the player is not known as played, not as won or lost', () => {
+    const stats = computeOwnStats([
+      { game: TOP_ROW, player: null },
+      { game: DIAGONAL, player: 'circle' },
+    ])
+    expect(stats).toMatchObject({ games: 2, won: 1, lost: 0, unknown: 1 })
+    expect(stats.favourite).toEqual({ shape: 'circle', games: 1 })
+  })
+
+  it('find the shape it played most, reading X as the cross', () => {
+    const stats = computeOwnStats([
+      { game: TOP_ROW, player: 'X' },
+      { game: DIAGONAL, player: 'cross' },
+      { game: DRAW, player: 'star' },
+    ])
+    expect(stats.favourite).toEqual({ shape: 'cross', games: 2 })
   })
 })

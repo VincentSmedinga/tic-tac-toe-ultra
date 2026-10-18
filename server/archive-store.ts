@@ -1,6 +1,6 @@
 import { gamesCursorSchema, storedGameSchema } from '../shared/protocol.ts'
 import type { GamesPage, GameSummary, StoredGame } from '../shared/protocol.ts'
-import type { RoomCounts } from '../shared/stats.ts'
+import type { OwnGame, RoomCounts } from '../shared/stats.ts'
 
 /** The part of Durable Object SQL storage the store uses, so it can run on any SQLite in tests. */
 export interface Sql {
@@ -50,6 +50,13 @@ export class ArchiveStore {
       finished_at INTEGER NOT NULL,
       PRIMARY KEY (owner, game_id)
     )`)
+    // Which player of the game each browser was, to know whether it won: added later, so rows from
+    // before have none and the game counts for them, but not as a win or a loss.
+    try {
+      sql.exec('ALTER TABLE players ADD COLUMN player_id TEXT')
+    } catch (error) {
+      if (!/duplicate column/i.test(String(error))) throw error
+    }
     sql.exec('CREATE INDEX IF NOT EXISTS players_by_time ON players (owner, finished_at DESC)')
   }
 
@@ -64,12 +71,20 @@ export class ArchiveStore {
         ? [stored.id, finishedAt, JSON.stringify(stored)]
         : [stored.id, finishedAt, JSON.stringify(stored), roomId]),
     )
-    for (const owner of new Set(owners)) {
+    // The owners are in seat order, like the players of the game: the same index is the same person.
+    const aligned = owners.length === game.players.length
+    const seen = new Set<string>()
+    for (const [index, owner] of owners.entries()) {
+      if (seen.has(owner)) continue
+      seen.add(owner)
+      const player = aligned ? game.players[index]?.id : undefined
       this.sql.exec(
-        'INSERT OR IGNORE INTO players (owner, game_id, finished_at) VALUES (?, ?, ?)',
-        owner,
-        stored.id,
-        finishedAt,
+        player === undefined
+          ? 'INSERT OR IGNORE INTO players (owner, game_id, finished_at) VALUES (?, ?, ?)'
+          : 'INSERT OR IGNORE INTO players (owner, game_id, finished_at, player_id) VALUES (?, ?, ?, ?)',
+        ...(player === undefined
+          ? [owner, stored.id, finishedAt]
+          : [owner, stored.id, finishedAt, player]),
       )
     }
   }
@@ -110,6 +125,21 @@ export class ArchiveStore {
       .flatMap(({ data }) => {
         const game = typeof data === 'string' ? parseGame(data) : null
         return game ? [game] : []
+      })
+  }
+
+  /** Every game this browser sat at, with the player it was in each (null when that isn't known). */
+  ownGames(owner: string): OwnGame[] {
+    return this.sql
+      .exec(
+        `SELECT g.data, p.player_id FROM players p JOIN games g ON g.id = p.game_id
+         WHERE p.owner = ? ORDER BY p.finished_at, p.game_id`,
+        owner,
+      )
+      .toArray()
+      .flatMap(({ data, player_id: player }) => {
+        const game = typeof data === 'string' ? parseGame(data) : null
+        return game ? [{ game, player: typeof player === 'string' ? player : null }] : []
       })
   }
 

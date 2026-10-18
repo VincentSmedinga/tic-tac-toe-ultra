@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers'
-import type { GamesPage, Stats, StoredGame } from '../shared/protocol.ts'
-import { computeStats } from '../shared/stats.ts'
+import type { GamesPage, OwnStats, Stats, StoredGame } from '../shared/protocol.ts'
+import { computeOwnStats, computeStats } from '../shared/stats.ts'
 import { ArchiveStore } from './archive-store.ts'
 import type { NewGame } from './archive-store.ts'
 import type { Env } from './env.ts'
@@ -45,6 +45,11 @@ export class Archive extends DurableObject<Env> {
    */
   stats(): Stats {
     return computeStats(this.store.all(), Date.now(), this.store.roomCounts())
+  }
+
+  /** The games of the browser with this token, counted: how many it played, won, lost and drew. */
+  async ownStats(token: string): Promise<OwnStats> {
+    return computeOwnStats(this.store.ownGames(await hashToken(token)))
   }
 
   /** The games of the browser with this token, newest first (see `ArchiveStore.list`). */

@@ -237,6 +237,22 @@ export const statsSchema = z.object({
 export type Stats = z.infer<typeof statsSchema>
 
 /**
+ * What `GET /api/stats/mine` answers: the games of one browser, counted. Only for that browser (its
+ * token is in the header), so it is never kept by a cache that others use.
+ */
+export const ownStatsSchema = z.object({
+  games: countSchema,
+  won: countSchema,
+  lost: countSchema,
+  drawn: countSchema,
+  /** Games of which it isn't known any more which player this browser was: not a win or a loss. */
+  unknown: countSchema,
+  /** The shape this browser played most, with how many games. */
+  favourite: z.object({ shape: shapeSchema, games: countSchema }).nullable(),
+})
+export type OwnStats = z.infer<typeof ownStatsSchema>
+
+/**
  * The whole room as one player sees it, sent again after every change. A game is its config plus
  * its moves (see shared/game/): the receiver rebuilds the game with `replayGame`, so there is no
  * second description of a game to keep in step.

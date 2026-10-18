@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeStats } from '../shared/stats.ts'
+import { computeOwnStats, computeStats } from '../shared/stats.ts'
 import worker from './index.ts'
 import type { Env } from './env.ts'
 
@@ -14,6 +14,8 @@ const STORED = {
 }
 
 const STATS = computeStats([], 0)
+const OWN = computeOwnStats([])
+const askedFor: string[] = []
 
 function fakeEnv(existing: readonly string[] = []) {
   const rooms = new Set(existing)
@@ -25,6 +27,10 @@ function fakeEnv(existing: readonly string[] = []) {
     ARCHIVE: {
       getByName: () => ({
         stats: () => Promise.resolve(STATS),
+        ownStats: (token: string) => {
+          askedFor.push(token)
+          return Promise.resolve(OWN)
+        },
         get: (id: string) => Promise.resolve(id === STORED.id ? STORED : null),
         list: (token: string, limit: number, before?: string) => {
           listed.push({ token, limit, before })
@@ -271,5 +277,37 @@ describe('GET /api/stats', () => {
   it('is only for GET and has nothing below it', async () => {
     expect((await call('/api/stats', { method: 'POST' })).status).toBe(405)
     expect((await call('/api/stats/more')).status).toBe(404)
+  })
+})
+
+describe('GET /api/stats/mine', () => {
+  const TOKEN = 'abcdefghijklmnopqrstuvwx'
+  const ask = (token: string | null = TOKEN, init: RequestInit = {}) =>
+    call('/api/stats/mine', {
+      ...init,
+      headers: token === null ? {} : { 'X-Player-Token': token },
+    })
+
+  it('counts the games of the browser whose token is in the header', async () => {
+    const response = await ask()
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual(OWN)
+    expect(askedFor).toContain(TOKEN)
+  })
+
+  it('is never kept by a cache that others use', async () => {
+    expect((await ask()).headers.get('Cache-Control')).toBe('private, no-store')
+  })
+
+  it('is refused without a token, with one that is no token, and with one in the address', async () => {
+    expect((await ask(null)).status).toBe(401)
+    expect((await ask('short')).status).toBe(401)
+    expect((await call(`/api/stats/mine?token=${TOKEN}`)).status).toBe(401)
+  })
+
+  it('is only for GET, and has nothing below it', async () => {
+    expect((await ask(TOKEN, { method: 'POST' })).status).toBe(405)
+    expect((await call('/api/stats/mine/more')).status).toBe(404)
+    expect((await call('/api/stats/other')).status).toBe(404)
   })
 })
