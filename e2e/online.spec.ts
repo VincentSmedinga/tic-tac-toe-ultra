@@ -17,10 +17,13 @@ async function startGame(browser: Browser) {
   await expect(anna.getByText('Wachten op een tweede speler…')).toBeVisible()
   const code = (await anna.locator('.room-code').textContent()) ?? ''
   expect(code).toMatch(/^[BCDFGHJKLMNPQRSTVWXZ]{4}$/)
+  // Choosing a shape is possible while waiting for the other player.
+  await anna.getByRole('button', { name: 'kruis', exact: true }).click()
 
   const bo = await newPlayer(browser, 'Bo')
   await bo.getByLabel('Code van de kamer').fill(code)
   await bo.getByRole('button', { name: 'Meedoen' }).click()
+  await bo.getByRole('button', { name: 'cirkel', exact: true }).click()
 
   await expect(anna.getByRole('group', { name: 'Speelveld' })).toBeVisible()
   await expect(bo.getByRole('group', { name: 'Speelveld' })).toBeVisible()
@@ -95,10 +98,12 @@ test('a player whose connection drops is shown as away, and comes back by themse
   await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
   await expect(anna.getByText('Wachten op een tweede speler…')).toBeVisible()
   const code = (await anna.locator('.room-code').textContent()) ?? ''
+  await anna.getByRole('button', { name: 'kruis', exact: true }).click()
 
   const bo = await newPlayer(browser, 'Bo')
   await bo.getByLabel('Code van de kamer').fill(code)
   await bo.getByRole('button', { name: 'Meedoen' }).click()
+  await bo.getByRole('button', { name: 'cirkel', exact: true }).click()
   await expect(bo.getByRole('group', { name: 'Speelveld' })).toBeVisible()
   await cell(anna, 1, 1).click()
   await expect(cell(bo, 1, 1)).toHaveAccessibleName('Rij 1, kolom 1: kruis')
@@ -220,4 +225,37 @@ test('a played game is in the list of both players and opens for anyone with its
   await anna.goto(link)
   await anna.getByRole('button', { name: 'Speel opnieuw' }).click()
   await expect(anna.getByText('Wachten op een tweede speler…')).toBeVisible()
+})
+
+test('players choose their own shapes, which are kept for the evening and the next room', async ({
+  browser,
+}) => {
+  const anna = await newPlayer(browser, 'Anna')
+  await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
+  const code = (await anna.locator('.room-code').textContent()) ?? ''
+  await anna.getByRole('button', { name: 'ster', exact: true }).click()
+  await expect(anna.getByText('Anna (ster) – jij')).toBeVisible()
+
+  const bo = await newPlayer(browser, 'Bo')
+  await bo.getByLabel('Code van de kamer').fill(code)
+  await bo.getByRole('button', { name: 'Meedoen' }).click()
+
+  // The shape of Anna is hers: Bo can't take it, and sees whose it is, and the game waits for Bo.
+  await expect(bo.getByText('Kies een vorm om te beginnen.')).toBeVisible()
+  await expect(bo.getByRole('button', { name: 'ster, van Anna' })).toBeDisabled()
+  await expect(anna.getByText('Bo kiest nog een vorm…')).toBeVisible()
+  await expect(anna.getByRole('group', { name: 'Speelveld' })).toBeHidden()
+  await bo.getByRole('button', { name: 'hart', exact: true }).click()
+
+  await expect(anna.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+  await expect(anna.getByText('Jij begint')).toBeVisible()
+  await cell(anna, 2, 2).click()
+  await expect(cell(bo, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: ster')
+  await cell(bo, 1, 1).click()
+  await expect(cell(anna, 1, 1)).toHaveAccessibleName('Rij 1, kolom 1: hart')
+
+  // A new room of the same browser asks for the same shape: nothing to choose when it is free.
+  await anna.getByRole('link', { name: 'Terug naar het begin' }).click()
+  await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
+  await expect(anna.getByText('Anna (ster) – jij')).toBeVisible()
 })

@@ -217,3 +217,12 @@
   margin: 0;
   text-align: center;
 }
+
+/* Where the shape of a player will come: nothing is chosen yet. */
+.shape-blank {
+  box-sizing: border-box;
+  width: 2rem;
+  height: 2rem;
+  border: 3px dashed var(--line);
+  border-radius: 0.5rem;
+}

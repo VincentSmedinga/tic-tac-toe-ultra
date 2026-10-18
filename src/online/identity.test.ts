@@ -4,10 +4,12 @@ import {
   clearLastRoom,
   getLastRoom,
   getName,
+  getShape,
   getToken,
   sanitizeName,
   setLastRoom,
   setName,
+  setShape,
 } from './identity.ts'
 
 afterEach(() => {
@@ -133,5 +135,33 @@ describe('the room this browser last sat in', () => {
     expect(getLastRoom()).toBe('GHJK')
     clearLastRoom()
     expect(getLastRoom()).toBeNull()
+  })
+})
+
+describe('the shape of a browser', () => {
+  it('is none until one is chosen', () => {
+    expect(getShape()).toBeNull()
+  })
+
+  it('is kept in localStorage', () => {
+    setShape('heart')
+    expect(window.localStorage.getItem('tic-tac-toe-ultra.shape')).toBe('heart')
+    expect(getShape()).toBe('heart')
+  })
+
+  it('is none when what is in storage is no shape', () => {
+    window.localStorage.setItem('tic-tac-toe-ultra.shape', 'banana')
+    expect(getShape()).toBeNull()
+  })
+
+  it('still counts for this visit when localStorage is off', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('off')
+    })
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('off')
+    })
+    setShape('star')
+    expect(getShape()).toBe('star')
   })
 })

@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react'
-import type { StateMessage } from '../../shared/protocol.ts'
+import type { ClientMessage, StateMessage } from '../../shared/protocol.ts'
+import type { ShapeId } from '../../shared/shapes.ts'
+import { ShapePicker } from '../play/ShapePicker.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
-import { nameOf, shapeOf } from '../play/players.ts'
-import { clearLastRoom, getName, getToken, sanitizeName, setLastRoom } from './identity.ts'
+import { nameOf } from '../play/players.ts'
+import {
+  clearLastRoom,
+  getName,
+  getShape,
+  getToken,
+  sanitizeName,
+  setLastRoom,
+  setShape,
+} from './identity.ts'
 import { CopyLink } from './CopyLink.tsx'
 import { Link } from './Link.tsx'
 import { OnlineGame } from './OnlineGame.tsx'
 import { roomPath } from './route.ts'
+import { isStarted } from './started.ts'
 import { browserDeps, useRoom } from './useRoom.ts'
 import type { RoomDeps, RoomProblem } from './useRoom.ts'
 import './Online.css'
@@ -26,6 +37,9 @@ const PROBLEMS: Record<RoomProblem, string> = {
   'not-joined': 'Er ging iets mis. Probeer het opnieuw.',
   'waiting-for-opponent': 'Er ging iets mis. Probeer het opnieuw.',
   'room-damaged': 'Er ging iets mis. Probeer het opnieuw.',
+  'shape-needed': 'Kies eerst een vorm.',
+  'shape-taken': 'Die vorm heeft de ander al. Kies een andere.',
+  'shape-locked': 'Het spel is al begonnen: je vorm kun je nu niet meer veranderen.',
   'game-over': 'Er ging iets mis. Probeer het opnieuw.',
   'game-not-over': 'Er ging iets mis. Probeer het opnieuw.',
   'not-your-turn': 'Er ging iets mis. Probeer het opnieuw.',
@@ -35,7 +49,11 @@ const PROBLEMS: Record<RoomProblem, string> = {
 
 /** A room: waiting for the other player, and then the two of you together. */
 export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
-  const [identity] = useState(() => ({ token: getToken(), name: sanitizeName(getName()) }))
+  const [identity] = useState(() => ({
+    token: getToken(),
+    name: sanitizeName(getName()),
+    shape: getShape(),
+  }))
   const { connection, state, problem, retry, send } = useRoom(code, identity, deps)
 
   // Remember the room once there is a seat in it, so that the start screen can lead back to it;
@@ -45,6 +63,12 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
     if (seated) setLastRoom(code)
     else if (problem === 'unknown-room' || problem === 'room-full') clearLastRoom()
   }, [seated, problem, code])
+
+  // Remember the shape this browser plays with, so that the next room asks for it again.
+  const myShape = state?.players.find((player) => player.id === state.you)?.shape
+  useEffect(() => {
+    if (myShape) setShape(myShape)
+  }, [myShape])
 
   // While a connection that was lost is tried again, the game stays on screen; only a problem
   // that trying again won't solve (or one before the room ever answered) takes the page.
@@ -80,29 +104,58 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
     )
   }
 
-  const together = state.players.length >= 2
   return (
     <div className="room">
       {connection !== 'open' && <Lost onRetry={retry} connecting={connection === 'connecting'} />}
 
-      {together ? (
+      {isStarted(state) ? (
         <OnlineGame state={state} send={send} />
       ) : (
-        <>
-          <h2>Kamer</h2>
-          <p className="room-code" aria-label={`Code ${state.code.split('').join(' ')}`}>
-            {state.code}
-          </p>
-          <ShareLink code={state.code} />
-          <Players state={state} />
-          <p role="status">Wachten op een tweede speler…</p>
-        </>
+        <Lobby state={state} send={send} />
       )}
 
       <Link to="/" className="button button-quiet">
         Terug naar het begin
       </Link>
     </div>
+  )
+}
+
+/** The room before the game: the code, who is here, and everybody choosing their shape. */
+function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMessage) => void }) {
+  const together = state.players.length >= 2
+  const mine = state.players.find((player) => player.id === state.you)
+  const other = state.players.find((player) => player.id !== state.you)
+
+  // The shapes the other player has, so that those can't be picked: with whose they are.
+  const taken: Partial<Record<ShapeId, string>> = {}
+  for (const player of state.players) {
+    if (player.id !== state.you && player.shape) taken[player.shape] = player.name ?? 'de ander'
+  }
+
+  let status = 'Wachten op een tweede speler…'
+  if (together && mine?.shape === undefined) status = 'Kies een vorm om te beginnen.'
+  else if (together && other?.shape === undefined)
+    status = `${other?.name ?? 'De ander'} kiest nog een vorm…`
+
+  return (
+    <>
+      <h2>Kamer</h2>
+      <p className="room-code" aria-label={`Code ${state.code.split('').join(' ')}`}>
+        {state.code}
+      </p>
+      {!together && <ShareLink code={state.code} />}
+      <Players state={state} />
+      <ShapePicker
+        label="Kies je vorm"
+        value={mine?.shape ?? null}
+        taken={taken}
+        onChange={(shape) => {
+          send({ type: 'choose', shape })
+        }}
+      />
+      <p role="status">{status}</p>
+    </>
   )
 }
 
@@ -122,26 +175,37 @@ function Lost({ onRetry, connecting = false }: { onRetry: () => void; connecting
   )
 }
 
-/** Who has a seat: their shape, their name if they gave one, and which of them is you. */
+/** Who has a seat: their shape (once chosen), their name if they gave one, and which one is you. */
 function Players({ state }: { state: StateMessage }) {
   return (
     <div className="players">
-      {state.players.map((player) => (
-        <div key={player.id} className="player">
-          <ShapeIcon shape={shapeOf(player.id)} size={32} decorative />
-          <span>
-            {player.name ?? nameOf(player.id)}
-            {player.name !== undefined && ` (${nameOf(player.id).toLowerCase()})`}
-            {player.id === state.you && ' – jij'}
-            {!player.connected && ' – niet verbonden'}
-          </span>
-        </div>
-      ))}
+      {state.players.map((player) => {
+        const { shape } = player
+        const label =
+          shape === undefined
+            ? (player.name ?? 'Nieuwe speler')
+            : (player.name ?? nameOf(shape)) +
+              (player.name === undefined ? '' : ` (${nameOf(shape).toLowerCase()})`)
+        return (
+          <div key={player.id} className="player">
+            {shape ? (
+              <ShapeIcon shape={shape} size={32} decorative />
+            ) : (
+              <span className="shape-blank" aria-hidden="true" />
+            )}
+            <span>
+              {label}
+              {player.id === state.you && ' – jij'}
+              {shape === undefined && ' – kiest nog'}
+              {!player.connected && ' – niet verbonden'}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-/** The address of the room, to copy and send to the other player. */
 function ShareLink({ code }: { code: string }) {
   return (
     <CopyLink

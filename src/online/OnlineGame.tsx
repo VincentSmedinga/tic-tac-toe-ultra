@@ -6,17 +6,23 @@ import { Board } from '../play/Board.tsx'
 import { nameOf, shapeOf } from '../play/players.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
+import type { StartedState } from './started.ts'
 import '../play/Game.css'
 import './Online.css'
 
 interface OnlineGameProps {
-  state: StateMessage
+  state: StartedState
   send: (message: ClientMessage) => void
 }
 
-/** The name a player goes by: the one they typed, or their shape ("Kruis"). */
-function displayName(state: StateMessage, id: string): string {
-  return state.players.find((player) => player.id === id)?.name ?? nameOf(id)
+/** The name a player goes by: the one they typed, or their shape ("Kruis"). `shape` is the player of the game. */
+function displayName(state: StateMessage, shape: string): string {
+  return state.players.find((player) => player.shape === shape)?.name ?? nameOf(shape)
+}
+
+/** The shape of the player who reads this. */
+function myShapeOf(state: StateMessage): string | undefined {
+  return state.players.find((player) => player.id === state.you)?.shape
 }
 
 /** What the status line says, from the point of view of the player who reads it. */
@@ -24,12 +30,12 @@ function statusText(state: StateMessage, game: GameState): string {
   const { status } = game
   if (status.kind === 'draw') return 'Gelijkspel! Niemand heeft gewonnen.'
   if (status.kind === 'won') {
-    return status.winner === state.you
+    return status.winner === myShapeOf(state)
       ? 'Je hebt gewonnen!'
       : `${displayName(state, status.winner)} heeft gewonnen!`
   }
   const starts = game.moveCount === 0
-  if (status.next === state.you) return starts ? 'Jij begint' : 'Jij bent aan de beurt'
+  if (status.next === myShapeOf(state)) return starts ? 'Jij begint' : 'Jij bent aan de beurt'
   return `${displayName(state, status.next)} ${starts ? 'begint' : 'is aan de beurt'}`
 }
 
@@ -53,34 +59,38 @@ export function OnlineGame({ state, send }: OnlineGameProps) {
       <Replay
         config={state.config}
         moves={state.moves}
-        players={state.players}
+        players={state.players.flatMap(({ shape, name }) =>
+          shape === undefined ? [] : [{ id: shape, name }],
+        )}
         onClose={() => {
           setReplayRound(null)
         }}
       />
     )
   }
-  const myTurn = game.status.kind === 'playing' && game.status.next === state.you
+  const myTurn = game.status.kind === 'playing' && game.status.next === myShapeOf(state)
   const away = state.players.filter((player) => player.id !== state.you && !player.connected)
 
   return (
     <section className="game online-game" aria-label="Online spel">
       <div className="players players-row">
-        {state.players.map((player) => (
-          <div key={player.id} className="player" data-you={player.id === state.you || undefined}>
-            <ShapeIcon shape={shapeOf(player.id)} size={28} decorative />
-            <span>
-              {displayName(state, player.id)}
-              {player.id === state.you && ' (jij)'}
-            </span>
-          </div>
-        ))}
+        {state.players.map((player) =>
+          player.shape === undefined ? null : (
+            <div key={player.id} className="player" data-you={player.id === state.you || undefined}>
+              <ShapeIcon shape={player.shape} size={28} decorative />
+              <span>
+                {displayName(state, player.shape)}
+                {player.id === state.you && ' (jij)'}
+              </span>
+            </div>
+          ),
+        )}
       </div>
 
       {away.length > 0 && (
         <p className="message" role="status">
-          {away.map((player) => displayName(state, player.id)).join(' en ')} is even weg… Het spel
-          wacht op terugkomst.
+          {away.map((player) => displayName(state, player.shape ?? '')).join(' en ')} is even weg…
+          Het spel wacht op terugkomst.
         </p>
       )}
 

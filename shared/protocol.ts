@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from './room.ts'
+import { SHAPE_IDS } from './shapes.ts'
 
 /** What goes over the WebSocket between a player and a room: JSON, validated on both sides. */
 
@@ -22,8 +23,18 @@ const nameSchema = z
   .transform((name) => (name === '' ? undefined : name))
   .optional()
 
+export const shapeSchema = z.enum(SHAPE_IDS)
+
 export const clientMessageSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('join'), token: tokenSchema, name: nameSchema }),
+  /** `shape` is the one this browser used last: taken when it is free and none is chosen yet. */
+  z.object({
+    type: z.literal('join'),
+    token: tokenSchema,
+    name: nameSchema,
+    shape: shapeSchema.optional(),
+  }),
+  /** Chooses a shape, or another one, until the game has started. */
+  z.object({ type: z.literal('choose'), shape: shapeSchema }),
   z.object({
     type: z.literal('move'),
     x: z.number().int().min(0).max(99),
@@ -33,13 +44,16 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
 ])
 export type ClientMessage = z.infer<typeof clientMessageSchema>
 
-/** What went wrong with a message; the first five are about the room, the rest about the move. */
+/** What went wrong with a message; the first ones are about the room and the shapes, the rest about the move. */
 export const errorCodeSchema = z.enum([
   'invalid-message',
   'not-joined',
   'room-full',
   'waiting-for-opponent',
   'room-damaged',
+  'shape-needed',
+  'shape-taken',
+  'shape-locked',
   'game-over',
   'game-not-over',
   'not-your-turn',
@@ -114,15 +128,26 @@ export const MAX_GAMES_PAGE_SIZE = 50
 export const stateMessageSchema = z.object({
   type: z.literal('state'),
   code: roomCodeSchema,
-  /** The player id of the one who receives this. */
+  /** The seat of the one who receives this. */
   you: z.string(),
   /** Which round of the evening this is; the starting player alternates with it. */
   round: z.number().int().min(0),
   /** Who has a seat, in seat order, and whether they are connected right now. */
   players: z.array(
-    z.object({ id: z.string(), name: z.string().optional(), connected: z.boolean() }),
+    z.object({
+      /** The seat, `X` or `O`: not the shape. */
+      id: z.string(),
+      name: z.string().optional(),
+      /** The shape this player has chosen, if they have. */
+      shape: shapeSchema.optional(),
+      connected: z.boolean(),
+    }),
   ),
-  config: configSchema,
+  /**
+   * The game of this round: there from the moment every seat has a shape, and its players are the
+   * shapes. Without it the room is still waiting for players or for their choice.
+   */
+  config: configSchema.optional(),
   moves: z.array(moveSchema),
   /** The id of the stored game once this round is over, so that it can be watched again. */
   gameId: gameIdSchema.optional(),

@@ -1,7 +1,13 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { Game } from './Game.tsx'
+
+/** Opens the game and starts it with the cross and the circle that are ready. */
+async function startGame() {
+  render(<Game />)
+  await userEvent.click(screen.getByRole('button', { name: 'Start' }))
+}
 
 /** The cell at row `y` and column `x`, counted from 1 like the labels do. */
 function cell(y: number, x: number) {
@@ -27,15 +33,15 @@ const crossWins = [
 ] as const
 
 describe('Game', () => {
-  it('starts with an empty field and the cross to play', () => {
-    render(<Game />)
+  it('starts with an empty field and the cross to play', async () => {
+    await startGame()
     expect(screen.getAllByRole('button')).toHaveLength(9)
     expect(screen.getByRole('status')).toHaveTextContent('Kruis begint')
     expect(cell(2, 2)).toHaveAccessibleName('Rij 2, kolom 2: leeg')
   })
 
   it('lets the players take turns', async () => {
-    render(<Game />)
+    await startGame()
     await tap([1, 1])
     expect(cell(1, 1)).toHaveAccessibleName('Rij 1, kolom 1: kruis')
     expect(screen.getByRole('status')).toHaveTextContent('Cirkel is aan de beurt')
@@ -46,7 +52,7 @@ describe('Game', () => {
   })
 
   it('ignores a tap on a cell that is taken', async () => {
-    render(<Game />)
+    await startGame()
     await tap([1, 1], [1, 1])
     expect(cell(1, 1)).toHaveAccessibleName('Rij 1, kolom 1: kruis')
     expect(screen.getByRole('status')).toHaveTextContent('Cirkel is aan de beurt')
@@ -54,7 +60,7 @@ describe('Game', () => {
 
   it('can be played with the keyboard', async () => {
     const user = userEvent.setup()
-    render(<Game />)
+    await startGame()
     cell(1, 2).focus()
     await user.keyboard('{Enter}')
     expect(cell(1, 2)).toHaveAccessibleName('Rij 1, kolom 2: kruis')
@@ -64,7 +70,7 @@ describe('Game', () => {
 
   describe('when someone wins', () => {
     it('says who won and marks the winning line', async () => {
-      render(<Game />)
+      await startGame()
       await tap(...crossWins)
       expect(screen.getByRole('status')).toHaveTextContent('Kruis heeft gewonnen!')
       for (const x of [1, 2, 3]) expect(cell(1, x)).toHaveAttribute('data-winning')
@@ -72,7 +78,7 @@ describe('Game', () => {
     })
 
     it('marks every line the last move completes, each cell once: five cells for a row and a column', async () => {
-      render(<Game />)
+      await startGame()
       // X takes the top row and the right column, and the corner (row 1, column 3) completes both.
       await tap([1, 1], [2, 1], [1, 2], [2, 2], [2, 3], [3, 1], [3, 3], [3, 2], [1, 3])
       expect(screen.getByRole('status')).toHaveTextContent('Kruis heeft gewonnen!')
@@ -90,14 +96,14 @@ describe('Game', () => {
     })
 
     it('takes no more moves', async () => {
-      render(<Game />)
+      await startGame()
       await tap(...crossWins, [3, 3])
       expect(cell(3, 3)).toHaveAccessibleName('Rij 3, kolom 3: leeg')
       expect(cell(3, 3)).toHaveAttribute('aria-disabled', 'true')
     })
 
     it('lets the other player start the next round after "Nog een keer"', async () => {
-      render(<Game />)
+      await startGame()
       const user = await tap(...crossWins)
       await user.click(screen.getByRole('button', { name: 'Nog een keer' }))
 
@@ -114,7 +120,7 @@ describe('Game', () => {
   })
 
   it('declares a draw, and offers another round', async () => {
-    render(<Game />)
+    await startGame()
     await tap([1, 1], [1, 2], [1, 3], [2, 2], [2, 1], [2, 3], [3, 2], [3, 1], [3, 3])
     expect(screen.getByRole('status')).toHaveTextContent('Gelijkspel!')
     expect(screen.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
@@ -124,13 +130,13 @@ describe('Game', () => {
   })
 
   describe('looking back', () => {
-    it('is not offered while the game is on', () => {
-      render(<Game />)
+    it('is not offered while the game is on', async () => {
+      await startGame()
       expect(screen.queryByRole('button', { name: 'Kijk terug' })).not.toBeInTheDocument()
     })
 
     it('replays the game just played, and goes back to the end of it', async () => {
-      render(<Game />)
+      await startGame()
       const user = await tap(...crossWins)
       await user.click(screen.getByRole('button', { name: 'Kijk terug' }))
 
@@ -145,8 +151,76 @@ describe('Game', () => {
     })
   })
 
-  it('does not offer a rematch while the game is on', () => {
-    render(<Game />)
+  it('does not offer a rematch while the game is on', async () => {
+    await startGame()
     expect(screen.queryByRole('button', { name: 'Nog een keer' })).not.toBeInTheDocument()
+  })
+
+  describe('choosing the shapes', () => {
+    /** The picker of a player, found by its label. */
+    const picker = (player: 1 | 2) =>
+      within(screen.getByRole('group', { name: `Speler ${player.toString()} kiest een vorm` }))
+
+    it('comes first, with the cross for the first player and the circle for the second ready', () => {
+      render(<Game />)
+      expect(screen.queryByRole('group', { name: 'Speelveld' })).not.toBeInTheDocument()
+      expect(picker(1).getByRole('button', { name: 'kruis' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      expect(picker(2).getByRole('button', { name: 'cirkel' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+    })
+
+    it('plays with the shapes that were chosen, the first player starting', async () => {
+      render(<Game />)
+      const user = userEvent.setup()
+      await user.click(picker(1).getByRole('button', { name: 'hart' }))
+      await user.click(picker(2).getByRole('button', { name: 'ster' }))
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+
+      expect(screen.getByRole('status')).toHaveTextContent('Hart begint')
+      await user.click(cell(1, 1))
+      expect(cell(1, 1)).toHaveAccessibleName('Rij 1, kolom 1: hart')
+      await user.click(cell(2, 2))
+      expect(cell(2, 2)).toHaveAccessibleName('Rij 2, kolom 2: ster')
+    })
+
+    it('does not let both take the same shape, and says whose it is', () => {
+      render(<Game />)
+      expect(picker(2).getByRole('button', { name: 'kruis, van speler 1' })).toBeDisabled()
+      expect(picker(1).getByRole('button', { name: 'cirkel, van speler 2' })).toBeDisabled()
+    })
+
+    it('frees a shape when its player takes another', async () => {
+      render(<Game />)
+      await userEvent.setup().click(picker(1).getByRole('button', { name: 'ster' }))
+      expect(picker(2).getByRole('button', { name: 'kruis' })).toBeEnabled()
+      expect(picker(2).getByRole('button', { name: 'ster, van speler 1' })).toBeDisabled()
+    })
+
+    it('keeps the shapes in a rematch, and lets the other player start', async () => {
+      render(<Game />)
+      const user = userEvent.setup()
+      await user.click(picker(1).getByRole('button', { name: 'hart' }))
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+      await tap(...crossWins)
+      await user.click(screen.getByRole('button', { name: 'Nog een keer' }))
+      expect(screen.getByRole('status')).toHaveTextContent('Cirkel begint')
+      await user.click(cell(1, 1))
+      expect(cell(1, 1)).toHaveAccessibleName('Rij 1, kolom 1: cirkel')
+    })
+
+    it('can be done again after a game, with a fresh start', async () => {
+      await startGame()
+      const user = await tap(...crossWins)
+      await user.click(screen.getByRole('button', { name: 'Andere vormen' }))
+      expect(picker(1).getByRole('button', { name: 'kruis' })).toBeVisible()
+      await user.click(picker(1).getByRole('button', { name: 'plus' }))
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+      expect(screen.getByRole('status')).toHaveTextContent('Plus begint')
+    })
   })
 })

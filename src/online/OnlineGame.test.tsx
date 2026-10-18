@@ -5,16 +5,19 @@ import type { Move } from '../../shared/game/index.ts'
 import type { StateMessage } from '../../shared/protocol.ts'
 import { roomConfig } from '../../shared/room.ts'
 import { OnlineGame } from './OnlineGame.tsx'
+import type { StartedState } from './started.ts'
 
 type Players = StateMessage['players']
 
+/** The seats X and O have chosen the cross and the circle. */
 const both: Players = [
-  { id: 'X', name: 'Anna', connected: true },
-  { id: 'O', connected: true },
+  { id: 'X', name: 'Anna', shape: 'cross', connected: true },
+  { id: 'O', shape: 'circle', connected: true },
 ]
 
-function stateOf(moves: Move[], you: string, players: Players = both, round = 0): StateMessage {
-  const config = roomConfig(round)
+/** The room as `you` (the seat X or O) sees it; the players of the game are the shapes. */
+function stateOf(moves: Move[], you: string, players: Players = both, round = 0): StartedState {
+  const config = roomConfig(round, ['cross', 'circle'])
   return {
     type: 'state',
     code: 'BCDF',
@@ -26,10 +29,10 @@ function stateOf(moves: Move[], you: string, players: Players = both, round = 0)
   }
 }
 
-const x = (col: number, row: number): Move => ({ player: 'X', x: col, y: row })
-const o = (col: number, row: number): Move => ({ player: 'O', x: col, y: row })
+const x = (col: number, row: number): Move => ({ player: 'cross', x: col, y: row })
+const o = (col: number, row: number): Move => ({ player: 'circle', x: col, y: row })
 
-/** X wins on the top row. */
+/** The cross wins on the top row. */
 const xWins = [x(0, 0), o(0, 1), x(1, 0), o(1, 1), x(2, 0)]
 
 function cell(row: number, col: number) {
@@ -121,8 +124,8 @@ describe('OnlineGame', () => {
   describe('when the other player is away', () => {
     it('says so, and that the game waits', () => {
       const players: Players = [
-        { id: 'X', name: 'Anna', connected: false },
-        { id: 'O', connected: true },
+        { id: 'X', name: 'Anna', shape: 'cross', connected: false },
+        { id: 'O', shape: 'circle', connected: true },
       ]
       render(<OnlineGame state={stateOf([x(1, 1)], 'O', players)} send={vi.fn()} />)
       const note = screen.getByText(/Anna is even weg/)
@@ -132,8 +135,8 @@ describe('OnlineGame', () => {
 
     it('says nothing about yourself when your own connection is the problem', () => {
       const players: Players = [
-        { id: 'X', name: 'Anna', connected: false },
-        { id: 'O', connected: true },
+        { id: 'X', name: 'Anna', shape: 'cross', connected: false },
+        { id: 'O', shape: 'circle', connected: true },
       ]
       render(<OnlineGame state={stateOf([], 'X', players)} send={vi.fn()} />)
       expect(screen.queryByText(/is even weg/)).not.toBeInTheDocument()

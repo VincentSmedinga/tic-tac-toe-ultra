@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { parseServerMessage } from '../../shared/protocol.ts'
 import type { ClientMessage, ErrorCode, StateMessage } from '../../shared/protocol.ts'
+import type { ShapeId } from '../../shared/shapes.ts'
 import type { RoomApi } from './api.ts'
 import { roomApi } from './api.ts'
 
@@ -92,7 +93,7 @@ function reduce(previous: HookState, action: HookAction): HookState {
  */
 export function useRoom(
   code: string,
-  identity: { token: string; name: string },
+  identity: { token: string; name: string; shape?: ShapeId | null },
   deps: RoomDeps = browserDeps,
 ): RoomView {
   const [view, dispatch] = useReducer(reduce, START)
@@ -126,9 +127,14 @@ export function useRoom(
         if (!session.active) return
         failuresRef.current = 0
         dispatch({ type: 'open' })
-        const { token, name } = identity
-        const join: ClientMessage =
-          name === '' ? { type: 'join', token } : { type: 'join', token, name }
+        const { token, name, shape } = identity
+        const join: ClientMessage = {
+          type: 'join',
+          token,
+          ...(name === '' ? {} : { name }),
+          // The shape this browser had last time: the room takes it when it is free.
+          ...(shape ? { shape } : {}),
+        }
         socket?.send(JSON.stringify(join))
       }
       socket.onmessage = (event) => {

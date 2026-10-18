@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { SHAPE_IDS } from '../../shared/shapes.ts'
 import { contrast, themes } from '../styles/tokens.ts'
 import { ShapeGallery } from './ShapeGallery.tsx'
 import { ShapeIcon } from './ShapeIcon.tsx'
@@ -22,6 +23,10 @@ describe('the set of shapes', () => {
       'goldbar',
     ])
     expect(new Set(SHAPES.map(({ name }) => name)).size).toBe(12)
+  })
+
+  it('has the same ids as the room knows, in the same order', () => {
+    expect(SHAPES.map(({ id }) => id)).toEqual([...SHAPE_IDS])
   })
 
   it('has a drawing for every shape', () => {

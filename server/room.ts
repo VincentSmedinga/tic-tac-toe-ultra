@@ -4,7 +4,7 @@ import { ArchiveQueue } from './archive-queue.ts'
 import type { Pending } from './archive-queue.ts'
 import type { Env } from './env.ts'
 import { newGameId } from './game-id.ts'
-import { newRoom } from './room-logic.ts'
+import { newRoom, upgradeRoom } from './room-logic.ts'
 import type { RoomState } from './room-logic.ts'
 import { RoomSession } from './room-session.ts'
 import type { Host } from './room-session.ts'
@@ -129,7 +129,10 @@ export class Room extends DurableObject<Env> {
     const find = (id: string) => sockets().find((ws) => attachmentOf(ws).id === id)
     const host: Host = {
       code: String(this.ctx.storage.kv.get(CODE_KEY) ?? ''),
-      load: () => this.ctx.storage.kv.get<RoomState>(ROOM_KEY) ?? null,
+      load: () => {
+        const room = this.ctx.storage.kv.get<RoomState>(ROOM_KEY)
+        return room ? upgradeRoom(room) : null
+      },
       save: (room) => {
         this.ctx.storage.kv.put(ROOM_KEY, room)
       },

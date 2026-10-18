@@ -1,19 +1,23 @@
 import type { GameConfig, PlayerId } from './game/index.ts'
 
-/** The players of a room, in seat order: whoever joins first is the first one. */
-export const ROOM_PLAYERS: readonly PlayerId[] = ['X', 'O']
+/**
+ * The seats of a room, in the order people join: the first to join has the first seat. A seat is
+ * not a player of the game: the player is the shape that whoever sits there has chosen.
+ */
+export const ROOM_SEATS: readonly string[] = ['X', 'O']
 
 /**
- * The game of a round: classic tic-tac-toe, where the player who starts alternates every round,
- * so after a rematch the other one starts.
+ * The game of a round: classic tic-tac-toe, played with the shapes the seats have chosen (`shapes`,
+ * in seat order). The player who starts alternates every round, so after a rematch the other one
+ * starts.
  */
-export function roomConfig(round: number): GameConfig {
-  const shift = round % ROOM_PLAYERS.length
+export function roomConfig(round: number, shapes: readonly PlayerId[]): GameConfig {
+  const shift = round % Math.max(shapes.length, 1)
   return {
     width: 3,
     height: 3,
     winLength: 3,
-    players: [...ROOM_PLAYERS.slice(shift), ...ROOM_PLAYERS.slice(0, shift)],
+    players: [...shapes.slice(shift), ...shapes.slice(0, shift)],
   }
 }
 
