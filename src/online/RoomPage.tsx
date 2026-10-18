@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { StateMessage } from '../../shared/protocol.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { nameOf, shapeOf } from '../play/players.ts'
-import { getName, getToken, sanitizeName } from './identity.ts'
+import { clearLastRoom, getName, getToken, sanitizeName, setLastRoom } from './identity.ts'
 import { Link } from './Link.tsx'
 import { OnlineGame } from './OnlineGame.tsx'
 import { browserDeps, useRoom } from './useRoom.ts'
@@ -35,6 +35,14 @@ const PROBLEMS: Record<RoomProblem, string> = {
 export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
   const [identity] = useState(() => ({ token: getToken(), name: sanitizeName(getName()) }))
   const { connection, state, problem, retry, send } = useRoom(code, identity, deps)
+
+  // Remember the room once there is a seat in it, so that the start screen can lead back to it;
+  // forget it when it is gone or full, since going back would only show that.
+  const seated = state !== null
+  useEffect(() => {
+    if (seated) setLastRoom(code)
+    else if (problem === 'unknown-room' || problem === 'room-full') clearLastRoom()
+  }, [seated, problem, code])
 
   // While a connection that was lost is tried again, the game stays on screen; only a problem
   // that trying again won't solve (or one before the room ever answered) takes the page.

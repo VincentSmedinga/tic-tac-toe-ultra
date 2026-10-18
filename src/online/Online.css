@@ -207,3 +207,8 @@
 .players-row .player[data-you] {
   font-weight: 700;
 }
+
+.resume-code {
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.2em;
+}

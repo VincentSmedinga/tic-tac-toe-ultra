@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { SyntheticEvent } from 'react'
 import { MAX_NAME_LENGTH, roomCodeSchema } from '../../shared/protocol.ts'
 import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from '../../shared/room.ts'
 import { ShapeGallery } from '../shapes/ShapeGallery.tsx'
 import type { RoomApi } from './api.ts'
 import { roomApi } from './api.ts'
-import { getName, setName } from './identity.ts'
+import { clearLastRoom, getLastRoom, getName, setName } from './identity.ts'
 import { Link } from './Link.tsx'
 import { navigate, roomPath } from './route.ts'
 import './Online.css'
@@ -36,6 +36,27 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
       : null,
   )
   const [busy, setBusy] = useState(false)
+  // The room this browser last sat in, when it is still there: a way back after going to the start.
+  const [resume, setResume] = useState<string | null>(null)
+
+  useEffect(() => {
+    const last = getLastRoom()
+    if (last === null) return
+    let current = true
+    void api
+      .roomExists(last)
+      .then((exists) => {
+        if (!current) return
+        if (exists) setResume(last)
+        else clearLastRoom()
+      })
+      .catch(() => {
+        // Can't ask just now: leave the offer out, the choices below still work.
+      })
+    return () => {
+      current = false
+    }
+  }, [api])
 
   async function createRoom() {
     setBusy(true)
@@ -88,6 +109,19 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
 
   return (
     <div className="start">
+      {resume !== null && (
+        <section className="choice choice-primary" aria-labelledby="resume-title">
+          <h2 id="resume-title">Je speelt nog mee</h2>
+          <p>
+            Je zit in kamer <strong className="resume-code">{resume}</strong>. Daar ga je verder
+            waar je was.
+          </p>
+          <Link to={roomPath(resume)} className="button button-primary">
+            Terug naar kamer {resume}
+          </Link>
+        </section>
+      )}
+
       <section className="choice choice-name" aria-labelledby="who-title">
         <h2 id="who-title">Wie ben je?</h2>
         <div className="field">

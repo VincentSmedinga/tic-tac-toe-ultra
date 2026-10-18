@@ -4,13 +4,15 @@
  * site data), so everything falls back to memory, and the game works without it.
  */
 
-import { MAX_NAME_LENGTH, tokenSchema } from '../../shared/protocol.ts'
+import { MAX_NAME_LENGTH, roomCodeSchema, tokenSchema } from '../../shared/protocol.ts'
 
 const TOKEN_KEY = 'tic-tac-toe-ultra.token'
 const NAME_KEY = 'tic-tac-toe-ultra.name'
+const ROOM_KEY = 'tic-tac-toe-ultra.room'
 
 let memoryToken: string | null = null
 let memoryName = ''
+let memoryRoom: string | null = null
 
 function storage(): Storage | null {
   try {
@@ -73,5 +75,38 @@ export function setName(name: string): void {
     storage()?.setItem(NAME_KEY, clean)
   } catch {
     // Not remembered, but it still counts for this visit.
+  }
+}
+
+/** The room this browser last sat in, so that the start screen can offer to go back to it. */
+export function getLastRoom(): string | null {
+  const store = storage()
+  let code = memoryRoom
+  if (store) {
+    try {
+      code = store.getItem(ROOM_KEY)
+    } catch {
+      // Fall back to what was remembered this visit.
+    }
+  }
+  return code !== null && roomCodeSchema.safeParse(code).success ? code : null
+}
+
+export function setLastRoom(code: string): void {
+  memoryRoom = code
+  try {
+    storage()?.setItem(ROOM_KEY, code)
+  } catch {
+    // Not remembered, but it still counts for this visit.
+  }
+}
+
+/** The room is gone, or full, or was left for good: it is no use to offer it again. */
+export function clearLastRoom(): void {
+  memoryRoom = null
+  try {
+    storage()?.removeItem(ROOM_KEY)
+  } catch {
+    // Nothing to clear.
   }
 }
