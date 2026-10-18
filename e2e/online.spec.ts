@@ -175,3 +175,49 @@ test('a finished game can be watched again, move by move, and gives way to a rem
   await expect(bo.getByRole('group', { name: 'Speelveld' })).toBeVisible()
   await expect(bo.getByText('Jij begint')).toBeVisible()
 })
+
+test('a played game is in the list of both players and opens for anyone with its link', async ({
+  browser,
+}) => {
+  const { anna, bo } = await startGame(browser)
+  await cell(anna, 1, 1).click()
+  await cell(bo, 2, 1).click()
+  await cell(anna, 1, 2).click()
+  await cell(bo, 2, 2).click()
+  await cell(anna, 1, 3).click()
+  await expect(bo.getByText('Anna heeft gewonnen!')).toBeVisible()
+
+  // Both players find it by going to the start screen and the list.
+  for (const player of [anna, bo]) {
+    await player.getByRole('link', { name: 'Terug naar het begin' }).click()
+    await player.getByRole('link', { name: 'Gespeelde spellen' }).click()
+    await expect(player.getByRole('heading', { name: 'Gespeelde spellen' })).toBeVisible()
+    await expect(player.getByRole('listitem')).toHaveCount(1)
+    await expect(player.getByRole('listitem')).toContainText('Anna (kruis) heeft gewonnen')
+  }
+
+  // The link of the game is the right to see it: a browser that never played gets the replay.
+  await anna.getByRole('listitem').getByRole('link').click()
+  await expect(anna.getByText('Zet 0 van 5')).toBeVisible()
+  const link = anna.url()
+  expect(link).toMatch(/\/spel\/[A-Za-z0-9_-]{16}$/)
+  await anna.getByRole('button', { name: 'Naar het einde' }).click()
+  await expect(anna.getByText('Anna (kruis) heeft gewonnen!')).toBeVisible()
+
+  const guest = await newPlayer(browser, 'Cor')
+  await guest.goto(link)
+  await expect(guest.getByText('Zet 0 van 5')).toBeVisible()
+  await guest.keyboard.press('End')
+  await expect(guest.getByText('Anna (kruis) heeft gewonnen!')).toBeVisible()
+
+  // The guest's own list has nothing: what a browser played is for that browser.
+  await guest.getByRole('link', { name: 'Alle gespeelde spellen' }).click()
+  await expect(guest.getByText(/nog geen spel online gespeeld/)).toBeVisible()
+
+  // A link that is no game says so, and playing again from a game makes a room.
+  await guest.goto('/spel/zzzzzzzzzzzzzzzz')
+  await expect(guest.getByRole('alert')).toContainText('Dit spel bestaat niet')
+  await anna.goto(link)
+  await anna.getByRole('button', { name: 'Speel opnieuw' }).click()
+  await expect(anna.getByText('Wachten op een tweede speler…')).toBeVisible()
+})
