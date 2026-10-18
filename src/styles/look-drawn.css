@@ -83,8 +83,7 @@ html[data-look='drawn'] .game-list li:nth-child(even) .game-item {
 
 html[data-look='drawn'] .button,
 html[data-look='drawn'] .rematch,
-html[data-look='drawn'] .replay-controls button,
-html[data-look='drawn'] .replay-speed button {
+html[data-look='drawn'] .replay-controls button {
   border: 3px solid var(--ink);
   border-radius: 12px 22px 14px 20px / 20px 12px 22px 14px;
   background: var(--page);
@@ -96,8 +95,7 @@ html[data-look='drawn'] .replay-speed button {
 }
 
 html[data-look='drawn'] .button-primary,
-html[data-look='drawn'] .rematch,
-html[data-look='drawn'] .replay-speed button[aria-pressed='true'] {
+html[data-look='drawn'] .rematch {
   background: var(--ink);
   color: var(--page);
 }
