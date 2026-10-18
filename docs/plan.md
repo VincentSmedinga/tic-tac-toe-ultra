@@ -48,6 +48,15 @@ The SVGs follow the hand-drawn lines, so they keep a slightly wobbly, hand-made 
 
 The second drawing adds the oval, heart, fort, waves and gold bar; the person who drew them chose the Dutch names. Photos from a phone hold the place where they were taken, so only a copy without metadata goes in the repository (`.gitignore` keeps the original HEIC files out).
 
+## Look and feel
+
+Everybody chooses how the game looks, for themselves and per device (localStorage; the "Uiterlijk" button in the corner of every screen). Two choices, both applied before the first paint by `public/appearance.js` (so nothing flashes) and kept up to date by `src/appearance/`:
+
+- **The theme, one of three looks** (`data-look` on `<html>`, `src/styles/look-*.css`). All three dress the same screens and share one layer (`look-shared.css`): everything centred, a fluid type scale, a board as big as the room that is left (width and height), screens that slide (a view transition, off for people who want less motion), and the shapes always on `--page` so their tested contrast holds. **Getekend** (the first) is warm: paper, marker lines, corners that differ from cell to cell, a highlighter under the headings (Patrick Hand). **Speels** is bright: a colourful sky, big cards with a thick edge and a hard shadow, buttons that go down when pressed (Fredoka). **Rustig** is calm: big type, no frames, one big button, almost no wallpaper (the system's rounded font). The decision was to keep all three and let people choose, rather than to pick one; the fonts are under the SIL Open Font License, come from the site itself and are fetched only by the look that uses them.
+- **Light or dark** (`data-scheme`): it follows the system until a person picks one, and has two buttons, Licht and Donker, never a "Systeem" (the model of [Blokhut](https://github.com/VincentSmedinga/blokhut) and of Lea Verou's [two states are enough](https://lea.verou.me/blog/2026/dark-mode-toggles-two-states-are-enough/)): a pick that is what the system gives anyway is forgotten, so the system is never out of reach. The browser's bar takes the colour of the page (`--chrome`, which a look may set itself).
+
+The wallpaper (the twelve shapes scattered over the page, drawn from the same paths) is a component whose loudness is a token of the look.
+
 ## Milestones
 
 - **0 · Foundation:** project, CI, deploy.
