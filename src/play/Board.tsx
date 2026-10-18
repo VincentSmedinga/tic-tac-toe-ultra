@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Cell, GameState } from '../../shared/game/index.ts'
+import { useMotion } from '../motion/preference.ts'
+import { newSeed } from '../motion/random.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { shapeById } from '../shapes/shapes.ts'
 import { boardLines } from './lines.ts'
 import { shapeOf } from './players.ts'
+import { useArrival } from './useArrival.ts'
 
 interface BoardProps {
   game: GameState
@@ -14,6 +17,8 @@ interface BoardProps {
   lastMove?: Cell
   /** False leaves the cells out of the tab order, for a board that is only looked at (a long replay). */
   focusable?: boolean
+  /** Fixes how the shapes are written (a test, a replay); without it every board has a seed of its own. */
+  seed?: number
 }
 
 /**
@@ -22,7 +27,8 @@ interface BoardProps {
  * too big for the screen keeps cells that are big enough to tap and is scrolled inside its frame;
  * one that fits fills the room that is left. For the keyboard the board is one stop, as in a grid:
  * Tab goes in and out, the arrow keys, Home and End move over the cells (a field of 19 × 19 would
- * be 361 stops otherwise).
+ * be 361 stops otherwise). A shape that has just been placed is written on the field as with a
+ * marker (`useArrival`): the move has counted already, the next one cuts the writing short.
  */
 export function Board({
   game,
@@ -30,6 +36,7 @@ export function Board({
   interactive = true,
   lastMove,
   focusable = true,
+  seed,
 }: BoardProps) {
   const { width, height } = game.config
   const grid = useRef<HTMLDivElement>(null)
@@ -44,6 +51,9 @@ export function Board({
   )
   const playing = game.status.kind === 'playing' && interactive
   const lines = boardLines(width, height)
+  const [ownSeed] = useState(newSeed)
+  const motion = useMotion()
+  const arrival = useArrival(game, seed ?? ownSeed)
 
   const moveTo = (x: number, y: number) => {
     const index = Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))
@@ -145,7 +155,18 @@ export function Board({
                 if (open) onPlay({ x, y })
               }}
             >
-              {player !== null && <ShapeIcon shape={shapeOf(player)} size="100%" decorative />}
+              {player !== null && (
+                <ShapeIcon
+                  shape={shapeOf(player)}
+                  size="100%"
+                  decorative
+                  arrival={
+                    arrival?.index === index && motion !== 'off'
+                      ? { plan: arrival.plan, mode: motion }
+                      : undefined
+                  }
+                />
+              )}
             </button>
           )
         })}

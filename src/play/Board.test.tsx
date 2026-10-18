@@ -1,8 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { applyMove, createGame } from '../../shared/game/index.ts'
-import type { GameConfig } from '../../shared/game/index.ts'
+import type { GameConfig, GameState } from '../../shared/game/index.ts'
+import { arrivalPlan } from '../motion/arrival.ts'
+import { resetAnimations, setAnimations } from '../motion/preference.ts'
 import { Board } from './Board.tsx'
 import gameCss from './Game.css?raw'
 import { boardLines } from './lines.ts'
@@ -181,5 +183,161 @@ describe('Board', () => {
       'tabindex',
       '0',
     )
+  })
+})
+
+describe('writing a shape', () => {
+  const originalMatchMedia = window.matchMedia.bind(window)
+  const play = (game: GameState, x: number, y: number) => {
+    if (game.status.kind !== 'playing') throw new Error('the game is over')
+    const result = applyMove(game, { player: game.status.next, x, y })
+    if (!result.ok) throw new Error(result.error)
+    return result.state
+  }
+  const cell = (name: string) => screen.getByRole('button', { name })
+
+  /** Every `animate` call, with the element it was made on. */
+  const animated = () => {
+    const calls: { element: Element; cancel: ReturnType<typeof vi.fn> }[] = []
+    stubAnimate(function (this: Element) {
+      const cancel = vi.fn()
+      calls.push({ element: this, cancel })
+      return { cancel }
+    })
+    return calls
+  }
+
+  // jsdom has no Web Animations API: a browser's `animate` is stood in for.
+  const stubAnimate = (implementation: (this: Element, frames: unknown) => unknown) => {
+    Object.defineProperty(Element.prototype, 'animate', {
+      value: implementation,
+      configurable: true,
+      writable: true,
+    })
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    window.matchMedia = originalMatchMedia
+    Reflect.deleteProperty(Element.prototype, 'animate')
+    window.localStorage.clear()
+    resetAnimations()
+  })
+
+  it('shows the variant that was picked for the move, on the shape that was placed', () => {
+    const empty = board()
+    const { rerender } = render(<Board game={empty} onPlay={vi.fn()} seed={42} />)
+    const first = play(empty, 1, 1)
+    rerender(<Board game={first} onPlay={vi.fn()} seed={42} />)
+    const kruis = cell('Rij 2, kolom 2: kruis').querySelector('svg')
+    expect(kruis).toHaveAttribute('data-arrival', arrivalPlan(42, 0, 2).variant)
+
+    const second = play(first, 0, 0)
+    rerender(<Board game={second} onPlay={vi.fn()} seed={42} />)
+    // The move before is whole again; the new shape is written, in a variant of its own.
+    expect(cell('Rij 2, kolom 2: kruis').querySelector('svg')).not.toHaveAttribute('data-arrival')
+    const cirkel = cell('Rij 1, kolom 1: cirkel').querySelector('svg')
+    expect(cirkel).toHaveAttribute('data-arrival', arrivalPlan(42, 1, 1).variant)
+    expect(cirkel?.getAttribute('data-arrival')).not.toBe(kruis?.getAttribute('data-arrival'))
+  })
+
+  it('writes the strokes of the new shape, and stops when the next move is played', () => {
+    const calls = animated()
+    const empty = board()
+    const { rerender } = render(<Board game={empty} onPlay={vi.fn()} seed={1} />)
+    expect(calls).toHaveLength(0)
+
+    const first = play(empty, 1, 1)
+    rerender(<Board game={first} onPlay={vi.fn()} seed={1} />)
+    // A cross has two strokes, and they are the ones of the cell that was played.
+    expect(calls).toHaveLength(2)
+    const svg = cell('Rij 2, kolom 2: kruis').querySelector('svg')
+    for (const { element } of calls) expect(element.closest('svg')).toBe(svg)
+
+    const running = [...calls]
+    rerender(<Board game={play(first, 0, 0)} onPlay={vi.fn()} seed={1} />)
+    for (const { cancel } of running) expect(cancel).toHaveBeenCalledOnce()
+    // The new shape (a circle: one stroke) is being written now.
+    expect(calls).toHaveLength(3)
+  })
+
+  it('writes nothing on a board that is first shown with moves on it, or one that is emptied', () => {
+    const calls = animated()
+    const played = play(play(board(), 0, 0), 1, 1)
+    const { rerender } = render(<Board game={played} onPlay={vi.fn()} seed={1} />)
+    expect(calls).toHaveLength(0)
+    rerender(<Board game={board()} onPlay={vi.fn()} seed={1} />)
+    expect(calls).toHaveLength(0)
+    expect(document.querySelector('[data-arrival]')).toBeNull()
+  })
+
+  it('writes nothing when several shapes arrive at once, as when a replay jumps ahead', () => {
+    const calls = animated()
+    const { rerender } = render(<Board game={board()} onPlay={vi.fn()} seed={1} />)
+    rerender(<Board game={play(play(board(), 0, 0), 1, 1)} onPlay={vi.fn()} seed={1} />)
+    expect(calls).toHaveLength(0)
+  })
+
+  it('does not write again when it is drawn again without a new move', () => {
+    const calls = animated()
+    const { rerender } = render(<Board game={board()} onPlay={vi.fn()} seed={1} />)
+    const first = play(board(), 1, 1)
+    rerender(<Board game={first} onPlay={vi.fn()} seed={1} />)
+    rerender(<Board game={{ ...first, cells: [...first.cells] }} onPlay={vi.fn()} seed={1} />)
+    expect(calls).toHaveLength(2)
+    for (const { cancel } of calls) expect(cancel).not.toHaveBeenCalled()
+  })
+
+  it('does not hold the game up: the next cell can be played while the shape is written', async () => {
+    animated()
+    const onPlay = vi.fn()
+    const { rerender } = render(<Board game={board()} onPlay={onPlay} seed={1} />)
+    rerender(<Board game={play(board(), 1, 1)} onPlay={onPlay} seed={1} />)
+    await userEvent.setup().click(cell('Rij 1, kolom 1: leeg'))
+    expect(onPlay).toHaveBeenCalledWith({ x: 0, y: 0 })
+  })
+
+  it('only fades the shape in when the system asks for less motion', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          matches: query.includes('reduce'),
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList,
+    )
+    const keyframes: unknown[] = []
+    stubAnimate((frames) => {
+      keyframes.push(frames)
+      return { cancel: vi.fn() }
+    })
+    const { rerender } = render(<Board game={board()} onPlay={vi.fn()} seed={1} />)
+    rerender(<Board game={play(board(), 1, 1)} onPlay={vi.fn()} seed={1} />)
+    expect(keyframes).toEqual([[{ opacity: 0 }, { opacity: 1 }]])
+  })
+
+  it('writes nothing, and stops what is going on, when the animations are switched off', () => {
+    const calls = animated()
+    const { rerender } = render(<Board game={board()} onPlay={vi.fn()} seed={1} />)
+    rerender(<Board game={play(board(), 1, 1)} onPlay={vi.fn()} seed={1} />)
+    expect(calls).toHaveLength(2)
+    act(() => {
+      setAnimations(false)
+    })
+    for (const { cancel } of calls) expect(cancel).toHaveBeenCalled()
+    expect(document.querySelector('[data-arrival]')).toBeNull()
+    rerender(<Board game={play(play(board(), 1, 1), 0, 0)} onPlay={vi.fn()} seed={1} />)
+    expect(calls).toHaveLength(2)
+  })
+
+  it('leaves the status line and the names of the cells as they are', () => {
+    animated()
+    const { rerender } = render(<Board game={board()} onPlay={vi.fn()} seed={1} />)
+    rerender(<Board game={play(board(), 1, 1)} onPlay={vi.fn()} seed={1} />)
+    const svg = cell('Rij 2, kolom 2: kruis').querySelector('svg')
+    expect(svg).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(9)
   })
 })
