@@ -37,6 +37,8 @@ export interface GameState {
   readonly config: GameConfig
   /** Row by row: the cell at (x, y) is `cells[y * width + x]`; null while empty. */
   readonly cells: readonly (PlayerId | null)[]
+  /** Every move played, in order: with `config` this is the whole game, and enough to replay it. */
+  readonly moves: readonly Move[]
   readonly moveCount: number
   readonly status: GameStatus
 }
@@ -74,6 +76,7 @@ export function createGame(config: GameConfig): GameState {
   return {
     config: { width, height, winLength, players: [...players] },
     cells: new Array<PlayerId | null>(width * height).fill(null),
+    moves: [],
     moveCount: 0,
     status: { kind: 'playing', next: first },
   }
@@ -98,7 +101,10 @@ export function applyMove(state: GameState, move: Move): MoveResult {
 
   const cells = state.cells.with(move.y * config.width + move.x, move.player)
   const moveCount = state.moveCount + 1
-  const next: GameState = { config, cells, moveCount, status }
+  // Keep only what the engine knows about a move, so extra properties of what a caller passes in
+  // (a message from a client, say) never end up in a stored game.
+  const moves = [...state.moves, { player: move.player, x: move.x, y: move.y }]
+  const next: GameState = { config, cells, moves, moveCount, status }
 
   const line = findLine(next, move)
   if (line) return succeed({ ...next, status: { kind: 'won', winner: move.player, line } })
