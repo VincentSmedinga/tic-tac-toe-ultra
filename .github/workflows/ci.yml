@@ -1,6 +1,8 @@
-# Checks every pull request, then deploys to Cloudflare Pages: a preview per pull request, production
-# for main. See README.md for the one-time setup the deploy needs; until it is done the deploy is
-# skipped with a notice and the checks still run.
+# Checks every pull request, then deploys to Cloudflare: the app is a Worker with static assets (and,
+# later, the rooms of the game). Production is the Worker of main; a pull request gets a Worker of its
+# own, tic-tac-toe-ultra-pr-<number>, which preview-cleanup.yml deletes when the pull request closes.
+# See README.md for the one-time setup the deploy needs; until it is done the deploy is skipped with
+# a notice and the checks still run.
 #
 # The repository is public, so Actions minutes are free and every pull request runs everything.
 name: CI
@@ -118,27 +120,29 @@ jobs:
         with:
           name: dist
           path: dist
-      - name: Deploy to Cloudflare Pages
+      # The build wrote the configuration of the Worker next to its code, in dist/<name>/.
+      - name: Deploy to Cloudflare
         id: deploy
         if: steps.setup.outputs.ready == 'true'
         env:
-          BRANCH: ${{ github.head_ref || github.ref_name }}
-          COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+          WORKER: ${{ github.event_name == 'pull_request' && format('tic-tac-toe-ultra-pr-{0}', github.event.pull_request.number) || 'tic-tac-toe-ultra' }}
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.json
         run: |
-          pnpm exec wrangler pages deploy dist --project-name tic-tac-toe-ultra --branch "$BRANCH" --commit-hash "$COMMIT"
-          url=$(jq -r 'select(.type == "pages-deploy-detailed") | .alias // .url' "$WRANGLER_OUTPUT_FILE_PATH" | tail -n 1)
+          config=$(ls dist/*/wrangler.json)
+          pnpm exec wrangler deploy --config "$config" --name "$WORKER"
+          url=$(jq -r 'select(.type == "deploy") | .targets[0]' "$WRANGLER_OUTPUT_FILE_PATH" | tail -n 1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "Deployed to $url" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployed $WORKER to $url" >> "$GITHUB_STEP_SUMMARY"
       # Cloudflare needs a moment to serve a new deployment, hence the tries. The deploy of main is
-      # not tested again, so this is what shows that the page is up.
+      # not tested again, so this is what shows that the page and the Worker are up.
       - name: Check that the page answers
         if: steps.setup.outputs.ready == 'true'
         env:
           URL: ${{ steps.deploy.outputs.url }}
         run: |
           for attempt in 1 2 3 4 5 6; do
-            if curl --fail --silent --max-time 20 "$URL/" | grep -q '<div id="root">'; then
+            if curl --fail --silent --max-time 20 "$URL/" | grep -q '<div id="root">' &&
+              curl --fail --silent --max-time 20 "$URL/api/health" | jq -e '.status == "ok"' > /dev/null; then
               echo "The page answers: $URL" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi

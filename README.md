@@ -21,29 +21,17 @@ pnpm dev
 
 ## Deploys
 
-CI deploys the app to Cloudflare Pages: every ready pull request gets a preview (the address is commented on the pull request, like `https://<branch>.tic-tac-toe-ultra.pages.dev`), and a merge to `main` goes to production. A draft pull request runs the checks only. Until the one-time setup below is done, the deploy is skipped with a notice and the checks still run.
+The app is a Cloudflare Worker with static assets: the Worker answers `/api/*` (the rooms of the game come here), the rest is the built app. CI deploys it: every ready pull request gets a Worker of its own as a preview (`https://tic-tac-toe-ultra-pr-<number>.<subdomain>.workers.dev`, commented on the pull request, deleted when the pull request closes), and a merge to `main` goes to production at `https://tic-tac-toe-ultra.<subdomain>.workers.dev`. A draft pull request runs the checks only. Until the one-time setup below is done, the deploy is skipped with a notice.
 
 ## One-time setup
 
 Done once, by Vincent, in about a quarter of an hour. It uses the Cloudflare account of [Blokhut](https://github.com/VincentSmedinga/blokhut); run the commands in the repository folder.
 
 1. Log Wrangler in: `pnpm exec wrangler login`.
-2. Create the Pages project:
-
-   ```sh
-   pnpm exec wrangler pages project create tic-tac-toe-ultra --production-branch main
-   ```
-
-   This gives the project its address on pages.dev, normally https://tic-tac-toe-ultra.pages.dev (Cloudflare adds a suffix if the name is taken; the dashboard shows it under Workers & Pages).
-
-3. Create an API token at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens): Create Token, Create Custom Token, with the permission Account · Cloudflare Pages · Edit. Copy the token, and the account id from the dashboard (Workers & Pages, in the sidebar).
-4. Give both to GitHub as secrets. `gh` asks for each value, so it doesn't end up in your shell history or in a chat:
-
-   ```sh
-   gh secret set CLOUDFLARE_API_TOKEN
-   gh secret set CLOUDFLARE_ACCOUNT_ID
-   ```
-
-5. Run the CI workflow on `main` again (Actions, CI, Run workflow) to deploy the first production version.
+2. Make sure the account has a `workers.dev` subdomain: in the [dashboard](https://dash.cloudflare.com), Workers & Pages, the subdomain is shown at the top right of the overview, with a button to choose one if there is none. It becomes part of the address of the game.
+3. Give the API token that the deploy uses the right to deploy Workers: at [dash.cloudflare.com/profile/api-tokens](https://dash.cloudflare.com/profile/api-tokens) edit the token `tic-tac-toe-ultra GitHub deploy` (or create a new custom token) and make its permissions Account · Workers Scripts · Edit, and keep Account · Cloudflare Pages · Edit while the old Pages project exists. The value of an existing token stays the same, so the GitHub secrets keep working; a new token goes in with `gh secret set CLOUDFLARE_API_TOKEN` (`gh` asks for the value, so it never ends up in a shell history or a chat).
+4. If the secrets don't exist yet: `gh secret set CLOUDFLARE_API_TOKEN` and `gh secret set CLOUDFLARE_ACCOUNT_ID` (the account id is in the dashboard, under Workers & Pages).
+5. Run the CI workflow on `main` again (Actions, CI, Run workflow) to deploy production as a Worker.
+6. When production answers at its new address, delete the old Pages project `tic-tac-toe-ultra` (dashboard, Workers & Pages, the project, Settings, Delete): its address, tic-tac-toe-ultra.pages.dev, stops working then.
 
 The deploy of a pull request that comes from a fork is always skipped: forks can't use the secrets.
