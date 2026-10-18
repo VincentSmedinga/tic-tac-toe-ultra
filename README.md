@@ -17,7 +17,7 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` starts the app on http://localhost:5173. `pnpm check` runs everything CI will check; the other commands are in [AGENTS.md](AGENTS.md).
+`pnpm dev` starts the app and the Worker on http://localhost:5173. `pnpm check` runs everything CI will check; the end-to-end tests (two browsers playing against each other) are `pnpm test:e2e`, once preceded by `pnpm exec playwright install chromium`. The other commands are in [AGENTS.md](AGENTS.md).
 
 ## Deploys
 
