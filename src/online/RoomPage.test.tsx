@@ -162,7 +162,7 @@ describe('RoomPage', () => {
   })
 
   describe('when the second player joins', () => {
-    it('says that you are both here, and who is who', async () => {
+    it('shows the board and who is who, as soon as the second player is there', async () => {
       const { socket } = await connected()
       socket.receive(state([{ id: 'X', name: 'Anna', connected: true }]))
       await screen.findByText('Wachten op een tweede speler…')
@@ -173,8 +173,8 @@ describe('RoomPage', () => {
           { id: 'O', connected: true },
         ]),
       )
-      expect(await screen.findByRole('heading', { name: 'Jullie zijn er allebei!' })).toBeVisible()
-      expect(screen.getByText('Anna (kruis) – jij')).toBeVisible()
+      expect(await screen.findByRole('group', { name: 'Speelveld' })).toBeVisible()
+      expect(screen.getByText('Anna (jij)')).toBeVisible()
       expect(screen.getByText('Cirkel')).toBeVisible()
       expect(screen.queryByText('Wachten op een tweede speler…')).not.toBeInTheDocument()
     })
@@ -187,7 +187,7 @@ describe('RoomPage', () => {
           { id: 'O', connected: false },
         ]),
       )
-      expect(await screen.findByText('Cirkel – niet verbonden')).toBeVisible()
+      expect(await screen.findByText(/Cirkel is even weg/)).toBeVisible()
     })
   })
 
@@ -240,30 +240,130 @@ describe('RoomPage', () => {
   })
 
   describe('when the connection is lost', () => {
-    it('says so, and joins again with a new socket when asked, keeping what was on screen', async () => {
-      const { sockets, socket } = await connected()
-      socket.receive(state([{ id: 'X', connected: true }]))
-      await screen.findByText('Wachten op een tweede speler…')
-
-      socket.closeFromServer(1006)
-      expect(await screen.findByRole('alert')).toHaveTextContent('De verbinding is verbroken')
-      expect(screen.getByLabelText('Code B C D F')).toBeVisible()
-
-      await userEvent.setup().click(screen.getByRole('button', { name: 'Opnieuw verbinden' }))
-      const second = await vi.waitFor(() => {
-        const next = sockets[1]
-        if (!next) throw new Error('no second socket yet')
-        return next
-      })
-      second.open()
-      expect(second.sent).toEqual([{ type: 'join', token: getToken() }])
-      expect(screen.queryByText('De verbinding is verbroken.')).not.toBeInTheDocument()
+    afterEach(() => {
+      vi.useRealTimers()
     })
 
-    it('says so when the socket was lost before the room said anything', async () => {
-      const { socket } = await connected()
+    /** A room with two players and a game in it, on fake time, with the first socket open. */
+    async function twoPlayersOnFakeTime() {
+      vi.useFakeTimers()
+      const world = setup()
+      await act(() => vi.advanceTimersByTimeAsync(0))
+      const socket = world.sockets[0]
+      if (!socket) throw new Error('no socket yet')
+      socket.open()
+      socket.receive(
+        state([
+          { id: 'X', connected: true },
+          { id: 'O', connected: true },
+        ]),
+      )
+      return { ...world, socket }
+    }
+
+    const later = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms))
+
+    it('says so, keeps the page as it was, and joins again by itself with a new socket', async () => {
+      const { sockets, socket } = await twoPlayersOnFakeTime()
       socket.closeFromServer(1006)
-      expect(await screen.findByRole('alert')).toHaveTextContent('De verbinding is verbroken')
+
+      expect(screen.getByRole('alert')).toHaveTextContent('De verbinding is verbroken')
+      expect(screen.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+      expect(sockets).toHaveLength(1)
+
+      await later(500)
+      expect(sockets).toHaveLength(2)
+      expect(screen.getByRole('alert')).toHaveTextContent('Opnieuw verbinden…')
+
+      sockets[1]?.open()
+      expect(sockets[1]?.sent).toEqual([{ type: 'join', token: getToken() }])
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    it('waits longer after every try that fails, and starts again from the short wait after a success', async () => {
+      const { sockets, socket } = await twoPlayersOnFakeTime()
+      socket.closeFromServer(1006)
+
+      await later(500)
+      expect(sockets).toHaveLength(2)
+      sockets[1]?.closeFromServer(1006) // never opened: a second failure in a row
+      await later(999)
+      expect(sockets).toHaveLength(2)
+      await later(1)
+      expect(sockets).toHaveLength(3)
+
+      sockets[2]?.open() // it worked: the next wait is the short one again
+      sockets[2]?.closeFromServer(1006)
+      await later(500)
+      expect(sockets).toHaveLength(4)
+    })
+
+    it('keeps the game on screen when the server cannot be asked for the room while reconnecting', async () => {
+      const { sockets, socket, roomExists } = await twoPlayersOnFakeTime()
+      roomExists.mockImplementation(() => Promise.reject(new Error('offline')))
+      socket.closeFromServer(1006)
+      await later(500)
+
+      expect(sockets).toHaveLength(1)
+      expect(screen.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+      expect(screen.getByRole('alert')).toHaveTextContent('De verbinding is verbroken')
+
+      roomExists.mockImplementation(() => Promise.resolve(true))
+      await later(1000)
+      expect(sockets).toHaveLength(2)
+    })
+
+    it('tries at once when the phone wakes up or the network is back', async () => {
+      const { sockets, socket } = await twoPlayersOnFakeTime()
+      vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+      socket.closeFromServer(1006)
+
+      await act(() => {
+        document.dispatchEvent(new Event('visibilitychange'))
+        return Promise.resolve()
+      })
+      await later(0)
+      expect(sockets).toHaveLength(2)
+
+      sockets[1]?.closeFromServer(1006)
+      await act(() => {
+        window.dispatchEvent(new Event('online'))
+        return Promise.resolve()
+      })
+      await later(0)
+      expect(sockets).toHaveLength(3)
+    })
+
+    it('tries now when the button is pressed', async () => {
+      const { sockets, socket } = await twoPlayersOnFakeTime()
+      socket.closeFromServer(1006)
+      act(() => {
+        screen.getByRole('button', { name: 'Nu opnieuw verbinden' }).click()
+      })
+      await later(0)
+      expect(sockets).toHaveLength(2)
+    })
+
+    it.each([4404, 4001])(
+      'does not try again by itself when the room says goodbye with %i',
+      async (code) => {
+        const { sockets, socket } = await twoPlayersOnFakeTime()
+        socket.closeFromServer(code)
+        await later(60_000)
+        expect(sockets).toHaveLength(1)
+      },
+    )
+
+    it('says so when the socket was lost before the room said anything, and tries again', async () => {
+      vi.useFakeTimers()
+      const { sockets } = setup()
+      await act(() => vi.advanceTimersByTimeAsync(0))
+      const first = sockets[0]
+      first?.open()
+      first?.closeFromServer(1006)
+      expect(screen.getByRole('alert')).toHaveTextContent('De verbinding is verbroken')
+      await later(500)
+      expect(sockets).toHaveLength(2)
     })
   })
 
