@@ -16,6 +16,9 @@
 }
 
 body {
+  /* The wallpaper lies in the page (`.wallpaper`, absolute, as high as the body) and never in a
+     fixed layer: see docs/plan.md, Look and feel, the top of the screen on an iPhone (issue #77). */
+  position: relative;
   background: var(--backdrop, var(--page));
   color: var(--text);
   font-family: var(--font-body);
@@ -31,9 +34,12 @@ body {
   width: min(100%, 40rem);
   min-height: 100dvh;
   margin-inline: auto;
-  /* Room for the notch and the home bar. */
-  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  /* Room for the notch and the home bar. The top is the status bar and a margin on top of it, not
+     the larger of the two: iOS fades the page a little way below the status bar, and the title
+     must start under that (issue #77). The bottom has the same room and some more, so that the footer
+     isn't pressed against the edge of the device and the page scrolls a little past it. */
+  padding: calc(1rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    calc(2.5rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   text-align: center;
 }
 
