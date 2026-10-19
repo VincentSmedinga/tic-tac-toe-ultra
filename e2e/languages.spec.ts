@@ -31,6 +31,7 @@ test('an English and a Frisian player play a whole game, each in their own langu
   await bo.getByRole('group', { name: 'Taal' }).getByRole('button', { name: 'Frysk' }).click()
   await expect(bo.locator('html')).toHaveAttribute('lang', 'fy')
   await expect(bo).toHaveTitle('Bûter, Tsiis en Aaien Ultra')
+  await bo.getByRole('link', { name: 'Begjin' }).click()
   await bo.getByLabel('Dyn namme (hoecht net)').fill('Bo')
   await bo.getByRole('link', { name: 'Begjin' }).click()
   await bo.getByLabel('Koade fan de keamer').fill(code)
