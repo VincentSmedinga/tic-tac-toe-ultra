@@ -14,6 +14,9 @@ The decisions are in [docs/plan.md](../plan.md), Decisions and Scrolling between
 - `useRoom.ts` is one player's connection to a room: first asking whether it exists, then the WebSocket, joining with the token.
 - A lost connection is tried again by itself, after 0.5 s growing to 8 s, and at once when the phone wakes up or the network is back; never when the room is gone or full.
 - `identity.ts` keeps this browser's token, name and last room in localStorage, with a fallback to memory when storage is off. The start screen offers the way back to the last room while it exists.
+- "Terug naar het begin" and the menu do not leave a room: the seat stays and the start screen offers the way back. Only "Stoppen" on the end-of-game screen leaves: `leave` goes to the room, and when it closes the socket with `CLOSE_LEFT` the page clears the last room (`clearLastRoom`) and goes to the start. `RoomPage.tsx` also clears it on the problem `left`.
+- "Stoppen" asks first in a room (`OnlineGame.tsx`, "Blijven" has the focus), is disabled while the connection is not open, and on `/samen` (`Game.tsx`) goes to the start at once.
+- A seat that left stays in `state.players` with `left`: the room says who left (`online.left`) and not "even weg", shows only the shapes of the round (`config.players`), and offers no rematch when fewer than two are left.
 - `play/` is the game on one screen: `Game` keeps the state with the engine, and starts with `ShapePicker`, once per player. The player who starts alternates every round.
 - `play/FieldPicker.tsx` and `field.ts` choose and describe the field: presets, an own field with odd numbers only, a suggested row.
 - The tests drive the room page with a fake socket (`RoomPage.test.tsx`).

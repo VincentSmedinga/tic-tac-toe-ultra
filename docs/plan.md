@@ -69,7 +69,7 @@ A game where many players play noughts and crosses together on one big field, ea
   Tests: `service-worker/worker.test.ts` runs the worker the build makes against a fake browser (never answers `/api/*` or a WebSocket, falls back to the offline page, a new version deletes the old caches), `src/pwa/*.test.tsx` the registration and the hint, `e2e/offline.spec.ts` the real thing in Chromium (the headers, taking over, rooms that are asked again).
   Playwright's offline mode stops a navigation before the worker sees it, so the offline page itself was seen once by hand: load the build from a server, stop the server, open another address.
   Chromium says the app is installable (`Page.getInstallabilityErrors` is empty); a Lighthouse run on the deployed pull request can say the same.
-- **Standalone has no address bar and no back button.** Every screen has the menu (the four places, see Navigation below) or, on a phone while a game is on the screen, a way back to the start; a room's code and link can be copied, and "Terug naar het begin" leaves a room, so nothing needs the browser's chrome.
+- **Standalone has no address bar and no back button.** Every screen has the menu (the four places, see Navigation below) or, on a phone while a game is on the screen, a way back to the start; a room's code and link can be copied, and "Terug naar het begin" goes to the start (the seat in the room stays, the start screen leads back to it; leaving for good is "Stoppen" after a game, see Leaving a game), so nothing needs the browser's chrome.
   Navigation is `history.pushState`, so the swipe back of an iPad or iPhone goes back through the game's own screens.
   A room's connection tries again at once when the page becomes visible or the network returns, and a page that iOS threw out of memory loads again and joins with its token.
   One thing to know: an installed app on iOS has its own storage, apart from Safari's, so it is another browser to the room (another token, name and last room); someone who made a room in Safari and opens the installed app joins it with the code or the link like anyone else.
@@ -173,6 +173,21 @@ Issue #81: with the games played, the statistics, three languages, the full scre
 - **There is no footer.** What it held is the menu or the settings page.
 - **The start screen is about one thing.** A big "Nieuwe kamer" makes a room with what the last one was made with (two players, 3 × 3 the first time); the line under it, "2 spelers · 3 × 3, drie op een rij · Aanpassen", opens the number of players and the field picker where they stand. Joining with a code is one row, "Samen op één scherm" is a second button, and the name lives on the settings page, with a line at the end of the start screen ("Je speelt als …", or "Voeg je naam toe") that links there. The room you are still in comes first, as before.
 - **Later:** "Dit apparaat vergeten" on the settings page (it would also lose the list of played games, so it needs a warning).
+
+## Leaving a game
+
+Issue #88. Before it, a room could not be left: closing the page or going to the start only dropped the connection, so the others saw "even weg… wacht op terugkomst" for ever and the leaver's start screen kept offering the room. Decided with Vincent on 2026-10-19; the proposals of the issue were accepted.
+
+- **A real `leave` message, for good, once the round is over.** During a round, before the game or while choosing it is refused (`game-not-over`): a missing player would stop the turns. Closing the page or "Terug naar het begin" stay what they were: the seat is reserved for a person who is only away.
+- **The seat is marked, not removed.** `left` holds the round the person was in. The ids of the other seats don't move (`seatId` is the position), the seat still counts against the number of seats so nobody else can take it, and the finished round keeps all its players. Taking over a seat that was left is for later.
+- **The others carry on with two or more.** The next round is played by the seats that are left, on the same field, and who starts is `round % shapes.length` of those; with fewer than two the room is over: no rematch (`room-over`), the replay and the way out only.
+- **The person who left cannot come back.** The same token gets `left` ("Je hebt dit spel verlaten"), so that "Stoppen" means something to the people who stay.
+- **A room nobody is in is deleted at once**, as soon as no game waits for the archive and no socket is open; a room in which somebody is left lives its 24 hours as before. The code is free again.
+- **Leaving forgets the room on this device** (`clearLastRoom`), and only this way: the header link and the menu keep the offer on the start screen.
+- **A question first in a room, none on one screen.** Leaving is for good and the button sits next to "Nog een keer"; "Blijven" has the focus. On `/samen` nothing is kept anywhere, so "Stoppen" goes to the start.
+- **No leaving without a connection.** The button is disabled while the connection isn't open; there is no local-only "leave" that would promise a freed seat it can't deliver.
+- **The game stays.** The archive is not touched: a game is kept when its round ends, with the tokens of everyone who played it, and stays in their lists.
+- **The words:** Stoppen (nl), Leave (en), Ophâlde (fy), and "{names} heeft/hebben het spel verlaten." in place of "even weg" for a seat that left.
 
 ## Style guide
 
