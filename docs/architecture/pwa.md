@@ -11,7 +11,7 @@ The decisions are in [docs/plan.md](../plan.md), Decisions (installable, service
 - It keeps the build's `/assets/*` files and takes over at once.
 - Change the worker with its test (`service-worker/worker.test.ts`).
 - `src/pwa/register.ts` registers it (in a build only), asks for a new one when the app wakes, and loads the page again for a new version when the app is out of sight.
-- `src/pwa/InstallHint.tsx` in the footer is the "Installeer de app" button (`beforeinstallprompt`) and the iOS tip "Tik op Deel en kies Zet op beginscherm", which can be closed for good.
+- `src/pwa/InstallHint.tsx` on the settings page (under "De app", only where there is something to say) is the "Installeer de app" button (`beforeinstallprompt`) and the iOS tip "Tik op Deel en kies Zet op beginscherm", which can be closed for good.
 - Playwright's offline mode stops a navigation before the worker sees it, so the offline page is not in `e2e/`.
 
 ## Icons and the link picture

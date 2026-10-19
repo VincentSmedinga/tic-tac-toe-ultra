@@ -23,7 +23,7 @@ The decisions are in [docs/plan.md](../plan.md), Animations; the ideas are issue
 - The circle, the oval and the diamond are one line, written with the clock or against it; the square goes round from any of its sides either way. `isRing` in `shapes/closure.ts` says which shapes are rings.
 - `random.ts` is a seedable generator (`createRandom`, `seedFrom`).
 - `play.ts` plays a plan on a shape's SVG and returns what cancels it.
-- `preference.ts` is the Animaties switch (Aan or Uit in the footer, per device) on top of `prefers-reduced-motion`. `useMotion` gives full, gentle (only a fade) or off.
+- `preference.ts` is the Animaties switch (Aan or Uit on the settings page, per device) on top of `prefers-reduced-motion`. `useMotion` gives full, gentle (only a fade) or off.
 - `Board` asks `useArrival` (`play/useArrival.ts`) which shapes arrived since it was first shown, one new shape at a time.
 - A board first shown with moves, or a jump over several moves, writes nothing.
 - Each arrived `ShapeIcon` gets `arrival`, which sets `data-arrival` to the variant and plays it before the first paint.

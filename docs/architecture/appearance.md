@@ -7,7 +7,8 @@ The decisions are in [docs/plan.md](../plan.md), Shapes and colours and Look and
 
 - How the game looks is chosen per device, in `src/appearance/`: three looks (`look.ts`, `data-look` on `<html>`) and light or dark (`scheme.ts`, `data-scheme`).
 - Light or dark has two buttons, never a "Systeem": a pick that equals what the system gives is forgotten.
-- The footer's `AppearanceControls.tsx` shows both choices. The `Wordmark` and the `Wallpaper` are on every screen.
+- The settings page (`src/settings/SettingsPage.tsx`) shows the choices: `AppearanceControls.tsx` (the three looks, light or dark, animations) and `LanguageControl.tsx`. The `Wordmark` and the `Wallpaper` are on every screen.
+- `AppearanceSync.tsx` is in the `App`, so the page follows the system between light and dark on every screen, not only on the settings page.
 - The `Wordmark` is the title with the app icon (an `<img>` of `public/icon.svg`) to its left, as high as the title's two lines. A look sets `--title-size` and may give `.wordmark-logo` an edge.
 - `public/appearance.js` sets look, scheme and language before the first paint. Keep it in sync with `look.ts`, `scheme.ts` and `src/i18n/language.ts`; `language.test.ts` runs it and compares.
 - The browser bar takes `--chrome`; a look may set it itself.
@@ -25,7 +26,7 @@ The decisions are in [docs/plan.md](../plan.md), Shapes and colours and Look and
 - iOS 26 and later draw a bar of their own, with a fade at its edge, behind the status bar and the toolbar next to such an element, and nothing in CSS turns that off. `src/styles/top-edge.test.ts` enforces it; see [docs/plan.md](../plan.md), Look and feel.
 - The wallpaper lies in the page: `.wallpaper` is absolute, as high as the `body`, which is `position: relative`, and it scrolls with the page.
 - The layer of the play mode is fixed by design and has a wallpaper of its own.
-- `.app` starts its content a margin below the inset and has more room under the footer.
+- `.app` starts its content a margin below the inset and has more room under the bar of places.
 - A new fixed layer must keep clear of the edges of the page.
 
 ## Shapes and colours
