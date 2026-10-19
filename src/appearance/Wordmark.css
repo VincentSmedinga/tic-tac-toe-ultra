@@ -15,6 +15,11 @@
 
 /* The same dark square with its own colours in every look and scheme; the phone rounds the icon on
    a home screen, so it is rounded here too. A look may give it an edge or a shadow, nothing else. */
+.wordmark-link {
+  display: flex;
+  flex: none;
+}
+
 .wordmark-logo {
   flex: none;
   width: calc(2em * var(--title-lines));

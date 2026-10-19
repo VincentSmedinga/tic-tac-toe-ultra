@@ -33,7 +33,7 @@ export function SettingsPage() {
         <AppearanceControls />
       </section>
 
-      <section className="choice" aria-label={t('appearance.language')}>
+      <section className="choice settings-language" aria-label={t('appearance.language')}>
         <LanguageControl />
       </section>
 

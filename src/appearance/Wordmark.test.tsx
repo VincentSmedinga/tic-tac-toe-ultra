@@ -11,7 +11,17 @@ describe('Wordmark', () => {
     expect(logo).toHaveAttribute('src', '/icon.svg')
     // The picture is only decoration: the title already says what the game is.
     expect(logo).toHaveAttribute('alt', '')
-    expect(title.firstElementChild).toBe(logo)
+    expect(title.querySelector('img')).toBe(logo)
+  })
+
+  it('takes you to the start with the icon, for a pointer only: the menu has the link for the rest', () => {
+    const { container } = render(<Wordmark />)
+    const link = container.querySelector('a')
+    expect(link).toHaveAttribute('href', '/')
+    expect(link).toContainElement(container.querySelector('img'))
+    expect(link).toHaveAttribute('aria-hidden', 'true')
+    expect(link).toHaveAttribute('tabindex', '-1')
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
   it.each([

@@ -7,3 +7,12 @@
   font-size: 1rem;
   opacity: 0.85;
 }
+
+/* The three languages stay in one row, like the groups of the look. */
+.settings-language .segmented-options {
+  flex-wrap: nowrap;
+}
+
+.settings-language .segmented-options button {
+  padding-inline: clamp(0.5rem, 3vw, 1.125rem);
+}

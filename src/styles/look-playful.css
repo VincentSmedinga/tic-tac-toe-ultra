@@ -68,8 +68,7 @@ html[data-look='playful'] .lost {
   box-shadow: 0 7px 0 var(--edge);
 }
 
-html[data-look='playful'] .shape-picker-grid,
-html[data-look='playful'] .share {
+html[data-look='playful'] .shape-picker-grid {
   padding: 0.75rem;
 }
 
