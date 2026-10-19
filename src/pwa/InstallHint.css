@@ -1,4 +1,4 @@
-/* A small line in the footer; the game's own buttons and colours, nothing louder than a link. */
+/* A line on the settings page; the game's own buttons and colours. */
 .install-hint {
   display: flex;
   flex-wrap: wrap;

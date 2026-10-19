@@ -36,7 +36,7 @@ body {
   margin-inline: auto;
   /* Room for the notch and the home bar. The top is the status bar and a margin on top of it, not
      the larger of the two: iOS fades the page a little way below the status bar, and the title
-     must start under that (issue #77). The bottom has the same room and some more, so that the footer
+     must start under that (issue #77). The bottom has the same room and some more, so that the bar of places
      isn't pressed against the edge of the device and the page scrolls a little past it. */
   padding: calc(1rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
     calc(2.5rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
@@ -53,7 +53,7 @@ legend,
   font-family: var(--font-title);
 }
 
-/* The screen takes the room that is left, which pushes the footer to the bottom of the page. */
+/* The screen takes the room that is left, which pushes the bar of places to the bottom of the page. */
 .app > main {
   display: flex;
   flex: 1 0 auto;

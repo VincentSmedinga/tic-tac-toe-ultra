@@ -1,0 +1,152 @@
+/*
+ * The four places. On a phone: a bar of tabs after the screen (`order: 1`, it is right after the
+ * header in the page), as wide as the page, each tab an icon over its name. It is part of the page
+ * and scrolls with it; on a short screen the screen above it takes the room that is left and the
+ * bar is at the bottom of the window. From 48 rem: a row under the title, icon beside name.
+ */
+.main-nav {
+  order: 1;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 1.5rem;
+  font-family: var(--font-title);
+}
+
+.main-nav ul {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.main-nav li {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.main-nav-link {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  min-height: 3.5rem;
+  padding: 0.375rem 0.125rem;
+  border-radius: var(--radius);
+  /* "Statistieken" and "Ynstellingen" are the longest, 12 letters: they fit a quarter of a phone at
+     this size, and break rather than being cut off when the text is made larger. */
+  font-size: clamp(0.6875rem, 3.2vw, 0.8125rem);
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.main-nav-link svg {
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.main-nav-link[aria-current='page'] {
+  font-weight: 700;
+}
+
+.main-nav-link:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* A game on a phone has no bar: the board has the room, and the header has a way back. */
+@media (max-width: 47.99rem) {
+  .app[data-screen='game'] .main-nav {
+    display: none;
+  }
+}
+
+@media (min-width: 48rem) {
+  .main-nav {
+    order: 0;
+    width: auto;
+    margin: 0 0 1rem;
+  }
+
+  .main-nav ul {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .main-nav li {
+    flex: 0 0 auto;
+  }
+
+  .main-nav-link {
+    flex-direction: row;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.5rem 1rem;
+    font-size: 1.125rem;
+  }
+}
+
+/* How a look marks the place you are in. */
+html[data-look='drawn'] .main-nav {
+  padding: 0.25rem 0.25rem 0;
+  background: var(--page);
+  border: 3px solid var(--ink);
+  border-radius: 14px 30px 16px 28px / 28px 14px 30px 16px;
+  box-shadow: 4px 5px 0 var(--ink);
+}
+
+html[data-look='drawn'] .main-nav-link[aria-current='page'] span {
+  /* The highlighter pen, like the headings. */
+  background: linear-gradient(
+    transparent 58%,
+    color-mix(in srgb, var(--shape-goldbar) 55%, transparent) 58%
+  );
+}
+
+html[data-look='playful'] .main-nav {
+  padding: 0.375rem;
+  background: var(--page);
+  border: 4px solid var(--edge);
+  border-radius: 1.5rem;
+  box-shadow: 0 7px 0 var(--edge);
+}
+
+html[data-look='playful'] .main-nav-link {
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+html[data-look='playful'] .main-nav-link[aria-current='page'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  outline: 3px solid var(--edge);
+  outline-offset: -3px;
+}
+
+html[data-look='calm'] .main-nav {
+  border-top: 2px solid var(--line);
+  padding-top: 0.5rem;
+}
+
+html[data-look='calm'] .main-nav-link {
+  opacity: 0.75;
+}
+
+html[data-look='calm'] .main-nav-link[aria-current='page'] {
+  opacity: 1;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+@media (min-width: 48rem) {
+  html[data-look='calm'] .main-nav {
+    border-top: 0;
+    padding-top: 0;
+  }
+}

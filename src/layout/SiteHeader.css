@@ -1,0 +1,39 @@
+.back-link {
+  display: none;
+}
+
+/* On a phone, a game has the screen to itself: the title is still there for a screen reader, and a
+   link takes its place. From 48 rem the row of places is under the title and this isn't needed. */
+@media (max-width: 47.99rem) {
+  .app[data-screen='game'] .site-header {
+    display: flex;
+    align-self: stretch;
+    justify-content: flex-start;
+  }
+
+  .app[data-screen='game'] .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 3rem;
+    margin-bottom: 0.5rem;
+    font-family: var(--font-title);
+    font-size: 1.125rem;
+    font-weight: 600;
+  }
+
+  .app[data-screen='game'] .back-link:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .app[data-screen='game'] .wordmark {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

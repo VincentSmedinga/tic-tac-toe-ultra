@@ -8,7 +8,15 @@ export interface Pages {
  * wrangler.jsonc lists them: the Worker answers these, so that it can say in the page where its
  * picture is, and the files of the build (`/assets/*`, the icons) never wake it.
  */
-export const PAGE_PATHS = ['/', '/samen', '/spellen', '/statistieken', '/spel/*', '/kamer/*']
+export const PAGE_PATHS = [
+  '/',
+  '/samen',
+  '/spellen',
+  '/statistieken',
+  '/instellingen',
+  '/spel/*',
+  '/kamer/*',
+]
 
 /** The picture that goes with a link (scripts/icons.ts); index.html names it with this address. */
 export const SHARE_IMAGE = '/og-image.png'

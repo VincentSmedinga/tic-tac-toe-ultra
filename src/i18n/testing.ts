@@ -34,11 +34,14 @@ function pattern(text: string): RegExp {
 export function dutchLeaks(language: LanguageId, root: ParentNode = document.body): string[] {
   const nl = DICTIONARIES.nl
   const other = DICTIONARIES[language]
-  const dutch = (Object.keys(nl) as MessageKey[]).flatMap((key) => {
-    const theirs = new Set(forms(other[key]))
-    return forms(nl[key])
+  // A text that the language has too, under whatever key, is no leak: "Start" is the home tab in
+  // Dutch and the button that starts a game in English.
+  const keys = Object.keys(nl) as MessageKey[]
+  const theirs = new Set(keys.flatMap((key) => forms(other[key])))
+  const dutch = keys.flatMap((key) =>
+    forms(nl[key])
       .filter((text) => !theirs.has(text))
-      .map((text) => pattern(text))
-  })
+      .map((text) => pattern(text)),
+  )
   return visibleTexts(root).filter((text) => dutch.some((regex) => regex.test(text)))
 }

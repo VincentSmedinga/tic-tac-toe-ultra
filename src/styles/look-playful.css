@@ -236,10 +236,3 @@ html[data-look='playful'] .replay-position label {
   border-radius: 999px;
   background: var(--page);
 }
-
-html[data-look='playful'] .site-footer-card {
-  background: var(--page);
-  border: 4px solid var(--edge);
-  border-radius: 1.5rem;
-  box-shadow: 0 7px 0 var(--edge);
-}

@@ -102,7 +102,7 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
             </button>
           )}
           <Link to="/" className="button">
-            {t('footer.start')}
+            {t('nav.back')}
           </Link>
         </div>
       </div>

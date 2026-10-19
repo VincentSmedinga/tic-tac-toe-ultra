@@ -45,10 +45,9 @@ describe('AppearanceControls', () => {
     expect(document.documentElement.dataset.scheme).toBe('dark')
   })
 
-  it('is always there: the three themes and light and dark, the ones in use pressed', () => {
+  it('has the three themes and light and dark, the ones in use pressed', () => {
     systemIs(false)
     render(<AppearanceControls />)
-    expect(screen.getByRole('region', { name: 'Uiterlijk' })).toBeVisible()
     expect(screen.getByRole('group', { name: 'Thema' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Getekend' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Speels' })).toHaveAttribute('aria-pressed', 'false')

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import { isPreview, offeredLanguages } from '../i18n/language.ts'
-import { setLanguage, useLanguage, useText } from '../i18n/store.ts'
+import { useText } from '../i18n/store.ts'
 import { setAnimations, useAnimations, useReducedMotion } from '../motion/preference.ts'
 import { LOOKS, applyLook, readLook, saveLook } from './look.ts'
 import type { LookId } from './look.ts'
@@ -18,14 +17,13 @@ import './AppearanceControls.css'
 
 /**
  * The choices about how the game looks, kept per device: the theme (a look, of which there are
- * three), light or dark, and whether the game may move. They live in the footer, which has a place of its own on every screen.
+ * three), light or dark, and whether the game may move. They are on the settings page.
  * Light or dark has two buttons, of which the one you see is pressed; there is no "Systeem": see
  * `chooseScheme`. Both are applied as soon as the page has loaded; public/appearance.js did it
  * before the first paint.
  */
 export function AppearanceControls() {
   const t = useText()
-  const language = useLanguage()
   const [look, setLook] = useState<LookId>(() => readLook())
   const [preference, setPreference] = useState<SchemePreference>(() => readPreference())
   const [systemIsDark, setSystemIsDark] = useState(() => matchMedia(DARK_QUERY).matches)
@@ -68,7 +66,7 @@ export function AppearanceControls() {
   }
 
   return (
-    <section className="appearance" aria-label={t('appearance.label')}>
+    <div className="appearance">
       <Segmented
         label={t('appearance.look')}
         options={LOOKS.map(({ id }) => ({
@@ -104,18 +102,6 @@ export function AppearanceControls() {
           setAnimations(wanted === 'on')
         }}
       />
-      {/* Each language in its own language, whatever the page is in; a language nobody has read yet
-          is left out (see language.ts). */}
-      <Segmented
-        label={t('appearance.language')}
-        options={offeredLanguages(isPreview(), language).map(({ id, name }) => ({
-          value: id,
-          label: name,
-          lang: id,
-        }))}
-        value={language}
-        onChange={setLanguage}
-      />
-    </section>
+    </div>
   )
 }
