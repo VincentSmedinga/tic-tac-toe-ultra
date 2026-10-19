@@ -20,6 +20,8 @@ vi.stubGlobal(
 beforeEach(() => {
   vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['nl-NL', 'nl'])
   vi.spyOn(navigator, 'language', 'get').mockReturnValue('nl-NL')
+  // jsdom has no scrolling: a screen that starts at the top only has to be able to ask for it.
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
 })
 
 afterEach(() => {

@@ -10,6 +10,7 @@ import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { SHAPES } from '../shapes/shapes.ts'
 import type { ShapeId } from '../shapes/shapes.ts'
+import { useScrollToTop } from '../online/scroll.ts'
 import { Board } from './Board.tsx'
 import { FieldPicker } from './FieldPicker.tsx'
 import { fieldLabel } from './field.ts'
@@ -101,6 +102,8 @@ function ChooseShapes({ onStart }: { onStart: (shapes: Shapes, field: FieldSetti
   const t = useText()
   const [shapes, setShapes] = useState<ShapeId[]>(defaultShapes(DEFAULT_PLAYERS))
   const [field, setField] = useState<FieldSettings>(CLASSIC_FIELD)
+  // The page was scrolled to the button that leads to the board (or comes back from it).
+  useScrollToTop('choose')
 
   // More players get the first shapes that are free, fewer players leave the last ones out.
   const setCount = (count: number) => {
@@ -173,6 +176,8 @@ function Play({
 }) {
   const [{ game }, dispatch] = useReducer(reducer, undefined, () => newGame(0, shapes, field))
   const [replaying, setReplaying] = useState(false)
+  // The board and its replay are two views of the screen, each starting at the top.
+  useScrollToTop(replaying ? 'replay' : 'board')
   const t = useText()
   const names = usePlayerNames()
   const { player, text } = describe(t, names, game)

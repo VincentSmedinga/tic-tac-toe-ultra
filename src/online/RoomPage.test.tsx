@@ -617,6 +617,35 @@ describe('RoomPage', () => {
     })
   })
 
+  it('shows the game from its top when the lobby becomes the game, and then never moves the page', async () => {
+    let scrollY = 0
+    vi.spyOn(window, 'scrollTo').mockImplementation((_x: number, y: number) => {
+      scrollY = y
+    })
+    Object.defineProperty(window, 'scrollY', { configurable: true, get: () => scrollY })
+    const anna = { id: 'X', name: 'Anna', connected: true } as const
+    const bo = { id: 'O', name: 'Bo', connected: true } as const
+    const { socket } = await connected()
+    socket.receive(state([anna, bo]))
+    expect(await screen.findByRole('button', { name: 'kruis' })).toBeVisible()
+
+    // Scrolled down to the shapes, the lobby turns into the game, which is shorter.
+    scrollY = 700
+    const players: StateMessage['players'] = [
+      { ...anna, shape: 'cross' },
+      { ...bo, shape: 'circle' },
+    ]
+    socket.receive(state(players))
+    expect(await screen.findByRole('group', { name: 'Speelveld' })).toBeVisible()
+    expect(scrollY).toBe(0)
+
+    // A move of the other player is not a new view.
+    scrollY = 120
+    socket.receive({ ...state(players), moves: [{ player: 'cross', x: 0, y: 0 }] })
+    expect(await screen.findByText('Bo is aan de beurt')).toBeVisible()
+    expect(scrollY).toBe(120)
+  })
+
   it('ignores a message that is not one of the server', async () => {
     const { socket } = await connected()
     socket.receive('not json')
