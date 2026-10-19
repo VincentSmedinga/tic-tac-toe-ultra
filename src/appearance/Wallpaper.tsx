@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { PATHS, SHAPES } from '../shapes/shapes.ts'
 import './Wallpaper.css'
 
@@ -23,10 +24,12 @@ const PLACES = [
  * is, is a matter of the style (`--wallpaper-opacity`); it says nothing to a screen reader.
  */
 export function Wallpaper() {
+  // One pattern per wallpaper: the play mode has a wallpaper of its own, in the layer.
+  const tile = `wallpaper-tile-${useId().replaceAll(':', '')}`
   return (
     <svg className="wallpaper" aria-hidden="true" focusable="false">
       <defs>
-        <pattern id="wallpaper-tile" width="240" height="190" patternUnits="userSpaceOnUse">
+        <pattern id={tile} width="240" height="190" patternUnits="userSpaceOnUse">
           {SHAPES.map(({ id }, index) => {
             const [x, y, turn] = PLACES[index] ?? [0, 0, 0]
             return (
@@ -47,7 +50,7 @@ export function Wallpaper() {
           })}
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="url(#wallpaper-tile)" />
+      <rect width="100%" height="100%" fill={`url(#${tile})`} />
     </svg>
   )
 }

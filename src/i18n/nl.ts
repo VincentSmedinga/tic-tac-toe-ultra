@@ -78,6 +78,8 @@ export const nl = {
   'play.rematch': 'Nog een keer',
   'play.otherShapes': 'Andere vormen',
   'play.replay': 'Kijk terug',
+  'playMode.open': 'Volledig scherm',
+  'playMode.close': 'Sluiten',
   'shapePicker.taken': '{shape}, van {owner}',
 
   'board.label': 'Speelveld',

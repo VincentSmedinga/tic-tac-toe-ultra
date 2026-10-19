@@ -3,6 +3,7 @@ import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { Cell, GameState } from '../../shared/game/index.ts'
 import { CLASSIC_FIELD, DEFAULT_PLAYERS, PLAYER_LIMITS, roomConfig } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
+import { Wallpaper } from '../appearance/Wallpaper.tsx'
 import { useText } from '../i18n/store.ts'
 import type { Text } from '../i18n/types.ts'
 import { Replay } from '../replay/Replay.tsx'
@@ -12,10 +13,13 @@ import type { ShapeId } from '../shapes/shapes.ts'
 import { Board } from './Board.tsx'
 import { FieldPicker } from './FieldPicker.tsx'
 import { fieldLabel } from './field.ts'
+import { usePlayMode } from './playMode.ts'
+import { PlayModeButton } from './PlayModeButton.tsx'
 import { usePlayerNames, shapeOf } from './players.ts'
 import type { PlayerNames } from './players.ts'
 import { ShapePicker } from './ShapePicker.tsx'
 import './Game.css'
+import './PlayMode.css'
 
 /** The shapes of a game on one screen, in the order of the players: the first one starts. */
 type Shapes = readonly ShapeId[]
@@ -170,7 +174,16 @@ function Play({
   const [{ game }, dispatch] = useReducer(reducer, undefined, () => newGame(0, shapes, field))
   const [replaying, setReplaying] = useState(false)
   const t = useText()
-  const { player, text } = describe(t, usePlayerNames(), game)
+  const names = usePlayerNames()
+  const { player, text } = describe(t, names, game)
+  const {
+    on: modeOn,
+    available: modeAvailable,
+    attachLayer,
+    attachTrigger,
+    toggle: toggleMode,
+    close: closeMode,
+  } = usePlayMode()
 
   if (replaying && game.status.kind !== 'playing') {
     return (
@@ -185,12 +198,36 @@ function Play({
   }
 
   return (
-    <section className="game" aria-label={t('app.title')}>
-      <p className="game-status" role="status">
-        {player !== null && <ShapeIcon shape={shapeOf(player)} size={32} decorative />}
-        <span>{text}</span>
-      </p>
-      <p className="field-label">{fieldLabel(t, field)}</p>
+    <section
+      ref={attachLayer}
+      className="game"
+      aria-label={t('app.title')}
+      data-play-mode={modeOn || undefined}
+    >
+      {modeOn && <Wallpaper />}
+      <div className="game-info">
+        {modeOn && (
+          <div className="players players-row">
+            {shapes.map((shape) => (
+              <div key={shape} className="player" data-turn={shape === player || undefined}>
+                <ShapeIcon shape={shape} size={28} decorative />
+                <span>{names.nameOf(shape)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="game-status" role="status">
+          {player !== null && <ShapeIcon shape={shapeOf(player)} size={32} decorative />}
+          <span>{text}</span>
+        </p>
+        <p className="field-label">{fieldLabel(t, field)}</p>
+        <PlayModeButton
+          on={modeOn}
+          available={modeAvailable}
+          toggle={toggleMode}
+          attachTrigger={attachTrigger}
+        />
+      </div>
       <Board
         game={game}
         onPlay={(cell) => {
@@ -215,6 +252,8 @@ function Play({
             type="button"
             className="rematch rematch-quiet"
             onClick={() => {
+              // The replay is a screen of its own, not part of the mode.
+              closeMode()
               setReplaying(true)
             }}
           >

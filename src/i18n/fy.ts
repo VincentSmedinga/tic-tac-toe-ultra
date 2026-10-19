@@ -75,6 +75,8 @@ export const fy: Dictionary = {
   'play.rematch': 'Noch ien kear',
   'play.otherShapes': 'Oare foarmen',
   'play.replay': 'Sjoch werom',
+  'playMode.open': 'Folslein skerm',
+  'playMode.close': 'Slute',
   'shapePicker.taken': '{shape}, fan {owner}',
 
   'board.label': 'Spylfjild',

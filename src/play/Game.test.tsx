@@ -37,7 +37,7 @@ const crossWins = [
 describe('Game', () => {
   it('starts with an empty field and the cross to play', async () => {
     await startGame()
-    expect(screen.getAllByRole('button')).toHaveLength(9)
+    expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(9)
     expect(screen.getByRole('status')).toHaveTextContent('Kruis begint')
     expect(cell(2, 2)).toHaveAccessibleName('Rij 2, kolom 2: leeg')
   })
@@ -63,6 +63,8 @@ describe('Game', () => {
   it('can be played with the keyboard: one stop, the arrow keys over the cells', async () => {
     const user = userEvent.setup()
     await startGame()
+    // The button for the full screen comes first, then the board.
+    await user.tab()
     await user.tab()
     expect(cell(1, 1)).toHaveFocus()
     await user.keyboard('{ArrowRight}{Enter}')
@@ -82,6 +84,8 @@ describe('Game', () => {
   it('moves over the cells with the arrow keys, Home and End, and stops at the edge', async () => {
     const user = userEvent.setup()
     await startGame()
+    // The button for the full screen comes first, then the board.
+    await user.tab()
     await user.tab()
     await user.keyboard('{ArrowLeft}{ArrowUp}')
     expect(cell(1, 1)).toHaveFocus()
@@ -98,6 +102,8 @@ describe('Game', () => {
   it('goes back in at the cell it was on', async () => {
     const user = userEvent.setup()
     await startGame()
+    // The button for the full screen comes first, then the board.
+    await user.tab()
     await user.tab()
     await user.keyboard('{ArrowDown}{ArrowRight}')
     await user.tab()

@@ -74,6 +74,8 @@ export const en: Dictionary = {
   'play.rematch': 'Play again',
   'play.otherShapes': 'Other shapes',
   'play.replay': 'Watch again',
+  'playMode.open': 'Full screen',
+  'playMode.close': 'Close',
   'shapePicker.taken': '{shape}, taken by {owner}',
 
   'board.label': 'Playing field',

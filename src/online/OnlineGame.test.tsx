@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Move } from '../../shared/game/index.ts'
 import type { StateMessage } from '../../shared/protocol.ts'
 import { roomConfig } from '../../shared/room.ts'
@@ -256,6 +256,40 @@ describe('OnlineGame', () => {
       expect(screen.queryByRole('region', { name: 'Spel terugkijken' })).not.toBeInTheDocument()
       expect(screen.getByText('Je hebt gewonnen!')).toBeVisible()
       expect(screen.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
+    })
+  })
+
+  describe('in the play mode', () => {
+    afterEach(() => {
+      window.history.replaceState(null, '', '/')
+    })
+
+    it('keeps what the room says about the connection, the players and whose turn it is', async () => {
+      const user = userEvent.setup()
+      render(
+        <OnlineGame
+          state={stateOf([x(0, 0)], 'O')}
+          send={vi.fn()}
+          banner={<p role="alert">Opnieuw verbinden…</p>}
+        />,
+      )
+      await user.click(screen.getByRole('button', { name: 'Volledig scherm' }))
+      const mode = screen.getByRole('region', { name: 'Online spel' })
+      expect(mode).toHaveAttribute('data-play-mode')
+      expect(within(mode).getByRole('alert')).toHaveTextContent('Opnieuw verbinden…')
+      expect(within(mode).getByRole('status')).toHaveTextContent('Jij bent aan de beurt')
+      expect(within(mode).getByText('Cirkel (jij)').closest('.player')).toHaveAttribute('data-turn')
+      expect(within(mode).getByText('Anna').closest('.player')).not.toHaveAttribute('data-turn')
+      // Only the player who is to move may play; the mode changes nothing of it.
+      await user.click(screen.getByRole('button', { name: /^Rij 2, kolom 2:/ }))
+      expect(window.history.state).toMatchObject({ playMode: true })
+    })
+
+    it('is a choice of this player, and says nothing to the room', async () => {
+      const send = vi.fn()
+      render(<OnlineGame state={stateOf([], 'X')} send={send} />)
+      await userEvent.click(screen.getByRole('button', { name: 'Volledig scherm' }))
+      expect(send).not.toHaveBeenCalled()
     })
   })
 })
