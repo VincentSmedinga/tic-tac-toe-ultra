@@ -46,7 +46,7 @@ describe('App', () => {
 
   it('goes from the start screen to the game on one screen without loading the page', async () => {
     openAt('/')
-    await userEvent.setup().click(screen.getByRole('link', { name: 'Samen spelen' }))
+    await userEvent.setup().click(screen.getByRole('link', { name: 'Samen op één scherm' }))
     expect(window.location.pathname).toBe('/samen')
     expect(await screen.findByRole('button', { name: 'Start' })).toBeVisible()
   })

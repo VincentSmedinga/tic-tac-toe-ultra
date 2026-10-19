@@ -171,7 +171,8 @@ Issue #81: with the games played, the statistics, three languages, the full scre
 - **A game on a phone has no bar.** The board keeps all its room, and the header gives way to a "‹ Terug naar het begin" link (the title stays for screen readers). A room is not lost by leaving it: the start screen offers the way back. From 48 rem the row stays in a game, there is room.
 - **The settings page (`/instellingen`) holds what was in the footer:** Uiterlijk (Thema, Licht of donker, Animaties), Taal, the name ("Wie ben je?"), "De app" (the install hint, only where it applies) and "Over" (what the game is, the version, the fonts, a link to the code). Each is kept per device and applied at once.
 - **There is no footer.** What it held is the menu or the settings page.
-- **Later:** a lighter start screen (one main action, "Nieuwe kamer", with the players and the field behind "Aanpassen", joining as one row, the name moved here, with a line "Spelen als …"), and "Dit apparaat vergeten" on the settings page (it would also lose the list of played games, so it needs a warning).
+- **The start screen is about one thing.** A big "Nieuwe kamer" makes a room with what the last one was made with (two players, 3 × 3 the first time); the line under it, "2 spelers · 3 × 3, drie op een rij · Aanpassen", opens the number of players and the field picker where they stand. Joining with a code is one row, "Samen op één scherm" is a second button, and the name lives on the settings page, with a line at the end of the start screen ("Je speelt als …", or "Voeg je naam toe") that links there. The room you are still in comes first, as before.
+- **Later:** "Dit apparaat vergeten" on the settings page (it would also lose the list of played games, so it needs a warning).
 
 ## Style guide
 

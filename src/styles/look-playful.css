@@ -205,15 +205,14 @@ html[data-look='playful'] .players {
   }
 }
 
-html[data-look='playful'] .start-lead {
+/* A line of loose text is a pill, so that the wallpaper doesn't run behind the words. */
+html[data-look='playful'] .start-name {
   width: fit-content;
   align-self: center;
   padding: 0.25rem 1.25rem;
-  border: 4px solid var(--edge);
+  border: 3px solid var(--edge);
   border-radius: 999px;
   background: var(--page);
-  font-family: var(--font-title);
-  font-weight: 700;
   box-shadow: 0 4px 0 var(--edge);
 }
 
