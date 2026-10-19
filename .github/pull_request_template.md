@@ -13,4 +13,4 @@ Closes #
 - [ ] Small, focused commits in Conventional Commits form, each with a body that says why
 - [ ] `pnpm check` passes (once the project has it), and the end-to-end tests for changes people see
 - [ ] Checkboxes ticked in the issues this finishes; `Closes #n` only when all of an issue's boxes are done, otherwise `Part of #n`
-- [ ] `AGENTS.md` updated, or not needed because:
+- [ ] `AGENTS.md` or the area file in `docs/architecture/` updated, or not needed because:
