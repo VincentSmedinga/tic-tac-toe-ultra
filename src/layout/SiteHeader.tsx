@@ -14,7 +14,10 @@ export function SiteHeader({ inGame }: { inGame: boolean }) {
     <header className="site-header">
       {inGame && (
         <Link to="/" className="back-link">
-          <span aria-hidden="true">‹</span> {t('nav.back')}
+          <span className="back-arrow" aria-hidden="true">
+            ‹
+          </span>
+          <span className="back-label">{t('nav.back')}</span>
         </Link>
       )}
       <Wordmark />
