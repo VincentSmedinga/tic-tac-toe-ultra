@@ -31,6 +31,11 @@ html[data-look='playful'] body {
   background: var(--backdrop) fixed;
 }
 
+/* The cover over the status bar is a piece of the same fixed gradient, so no edge shows. */
+html[data-look='playful'] body::before {
+  background: var(--backdrop) fixed;
+}
+
 html[data-look='playful'] .wordmark {
   --title-size: clamp(1.6rem, 7.5vw, 3.25rem);
 }

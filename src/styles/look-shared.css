@@ -31,10 +31,31 @@ body {
   width: min(100%, 40rem);
   min-height: 100dvh;
   margin-inline: auto;
-  /* Room for the notch and the home bar. */
-  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+  /* Room for the notch and the home bar. The top is the status bar and a margin on top of it, not
+     the larger of the two: iOS fades the page a little way below the status bar, and the title
+     must start under that (issue #77). */
+  padding: calc(1rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
     max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   text-align: center;
+}
+
+/*
+ * The status bar's part of the screen is a solid cover in the colour of the page's bar (`--chrome`,
+ * the same colour `scheme.ts` gives the browser's bar), above everything, the play mode's layer
+ * too. The game is drawn under the status bar (`viewport-fit=cover`, `black-translucent`), and iOS
+ * 26 and later fade whatever scrolls under it, which put a shadow over the logo and the title
+ * (issue #77). With the cover nothing is under the bar to be faded, and iOS has a solid fixed
+ * element at the top to take its tint from. It is as high as the inset and so nothing at all where
+ * there is no status bar. A look whose page is not one colour paints it with its own backdrop.
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 200;
+  height: env(safe-area-inset-top);
+  background: var(--chrome);
+  pointer-events: none;
 }
 
 h1,
