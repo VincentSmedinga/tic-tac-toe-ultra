@@ -1,9 +1,20 @@
-/* How the game looks: two groups of buttons, side by side where there is room. */
+/* How the game looks: the groups of buttons under each other, each with all its buttons in a row. */
 .appearance {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
   width: 100%;
   font-family: var(--font-title);
   font-size: 1rem;
+}
+
+/* All the buttons of a group stay in one row: they give up some padding, and then some width, before
+   they would go on a second line (Getekend, Speels and Rustig in Speels's wide letters, on a narrow
+   phone). */
+.appearance .segmented-options {
+  flex-wrap: nowrap;
+}
+
+.appearance .segmented-options button {
+  padding-inline: clamp(0.5rem, 3vw, 1.125rem);
 }

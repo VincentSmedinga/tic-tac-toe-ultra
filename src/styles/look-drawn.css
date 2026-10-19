@@ -217,14 +217,3 @@ html[data-look='drawn'] .players {
     opacity: 0;
   }
 }
-
-html[data-look='drawn'] .site-footer-card {
-  background: var(--page);
-  border: 3px solid var(--ink);
-  border-radius: 14px 30px 16px 28px / 28px 14px 30px 16px;
-  box-shadow: 4px 5px 0 var(--ink);
-}
-
-html[data-look='drawn'] .footer-links a {
-  font-size: 1.375rem;
-}

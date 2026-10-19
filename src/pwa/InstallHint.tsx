@@ -3,7 +3,7 @@ import { dismissTip, install, isStandalone, useCanInstall, useShowIosTip } from 
 import './InstallHint.css'
 
 /**
- * How to put the game on the home screen, in the footer, small: a button where the browser can
+ * How to put the game on the home screen, on the settings page: a button where the browser can
  * install it, a tip where it can't be asked for (iPad and iPhone) that can be closed for good.
  * In the installed app, and in any other browser, there is nothing to see.
  */

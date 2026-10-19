@@ -48,10 +48,10 @@ test('one player plays in the full screen mode, the other does not see it, and b
     'true',
   )
   await expect(anna.locator('html')).toHaveAttribute('data-play-mode', '')
-  await expect(anna.locator('footer')).toHaveAttribute('inert', '')
+  await expect(anna.locator('nav.main-nav')).toHaveAttribute('inert', '')
   await expect(anna.locator('header')).toHaveAttribute('inert', '')
 
-  // The field is all there, with no scrolling of the page or of the field, and the footer is out of
+  // The field is all there, with no scrolling of the page or of the field, and the menu is out of
   // the way; nothing of it is shared with Bo.
   const frame = anna.locator('.board-frame')
   expect(
@@ -65,7 +65,7 @@ test('one player plays in the full screen mode, the other does not see it, and b
   const board = await anna.locator('.board').boundingBox()
   expect(board?.width).toBeGreaterThan(412 * 0.85)
   await expect(bo.locator('html')).not.toHaveAttribute('data-play-mode')
-  await expect(bo.getByRole('link', { name: 'Gespeelde spellen' })).toBeVisible()
+  await expect(bo.getByRole('link', { name: 'Terug naar het begin' })).toBeVisible()
 
   // The game goes on as usual, in the mode and out of it.
   await cell(anna, 2, 2).click()
@@ -81,7 +81,7 @@ test('one player plays in the full screen mode, the other does not see it, and b
     'false',
   )
   await expect(anna.locator('html')).not.toHaveAttribute('data-play-mode')
-  await expect(anna.locator('footer')).not.toHaveAttribute('inert')
+  await expect(anna.locator('nav.main-nav')).not.toHaveAttribute('inert')
   await expect(anna).toHaveURL(room)
   await expect(cell(anna, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: kruis')
 

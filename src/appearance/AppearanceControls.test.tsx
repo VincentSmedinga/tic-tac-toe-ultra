@@ -1,5 +1,6 @@
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { readAnimations, resetAnimations } from '../motion/preference.ts'
 import { AppearanceControls } from './AppearanceControls.tsx'
@@ -45,10 +46,9 @@ describe('AppearanceControls', () => {
     expect(document.documentElement.dataset.scheme).toBe('dark')
   })
 
-  it('is always there: the three themes and light and dark, the ones in use pressed', () => {
+  it('has the three themes and light and dark, the ones in use pressed', () => {
     systemIs(false)
     render(<AppearanceControls />)
-    expect(screen.getByRole('region', { name: 'Uiterlijk' })).toBeVisible()
     expect(screen.getByRole('group', { name: 'Thema' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Getekend' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: 'Speels' })).toHaveAttribute('aria-pressed', 'false')
@@ -116,5 +116,14 @@ describe('AppearanceControls', () => {
     expect(readAnimations()).toBe(false)
     await userEvent.setup().click(within(group).getByRole('button', { name: 'Aan' }))
     expect(readAnimations()).toBe(true)
+  })
+})
+
+describe('the layout of AppearanceControls', () => {
+  const css = readFileSync('src/appearance/AppearanceControls.css', 'utf8')
+
+  it('puts the groups under each other, each with all its buttons in a row', () => {
+    expect(css).toMatch(/\.appearance \{[^}]*flex-direction: column/)
+    expect(css).toMatch(/\.appearance \.segmented-options \{[^}]*flex-wrap: nowrap/)
   })
 })

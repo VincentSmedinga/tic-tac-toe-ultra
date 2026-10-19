@@ -98,9 +98,12 @@ test('games that were played are counted, by the server and on the page', async 
   const cross = stats.shapes.find(({ shape }) => shape === 'cross')
   expect(cross?.won).toBeGreaterThanOrEqual(3)
 
-  // The page, from the footer of another screen, tells the same.
+  // The page, from the menu of another screen, tells the same.
   await page.goto('/')
-  await page.getByRole('contentinfo').getByRole('link', { name: 'Statistieken' }).click()
+  await page
+    .getByRole('navigation', { name: 'Hoofdmenu' })
+    .getByRole('link', { name: 'Statistieken' })
+    .click()
   await expect(page).toHaveURL(/\/statistieken$/)
   await expect(page.getByRole('heading', { name: 'Statistieken', level: 2 })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Samen gespeeld' })).toBeVisible()

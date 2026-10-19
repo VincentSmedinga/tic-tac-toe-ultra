@@ -1,11 +1,11 @@
 # The app: screens, router and layout
 
-Read this before adding a screen, an address or something in the footer.
+Read this before adding a screen, an address or something to the menu.
 The decisions are in [docs/plan.md](../plan.md), Decisions and Scrolling between screens.
 
 ## Screens and the router
 
-- `src/online/route.ts` and `Link.tsx` are a minimal router on `history.pushState`: `/` the start screen, `/samen` the game on one screen, `/kamer/<code>` a room, `/spellen`, `/spel/<id>`, `/statistieken`.
+- `src/online/route.ts` and `Link.tsx` are a minimal router on `history.pushState`: `/` the start screen, `/samen` the game on one screen, `/kamer/<code>` a room, `/spellen`, `/spel/<id>`, `/statistieken`, `/instellingen`.
 - The addresses stay Dutch in every language.
 - A new address goes in the router, in `PAGE_PATHS` and in `run_worker_first`, see [pwa.md](pwa.md).
 - `StartScreen.tsx` makes a room: the number of players and the field.
@@ -26,12 +26,16 @@ The decisions are in [docs/plan.md](../plan.md), Decisions and Scrolling between
 - A state change while playing never moves the page.
 - Tests: `scroll.test.tsx`, `RoomPage.test.tsx` and `e2e/scroll.spec.ts`.
 
-## Layout and footer
+## Layout and the menu
 
-- The page is `.app` with a `header` (the wordmark), the screen in `main`, and `SiteFooter` (`src/layout/`) as a real `contentinfo` landmark after `main`.
-- The footer holds the links between screens ("Terug naar het begin", "Gespeelde spellen", "Statistieken"; the one for the screen you are on is left out) and the appearance, language and animation controls.
+- The page is `.app` with a `header` (`SiteHeader`: the wordmark), the nav (`MainNav`), and the screen in `main`. There is no footer.
+- `MainNav` (`src/layout/`) is a `nav` named "Hoofdmenu" with four links: the start, the games played, the statistics and the settings. The place you are in has `aria-current="page"`; `placeOf` in `place.ts` says which (a replay belongs to the games, a game being played to none).
+- It comes right after the header in the page, so the keyboard reaches it first; on a phone `order: 1` puts it after the screen, as a bar of tabs, and from 48 rem it is a row under the title.
+- A game on a phone has no bar. `.app` has `data-screen="game"` on `/samen` and in a room, and then the nav is hidden and the header is a "‹ Terug naar het begin" link (`.back-link`) with the title only for screen readers. From 48 rem the nav stays and the link is hidden.
+- The menu is part of the page, never `position: fixed` or `sticky`: iOS draws a bar behind such an element at the edge of the screen, see [appearance.md](appearance.md). `MainNav.test.tsx` reads the CSS for it.
+- A new screen goes in the menu only if it is one of the places you move between all day; anything else is reached from a screen.
+- A choice that is kept per device (the look, the language, the name, the app) goes on the settings page, not on the screen it is about.
 - Nothing is fixed over the screen, so a control never covers what a screen needs.
-- A link to another screen belongs in the footer, not at the bottom of the screen.
 - A button is as wide as what is on it.
 - A new screen has to look right in all three looks, light and dark, see [appearance.md](appearance.md).
 - Every screen has component tests in English and Frisian, see [i18n.md](i18n.md).

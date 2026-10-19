@@ -29,6 +29,7 @@
       "/samen",
       "/spellen",
       "/statistieken",
+      "/instellingen",
       "/spel/*",
       "/kamer/*",
     ],

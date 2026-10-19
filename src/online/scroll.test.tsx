@@ -32,7 +32,7 @@ describe('the page when a screen opens', () => {
   it('starts a screen at the top, with every link', async () => {
     openAt('/')
     scrollTo(900)
-    await userEvent.setup().click(screen.getByRole('link', { name: 'Gespeelde spellen' }))
+    await userEvent.setup().click(screen.getByRole('link', { name: 'Spellen' }))
     expect(window.location.pathname).toBe('/spellen')
     expect(scrollY).toBe(0)
   })
