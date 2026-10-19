@@ -16,9 +16,14 @@
  *   as pictures, for what doesn't take an SVG.
  * - `icon-maskable-512.png`: Android crops an icon to a circle or a squircle, so the whole picture
  *   is drawn smaller, inside a circle of 80 % of the square (the safe zone).
+ * - `og-image.png` (1200 × 630): the face of a link in a chat (`og:image`): the icon on the left,
+ *   the title in the font of the Getekend look on the right, on the dark of the page.
  */
 import { Resvg } from '@resvg/resvg-js'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { inflateSync } from 'node:zlib'
 import { PATHS } from '../src/shapes/shapes.ts'
 import type { ShapeId } from '../src/shapes/shapes.ts'
 
@@ -93,10 +98,11 @@ function picture({ colours, shapeSize, strokeWidth, centres, lines }: PictureOpt
 const round = (value: number) => Number(value.toFixed(3))
 
 /**
- * The icon as an SVG. `scale` draws the whole picture smaller around the middle (for the maskable
- * icon); `background` fills the square (left out to measure what is drawn).
+ * What the icon draws, without the `<svg>` around it. `scale` draws the whole picture smaller
+ * around the middle (for the maskable icon); `background` fills the square (left out to measure
+ * what is drawn).
  */
-export function iconSvg(tokens: string, { scale = 1, background = true } = {}): string {
+function iconBody(tokens: string, { scale = 1, background = true } = {}): string {
   const colours = darkShapeColours(tokens)
   const content = picture({
     colours,
@@ -113,7 +119,15 @@ export function iconSvg(tokens: string, { scale = 1, background = true } = {}): 
   const fill = background
     ? `<rect width="${SIZE.toString()}" height="${SIZE.toString()}" fill="${BACKGROUND}"/>`
     : ''
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE.toString()} ${SIZE.toString()}">${fill}${inner}</svg>\n`
+  return `${fill}${inner}`
+}
+
+/** The icon as an SVG; see `iconBody` for the options. */
+export function iconSvg(
+  tokens: string,
+  options: { scale?: number; background?: boolean } = {},
+): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE.toString()} ${SIZE.toString()}">${iconBody(tokens, options)}</svg>\n`
 }
 
 /** The icon for a browser tab: bigger, bolder shapes without the lines, on a rounded square. */
@@ -136,6 +150,74 @@ export function faviconSvg(tokens: string): string {
 /** How much of the picture the maskable icon keeps: all of it fits the circle of the safe zone. */
 export const MASKABLE_SCALE = 0.67
 
+export const OG_WIDTH = 1200
+export const OG_HEIGHT = 630
+/** The font of the title in the Getekend look: Patrick Hand, which `@fontsource` ships as WOFF. */
+export const OG_FONT = 'Patrick Hand'
+/** The title in three lines, as it is set in the picture. */
+export const OG_TITLE = ['Boter, Kaas', 'en Eieren', 'Ultra'] as const
+
+/** The picture that goes with a link: the icon on the left, the title on the right, on the dark page. */
+export function ogImageSvg(tokens: string): string {
+  const width = OG_WIDTH.toString()
+  const height = OG_HEIGHT.toString()
+  const iconSize = 420
+  const top = (OG_HEIGHT - iconSize) / 2
+  const lineHeight = 132
+  const firstBaseline = OG_HEIGHT / 2 - lineHeight + 38
+  const lines = OG_TITLE.map(
+    (line, index) =>
+      `<text x="600" y="${(firstBaseline + index * lineHeight).toString()}">${line}</text>`,
+  ).join('')
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}"><rect width="${width}" height="${height}" fill="${BACKGROUND}"/><clipPath id="round"><rect x="90" y="${top.toString()}" width="${iconSize.toString()}" height="${iconSize.toString()}" rx="72"/></clipPath><g clip-path="url(#round)"><svg x="90" y="${top.toString()}" width="${iconSize.toString()}" height="${iconSize.toString()}" viewBox="0 0 ${SIZE.toString()} ${SIZE.toString()}">${iconBody(tokens)}</svg></g><g fill="${INK}" font-family="${OG_FONT}" font-size="122">${lines}</g></svg>\n`
+}
+
+/**
+ * A WOFF file as the TrueType font inside it. WOFF is that font with each table compressed, and
+ * resvg only reads TrueType, so the font the game ships can be used for the picture.
+ */
+export function ttfFromWoff(woff: Buffer): Buffer {
+  const count = woff.readUInt16BE(12)
+  const header = Buffer.alloc(12 + 16 * count)
+  woff.copy(header, 0, 4, 8) // the flavor: what kind of outlines
+  header.writeUInt16BE(count, 4)
+  let power = 0
+  while (2 ** (power + 1) <= count) power++
+  header.writeUInt16BE(2 ** power * 16, 6)
+  header.writeUInt16BE(power, 8)
+  header.writeUInt16BE(count * 16 - 2 ** power * 16, 10)
+
+  const tables: Buffer[] = []
+  let offset = header.length
+  for (let index = 0; index < count; index++) {
+    const entry = 44 + index * 20
+    const start = woff.readUInt32BE(entry + 4)
+    const compressed = woff.readUInt32BE(entry + 8)
+    const length = woff.readUInt32BE(entry + 12)
+    const stored = woff.subarray(start, start + compressed)
+    const data = compressed < length ? inflateSync(stored) : stored
+    const target = 12 + index * 16
+    woff.copy(header, target, entry, entry + 4) // the tag
+    header.writeUInt32BE(woff.readUInt32BE(entry + 16), target + 4) // the checksum
+    header.writeUInt32BE(offset, target + 8)
+    header.writeUInt32BE(length, target + 12)
+    const padded = Buffer.alloc((length + 3) & ~3) // every table starts on a multiple of 4
+    data.copy(padded)
+    tables.push(padded)
+    offset += padded.length
+  }
+  return Buffer.concat([header, ...tables])
+}
+
+/** The picture of the link as a PNG, with the title in the font file at `fontPath` (a TrueType file). */
+export function ogImagePng(tokens: string, fontPath: string): Buffer {
+  return new Resvg(ogImageSvg(tokens), {
+    font: { fontFiles: [fontPath], loadSystemFonts: false },
+  })
+    .render()
+    .asPng()
+}
+
 /** The pictures of the icon, by file name, as the bytes to write. */
 export function makeIcons(tokens: string): Map<string, string | Buffer> {
   const full = iconSvg(tokens)
@@ -153,12 +235,32 @@ export function makeIcons(tokens: string): Map<string, string | Buffer> {
   ])
 }
 
+/** Where the font of the title is (`pnpm install` puts it there). */
+const FONT_WOFF = new URL(
+  '../node_modules/@fontsource/patrick-hand/files/patrick-hand-latin-400-normal.woff',
+  import.meta.url,
+)
+
+/** `ogImagePng` with the game's own font: it is turned into a TrueType file in a folder of its own first. */
+export function makeOgImage(tokens: string): Buffer {
+  const folder = mkdtempSync(join(tmpdir(), 'ultra-og-'))
+  const fontPath = join(folder, 'patrick-hand.ttf')
+  try {
+    writeFileSync(fontPath, ttfFromWoff(readFileSync(FONT_WOFF)))
+    return ogImagePng(tokens, fontPath)
+  } finally {
+    rmSync(folder, { recursive: true, force: true })
+  }
+}
+
 if (import.meta.main) {
   const root = new URL('..', import.meta.url)
   const tokens = readFileSync(new URL('src/styles/tokens.css', root), 'utf8')
   const publicDir = new URL('public/', root)
   mkdirSync(publicDir, { recursive: true })
-  for (const [name, bytes] of makeIcons(tokens)) {
+  const files = makeIcons(tokens)
+  files.set('og-image.png', makeOgImage(tokens))
+  for (const [name, bytes] of files) {
     writeFileSync(new URL(name, publicDir), bytes)
     console.log(`public/${name}`)
   }

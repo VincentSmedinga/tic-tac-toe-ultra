@@ -11,6 +11,7 @@ import { CLASSIC_FIELD, DEFAULT_PLAYERS } from '../shared/room.ts'
 import type { FieldSettings } from '../shared/room.ts'
 import { ARCHIVE_NAME } from './archive.ts'
 import type { Env } from './env.ts'
+import { isPage, servePage } from './page.ts'
 import { newRoomCode } from './room-code.ts'
 
 export { Archive } from './archive.ts'
@@ -22,7 +23,9 @@ const CREATE_ATTEMPTS = 10
 const STATS_MAX_AGE = 30
 
 /**
- * The Worker: answers /api/*; every other address is the app, which Cloudflare serves itself.
+ * The Worker: answers /api/*; the pages of the app (server/page.ts) it gets from the files with
+ * the full address of the picture of a link in them, and every other address is a file that
+ * Cloudflare serves itself.
  *   POST /api/rooms          make a room, answers { code }; the body may say how big the field is
  *                            and how many people play ({ width, height, winLength, players }),
  *                            without one it is classic 3×3 for two
@@ -36,7 +39,9 @@ export default {
   async fetch(request, env): Promise<Response> {
     const url = new URL(request.url)
     const parts = url.pathname.split('/').filter(Boolean) // ['api', 'rooms', code?, 'ws'?]
-    if (parts[0] !== 'api') return notFound()
+    if (parts[0] !== 'api') {
+      return isPage(url.pathname) ? servePage(request, env) : notFound()
+    }
 
     if (parts[1] === 'health' && parts.length === 2) return Response.json({ status: 'ok' })
     if (parts[1] === 'games') return getGame(parts, request, env)

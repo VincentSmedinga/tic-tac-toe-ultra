@@ -288,7 +288,10 @@ jobs:
           URL: ${{ steps.deploy.outputs.url }}
         run: |
           for attempt in 1 2 3 4 5 6; do
+            # The Worker puts the address it was asked on in front of the picture of a link.
             if curl --fail --silent --max-time 20 "$URL/" | grep -q '<div id="root">' &&
+              curl --fail --silent --max-time 20 "$URL/kamer/BCDF" | grep -qF "content=\"$URL/og-image.png\"" &&
+              curl --fail --silent --max-time 20 --head "$URL/og-image.png" | grep -qi '^content-type: image/png' &&
               curl --fail --silent --max-time 20 "$URL/api/health" | jq -e '.status == "ok"' > /dev/null; then
               echo "The page answers: $URL" >> "$GITHUB_STEP_SUMMARY"
               exit 0
