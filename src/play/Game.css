@@ -1,6 +1,8 @@
 :root {
-  /* What the field and the players are painted with: the page colour, a little see-through. */
-  --board-surface: color-mix(in srgb, var(--page) 62%, transparent);
+  /* What the field and the players are painted with: the page colour, a little see-through, with
+     what is behind it blurred. A look that has a faint wallpaper (Getekend) lets more through. */
+  --board-surface: color-mix(in srgb, var(--page) var(--board-opacity, 62%), transparent);
+  --board-blur: 6px;
 }
 
 .game {
@@ -74,8 +76,8 @@
   inset: -0.5rem;
   border-radius: 1rem;
   background: var(--board-surface, var(--page));
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(var(--board-blur));
+  backdrop-filter: blur(var(--board-blur));
   pointer-events: none;
 }
 

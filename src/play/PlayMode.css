@@ -91,8 +91,8 @@ html[data-play-mode] body {
   padding: 0.125rem 0.5rem;
   border-radius: 1rem;
   background: var(--board-surface);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(var(--board-blur));
+  backdrop-filter: blur(var(--board-blur));
 }
 
 .game[data-play-mode] .player {
