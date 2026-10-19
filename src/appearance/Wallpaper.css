@@ -1,5 +1,9 @@
 .wallpaper {
-  position: fixed;
+  /* Not fixed: iOS 26 and later draw a solid bar of their own (with a fade at its edge) behind the
+     status bar and the toolbar next to a fixed element that touches the edge of the screen, which
+     hid the wallpaper there and lay over the title (issue #77). It lies in the page instead, in the
+     body, which is as high as the page (the layer of the play mode is fixed itself and has its own). */
+  position: absolute;
   inset: 0;
   z-index: -1;
   width: 100%;

@@ -19,6 +19,15 @@ The decisions are in [docs/plan.md](../plan.md), Shapes and colours and Look and
 - A part's own CSS sits above the looks only where a rule says so (`Replay.css`, `PlayMode.css`, the bottom of `Stats.css`).
 - The wallpaper is the twelve shapes drawn from the same paths; its loudness is a token of the look.
 
+## The top and the bottom of the screen on iOS
+
+- Nothing of the page is `position: fixed` against the screen's edges.
+- iOS 26 and later draw a bar of their own, with a fade at its edge, behind the status bar and the toolbar next to such an element, and nothing in CSS turns that off. `src/styles/top-edge.test.ts` enforces it; see [docs/plan.md](../plan.md), Look and feel.
+- The wallpaper lies in the page: `.wallpaper` is absolute, as high as the `body`, which is `position: relative`, and it scrolls with the page.
+- The layer of the play mode is fixed by design and has a wallpaper of its own.
+- `.app` starts its content a margin below the inset and has more room under the footer.
+- A new fixed layer must keep clear of the edges of the page.
+
 ## Shapes and colours
 
 - `src/shapes/shapes.ts` is the registry of the twelve shapes (id, Dutch name, the marker's name) and their drawings. `ShapeIcon` draws one in its own colour.
