@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
 import { roomCodeSchema } from '../../shared/protocol.ts'
+import { pushEntry } from './scroll.ts'
 
 /** Where in the app we are: the start screen, the game on one screen, a room, played games, or the statistics. */
 export type Route =
@@ -50,11 +51,12 @@ function subscribe(listener: () => void): () => void {
 /**
  * Goes to another address of the app without loading the page again. Where the browser can, the
  * old screen slides away and the new one comes in (a view transition, which the style decides
- * the look of, or switches off); everywhere else the new screen is simply there.
+ * the look of, or switches off); everywhere else the new screen is simply there. The new screen
+ * starts at the top, and the place on the old one is kept for when back comes to it (`scroll.ts`).
  */
 export function navigate(path: string): void {
   const go = () => {
-    window.history.pushState(null, '', path)
+    pushEntry(path)
     for (const listener of listeners) listener()
     window.scrollTo(0, 0)
   }

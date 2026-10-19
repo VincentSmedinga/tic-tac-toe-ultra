@@ -16,6 +16,7 @@ import type { PlayerNames } from '../play/players.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import type { StartedState } from './started.ts'
+import { useScrollToTop } from './scroll.ts'
 import '../play/Game.css'
 import '../play/PlayMode.css'
 import './Online.css'
@@ -68,6 +69,8 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
   const names = usePlayerNames()
   // The round whose replay is open, so a rematch can't leave it open for the next round.
   const [replayRound, setReplayRound] = useState<number | null>(null)
+  // The game and its replay are two views of the room, each starting at the top.
+  useScrollToTop(replayRound === state.round ? 'replay' : 'game')
   const replayed = replayGame(state.config, state.moves)
   if (!replayed.ok) {
     // The room only sends moves that replay, so this is a message that came out wrong.
