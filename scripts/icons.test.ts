@@ -89,7 +89,7 @@ describe('the icon', () => {
 describe('the manifest', () => {
   it('names the game, opens in its own window and starts at the front', () => {
     expect(manifest.name).toBe('Boter, Kaas en Eieren Ultra')
-    expect(manifest.short_name).toBe('Ultra')
+    expect(manifest.short_name).toBe('Tic Tac Toe Ultra')
     expect(manifest.lang).toBe('nl')
     expect(manifest.display).toBe('standalone')
     expect(manifest.start_url).toBe('/')
@@ -121,7 +121,7 @@ describe('the manifest', () => {
     expect(page).toContain('<link rel="icon" href="/favicon.svg" type="image/svg+xml" />')
     expect(page).toContain('viewport-fit=cover')
     expect(page).toContain('<meta name="apple-mobile-web-app-capable" content="yes" />')
-    expect(page).toContain('<meta name="apple-mobile-web-app-title" content="Ultra" />')
+    expect(page).toContain('<meta name="apple-mobile-web-app-title" content="Tic Tac Toe Ultra" />')
     expect(page).toContain('content="black-translucent"')
   })
 
