@@ -39,7 +39,7 @@ test('a person chooses a theme and light or dark, which is there at once and aft
 
   // It holds for the other screens too, and the game still plays.
   await page.getByRole('link', { name: 'Start', exact: true }).click()
-  await page.getByRole('link', { name: 'Samen spelen' }).click()
+  await page.getByRole('link', { name: 'Samen op één scherm' }).click()
   await page.getByRole('button', { name: 'Start' }).click()
   await expect(page.getByRole('group', { name: 'Speelveld' })).toBeVisible()
   await expect(html(page)).toHaveAttribute('data-look', 'playful')

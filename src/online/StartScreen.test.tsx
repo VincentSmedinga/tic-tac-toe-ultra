@@ -4,8 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setLanguage } from '../i18n/store.ts'
 import { dutchLeaks } from '../i18n/testing.ts'
 import type { RoomApi } from './api.ts'
-import { getLastRoom, setLastRoom, setName } from './identity.ts'
+import { getLastRoom, getRoomChoice, setLastRoom, setName } from './identity.ts'
 import { StartScreen } from './StartScreen.tsx'
+
+/** The players and the field are behind the line that says what the room is made with. */
+async function openOptions(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /Aanpassen|Change|Oanpasse/ }))
+}
 
 function fakeApi(overrides: Partial<RoomApi> = {}): RoomApi {
   return {
@@ -69,32 +74,36 @@ describe('StartScreen', () => {
     })
   })
 
-  it('shows the three ways to play as choices of their own, each with its action', () => {
+  it('shows one main action, with the way to join and the way to play on one screen', () => {
     render(<StartScreen api={fakeApi()} />)
-    const choices = [
-      ['Een nieuwe kamer starten', 'button', 'Nieuwe kamer'],
-      ['Meedoen met een code', 'button', 'Meedoen'],
-      ['Samen op één scherm', 'link', 'Samen spelen'],
-    ] as const
-    for (const [title, role, action] of choices) {
-      const choice = within(screen.getByRole('region', { name: title }))
-      expect(choice.getByRole(role, { name: action })).toBeVisible()
-    }
-    expect(screen.getByRole('link', { name: 'Samen spelen' })).toHaveAttribute('href', '/samen')
+    const create = within(screen.getByRole('region', { name: 'Een nieuwe kamer starten' }))
+    expect(create.getByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
+    const join = within(screen.getByRole('region', { name: 'Meedoen met een code' }))
+    expect(join.getByRole('button', { name: 'Meedoen' })).toBeVisible()
     expect(screen.getByLabelText('Code van de kamer')).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Samen op één scherm' })).toHaveAttribute(
+      'href',
+      '/samen',
+    )
   })
 
-  it('asks for a name in a way that Safari can fill in from the Contacts app', () => {
-    render(<StartScreen api={fakeApi()} />)
-    const field = screen.getByLabelText('Je naam (hoeft niet)')
-    expect(field).toHaveAttribute('autocomplete', 'given-name')
-    expect(field).toHaveAttribute('name', 'given-name')
-  })
-
-  it('starts with the name that was typed last time', () => {
+  it('has no name field: the name is on the settings page, and a line says whose it is', () => {
     setName('Anna')
     render(<StartScreen api={fakeApi()} />)
-    expect(screen.getByLabelText('Je naam (hoeft niet)')).toHaveValue('Anna')
+    expect(screen.queryByLabelText('Je naam (hoeft niet)')).not.toBeInTheDocument()
+    expect(screen.getByText(/Je speelt als Anna\./)).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Wijzig je naam' })).toHaveAttribute(
+      'href',
+      '/instellingen',
+    )
+  })
+
+  it('asks for the name on the settings page while there is none', () => {
+    render(<StartScreen api={fakeApi()} />)
+    expect(screen.getByRole('link', { name: 'Voeg je naam toe' })).toHaveAttribute(
+      'href',
+      '/instellingen',
+    )
   })
 
   it('says so when the address of a room was no code', () => {
@@ -105,18 +114,59 @@ describe('StartScreen', () => {
   })
 
   describe('a new room', () => {
-    it('makes a room, remembers the name, and goes to the room', async () => {
+    it('makes a room and goes to the room', async () => {
       const api = fakeApi()
       const user = userEvent.setup()
       render(<StartScreen api={api} />)
-      await user.type(screen.getByLabelText('Je naam (hoeft niet)'), '  Anna ')
       await user.click(screen.getByRole('button', { name: 'Nieuwe kamer' }))
 
       await vi.waitFor(() => {
         expect(window.location.pathname).toBe('/kamer/BCDF')
       })
       expect(api.createRoom).toHaveBeenCalledOnce()
-      expect(window.localStorage.getItem('tic-tac-toe-ultra.name')).toBe('Anna')
+    })
+
+    it('says what the room is made with, and keeps the players and the field behind Aanpassen', async () => {
+      render(<StartScreen api={fakeApi()} />)
+      const adjust = screen.getByRole('button', {
+        name: /2 spelers · 3 × 3, drie op een rij · Aanpassen/,
+      })
+      expect(adjust).toHaveAttribute('aria-expanded', 'false')
+      expect(screen.queryByRole('group', { name: 'Veld' })).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Aantal spelers')).not.toBeInTheDocument()
+
+      await userEvent.setup().click(adjust)
+      expect(adjust).toHaveAttribute('aria-expanded', 'true')
+      expect(screen.getByRole('group', { name: 'Veld' })).toBeVisible()
+      expect(screen.getByLabelText('Aantal spelers')).toBeVisible()
+    })
+
+    it('makes the next room with what the last one was made with', async () => {
+      const user = userEvent.setup()
+      const { unmount } = render(<StartScreen api={fakeApi()} />)
+      await openOptions(user)
+      await user.click(screen.getByRole('button', { name: /Groter/ }))
+      await user.selectOptions(screen.getByLabelText('Aantal spelers'), '4')
+      expect(getRoomChoice()).toEqual({
+        players: 4,
+        field: { width: 7, height: 7, winLength: 5 },
+      })
+      unmount()
+
+      const api = fakeApi()
+      render(<StartScreen api={api} />)
+      expect(
+        screen.getByRole('button', { name: /4 spelers · 7 × 7, vijf op een rij · Aanpassen/ }),
+      ).toBeVisible()
+      await user.click(screen.getByRole('button', { name: 'Nieuwe kamer' }))
+      expect(api.createRoom).toHaveBeenCalledWith({ width: 7, height: 7, winLength: 5, players: 4 })
+    })
+
+    it('starts classic again when what was kept is no good', () => {
+      window.localStorage.setItem('tic-tac-toe-ultra.new-room', '{"players":99,"field":{}}')
+      render(<StartScreen api={fakeApi()} />)
+      expect(getRoomChoice()).toBeNull()
+      expect(screen.getByRole('button', { name: /2 spelers · 3 × 3/ })).toBeVisible()
     })
 
     it('is a classic room unless another field is chosen', async () => {
@@ -130,6 +180,7 @@ describe('StartScreen', () => {
       const api = fakeApi()
       const user = userEvent.setup()
       render(<StartScreen api={api} />)
+      await openOptions(user)
       const card = within(screen.getByRole('region', { name: 'Een nieuwe kamer starten' }))
       expect(card.getByRole('group', { name: 'Veld' })).toBeVisible()
 
@@ -142,6 +193,7 @@ describe('StartScreen', () => {
       const api = fakeApi()
       const user = userEvent.setup()
       render(<StartScreen api={api} />)
+      await openOptions(user)
       expect(screen.getByLabelText('Aantal spelers')).toHaveValue('2')
       await user.selectOptions(screen.getByLabelText('Aantal spelers'), '5')
       await user.click(screen.getByRole('button', { name: 'Nieuwe kamer' }))
@@ -153,8 +205,9 @@ describe('StartScreen', () => {
       })
     })
 
-    it('offers two to twelve players', () => {
+    it('offers two to twelve players', async () => {
       render(<StartScreen api={fakeApi()} />)
+      await openOptions(userEvent.setup())
       const options = [...screen.getByLabelText('Aantal spelers').querySelectorAll('option')]
       expect(options.map((option) => option.value)).toEqual([
         '2',
@@ -174,6 +227,7 @@ describe('StartScreen', () => {
     it('says that a bigger field is nicer with more than two players, while the field is classic', async () => {
       render(<StartScreen api={fakeApi()} />)
       const user = userEvent.setup()
+      await openOptions(user)
       expect(screen.queryByText(/groter veld leuker/)).not.toBeInTheDocument()
       await user.selectOptions(screen.getByLabelText('Aantal spelers'), '4')
       expect(screen.getByText('Met meer dan twee spelers is een groter veld leuker.')).toBeVisible()
@@ -185,6 +239,7 @@ describe('StartScreen', () => {
       const api = fakeApi()
       const user = userEvent.setup()
       render(<StartScreen api={api} />)
+      await openOptions(user)
       await user.click(screen.getByRole('button', { name: /Eigen veld/ }))
       await user.selectOptions(screen.getByLabelText('Breedte'), '11')
       await user.selectOptions(screen.getByLabelText('Hoogte'), '9')
@@ -275,7 +330,7 @@ describe.each([
     heading: 'Start a new room',
     create: 'New room',
     join: 'Join',
-    local: 'Play together',
+    local: 'Together on one screen',
     code: 'That is not a valid code. Ask the person who made the room for the code again.',
     resume: 'Back to room BCDF',
   },
@@ -284,7 +339,7 @@ describe.each([
     heading: 'In nije keamer starte',
     create: 'Nije keamer',
     join: 'Meidwaan',
-    local: 'Tegearre spylje',
+    local: 'Tegearre op ien skerm',
     code: 'Dat is gjin jildige koade. Freegje de koade opnij oan wa’t de keamer makke hat.',
     resume: 'Werom nei keamer BCDF',
   },

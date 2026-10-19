@@ -36,7 +36,8 @@ test('the board starts at its top after Start, which is at the bottom of a tall 
 test('a link goes to the top of the next screen, and back puts the page where it was', async ({
   page,
 }) => {
-  await page.goto('/')
+  // The settings are a long page, with the menu at the end of it.
+  await page.goto('/instellingen')
   const link = page.getByRole('link', { name: 'Spellen' })
   await link.scrollIntoViewIfNeeded()
   const before = await page.evaluate<number>('scrollY')
@@ -47,6 +48,6 @@ test('a link goes to the top of the next screen, and back puts the page where it
   await expect.poll(() => page.evaluate('scrollY')).toBe(0)
 
   await page.goBack()
-  await expect(page).toHaveURL(/\/$/)
+  await expect(page).toHaveURL(/\/instellingen$/)
   await expect.poll(() => page.evaluate('scrollY')).toBe(before)
 })

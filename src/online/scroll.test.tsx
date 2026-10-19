@@ -90,7 +90,7 @@ describe('the page when a screen opens', () => {
     openAt('/')
     const user = userEvent.setup()
     scrollTo(640)
-    await user.click(screen.getByRole('link', { name: 'Samen spelen' }))
+    await user.click(screen.getByRole('link', { name: 'Samen op één scherm' }))
     expect(scrollY).toBe(0)
     scrollTo(75)
 
@@ -115,7 +115,7 @@ describe('the page when a screen opens', () => {
   it('does not take the page back when it is the full screen mode that back leaves', async () => {
     openAt('/')
     const user = userEvent.setup()
-    await user.click(screen.getByRole('link', { name: 'Samen spelen' }))
+    await user.click(screen.getByRole('link', { name: 'Samen op één scherm' }))
     await user.click(await screen.findByRole('button', { name: 'Start' }))
     scrollTo(30)
     window.history.pushState({ playMode: true }, '')

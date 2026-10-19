@@ -5,17 +5,21 @@
  */
 
 import { MAX_NAME_LENGTH, roomCodeSchema, shapeSchema, tokenSchema } from '../../shared/protocol.ts'
+import { isValidField, isValidPlayerCount } from '../../shared/room.ts'
+import type { FieldSettings } from '../../shared/room.ts'
 import type { ShapeId } from '../../shared/shapes.ts'
 
 const TOKEN_KEY = 'tic-tac-toe-ultra.token'
 const NAME_KEY = 'tic-tac-toe-ultra.name'
 const ROOM_KEY = 'tic-tac-toe-ultra.room'
 const SHAPE_KEY = 'tic-tac-toe-ultra.shape'
+const CHOICE_KEY = 'tic-tac-toe-ultra.new-room'
 
 let memoryToken: string | null = null
 let memoryName = ''
 let memoryRoom: string | null = null
 let memoryShape: ShapeId | null = null
+let memoryChoice: string | null = null
 
 function storage(): Storage | null {
   try {
@@ -133,6 +137,43 @@ export function setShape(shape: ShapeId): void {
   memoryShape = shape
   try {
     storage()?.setItem(SHAPE_KEY, shape)
+  } catch {
+    // Not remembered, but it still counts for this visit.
+  }
+}
+
+/** What a new room was last made with: how many players, and which field. */
+export interface RoomChoice {
+  players: number
+  field: FieldSettings
+}
+
+/** The last choice for a new room, or null when there is none yet or it is no longer a good one. */
+export function getRoomChoice(): RoomChoice | null {
+  const store = storage()
+  let raw = memoryChoice
+  if (store) {
+    try {
+      raw = store.getItem(CHOICE_KEY)
+    } catch {
+      // Fall back to what was remembered this visit.
+    }
+  }
+  if (raw === null) return null
+  try {
+    const { players, field } = JSON.parse(raw) as { players: number; field: FieldSettings }
+    const { width, height, winLength } = field
+    const checked = { width, height, winLength }
+    return isValidPlayerCount(players) && isValidField(checked) ? { players, field: checked } : null
+  } catch {
+    return null
+  }
+}
+
+export function setRoomChoice(choice: RoomChoice): void {
+  memoryChoice = JSON.stringify(choice)
+  try {
+    storage()?.setItem(CHOICE_KEY, memoryChoice)
   } catch {
     // Not remembered, but it still counts for this visit.
   }

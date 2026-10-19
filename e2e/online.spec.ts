@@ -8,15 +8,20 @@ async function newPlayer(browser: Browser, name: string): Promise<Page> {
     locale: 'nl-NL',
   })
   const page = await context.newPage()
-  await page.goto('/')
+  // The name is on the settings page; the start screen is where a player goes next.
+  await page.goto('/instellingen')
   await page.getByLabel('Je naam (hoeft niet)').fill(name)
+  await page.getByRole('link', { name: 'Start', exact: true }).click()
   return page
 }
 
 /** Anna makes a room, Bo joins it with the code: both end up on the board. */
 async function startGame(browser: Browser, preset?: RegExp) {
   const anna = await newPlayer(browser, 'Anna')
-  if (preset) await anna.getByRole('button', { name: preset }).click()
+  if (preset) {
+    await anna.getByRole('button', { name: /Aanpassen/ }).click()
+    await anna.getByRole('button', { name: preset }).click()
+  }
   await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
   await expect(anna.getByText('Wachten op een tweede speler…')).toBeVisible()
   const code = (await anna.locator('.room-code').textContent()) ?? ''
@@ -329,6 +334,7 @@ test('three people play in a room of four seats, started by the one who made it'
   browser,
 }) => {
   const anna = await newPlayer(browser, 'Anna')
+  await anna.getByRole('button', { name: /Aanpassen/ }).click()
   await anna.getByLabel('Aantal spelers').selectOption('4')
   await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
   await expect(anna.getByText('Wachten op meer spelers…')).toBeVisible()

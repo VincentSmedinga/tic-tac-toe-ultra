@@ -10,8 +10,13 @@ async function newPlayer(browser: Browser, name: string, address = '/'): Promise
     hasTouch: true,
   })
   const page = await context.newPage()
-  await page.goto(address)
-  if (address === '/') await page.getByLabel('Je naam (hoeft niet)').fill(name)
+  if (address === '/') {
+    await page.goto('/instellingen')
+    await page.getByLabel('Je naam (hoeft niet)').fill(name)
+    await page.getByRole('link', { name: 'Start', exact: true }).click()
+  } else {
+    await page.goto(address)
+  }
   return page
 }
 
@@ -99,6 +104,7 @@ test('a field that is too big keeps its cells and scrolls in its frame, while th
   browser,
 }) => {
   const anna = await newPlayer(browser, 'Anna')
+  await anna.getByRole('button', { name: /Aanpassen/ }).click()
   await anna.getByRole('button', { name: /^Groot/ }).click()
   await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
   await anna.getByRole('button', { name: 'kruis', exact: true }).click()
