@@ -130,6 +130,9 @@ test('asks the browser for the real full screen where it has it, and ends both t
   if (available) {
     // The mode is the layer in any case; the browser's full screen is on top of it.
     await expect.poll(() => page.evaluate('document.fullscreenElement !== null')).toBe(true)
+    // The browser draws nothing of the page behind it, so the layer brings the theme itself.
+    await expect(page.locator('.game > .wallpaper')).toHaveCount(1)
+    await expect(page.locator('.game')).not.toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
   }
   await page.getByRole('button', { name: 'Sluiten' }).click()
   await expect(page.locator('html')).not.toHaveAttribute('data-play-mode')

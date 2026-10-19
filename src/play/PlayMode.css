@@ -46,18 +46,12 @@ html[data-play-mode] body {
     max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
   overflow: hidden;
   overscroll-behavior: none;
-  /* No colour of its own: the look's own backdrop and wallpaper stay behind it, so that the theme
-     keeps its place. What has to be read (the board, the players) is on a surface of the page colour
-     a little see-through, so that the shapes keep the contrast they were tested for. */
-  background: transparent;
+  /* The theme's own backdrop and wallpaper, painted by the layer itself: in the browser's real full
+     screen the layer is in the top layer, where the page behind is not drawn at all and the
+     browser puts black. The wallpaper is the layer's first child (`.wallpaper`, behind the rest). */
+  background:
+    var(--paper-grain, linear-gradient(transparent, transparent)), var(--backdrop, var(--page));
   color: var(--text);
-  --surface: color-mix(in srgb, var(--page) 86%, transparent);
-}
-
-/* What is left of the page behind the layer is only its backdrop and its wallpaper: the title and
-   the footer are inert and, now that the layer lets the backdrop through, out of sight too. */
-html[data-play-mode] .app > :not(main, .wallpaper) {
-  visibility: hidden;
 }
 
 /* Top: who is to play and the way out; the players under it, small. */
@@ -96,7 +90,9 @@ html[data-play-mode] .app > :not(main, .wallpaper) {
 .game[data-play-mode] .players {
   padding: 0.125rem 0.5rem;
   border-radius: 1rem;
-  background: var(--surface);
+  background: var(--board-surface);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
 }
 
 .game[data-play-mode] .player {
@@ -151,8 +147,6 @@ html[data-play-mode] .app > :not(main, .wallpaper) {
     calc(var(--columns) * var(--cell-min))
   );
   margin: auto;
-  background: var(--surface);
-  box-shadow: 0 0 0 0.5rem var(--surface);
 }
 
 .game[data-play-mode] .game-actions {

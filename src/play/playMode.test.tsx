@@ -274,4 +274,11 @@ describe('the play mode', () => {
     expect(screen.getByRole('button', { name: close })).toHaveAttribute('aria-pressed', 'true')
     expect(dutchLeaks(language, layer())).toEqual([])
   })
+
+  it('has a wallpaper of its own in the layer, because the real full screen shows nothing behind it', async () => {
+    await startGame()
+    expect(layer().querySelector('.wallpaper')).toBeNull()
+    await userEvent.click(opener())
+    expect(layer().querySelector('.wallpaper')).not.toBeNull()
+  })
 })

@@ -3,6 +3,7 @@ import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { Cell, GameState } from '../../shared/game/index.ts'
 import { CLASSIC_FIELD, DEFAULT_PLAYERS, PLAYER_LIMITS, roomConfig } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
+import { Wallpaper } from '../appearance/Wallpaper.tsx'
 import { useText } from '../i18n/store.ts'
 import type { Text } from '../i18n/types.ts'
 import { Replay } from '../replay/Replay.tsx'
@@ -203,6 +204,7 @@ function Play({
       aria-label={t('app.title')}
       data-play-mode={modeOn || undefined}
     >
+      {modeOn && <Wallpaper />}
       <div className="game-info">
         {modeOn && (
           <div className="players players-row">

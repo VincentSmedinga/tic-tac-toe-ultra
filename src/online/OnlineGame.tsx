@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { replayGame } from '../../shared/game/index.ts'
 import type { GameState } from '../../shared/game/index.ts'
 import type { ClientMessage, StateMessage } from '../../shared/protocol.ts'
+import { Wallpaper } from '../appearance/Wallpaper.tsx'
 import { useFormat } from '../i18n/format.ts'
 import { useText } from '../i18n/store.ts'
 import type { Text } from '../i18n/types.ts'
@@ -110,6 +111,7 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
       aria-label={t('online.label')}
       data-play-mode={modeOn || undefined}
     >
+      {modeOn && <Wallpaper />}
       <div className="game-info">
         {banner}
 

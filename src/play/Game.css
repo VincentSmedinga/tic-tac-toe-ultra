@@ -1,3 +1,8 @@
+:root {
+  /* What the field and the players are painted with: the page colour, a little see-through. */
+  --board-surface: color-mix(in srgb, var(--page) 62%, transparent);
+}
+
 .game {
   display: flex;
   flex-direction: column;
@@ -54,9 +59,24 @@
   /* Never narrower than the cells need to stay as big as --cell-min. */
   width: max(var(--fit), calc(var(--columns) * var(--cell-min)));
   margin-inline: auto;
-  border-radius: 0.5rem;
-  background: var(--page);
-  box-shadow: 0 0 0 0.5rem var(--page);
+  /* The surface is drawn by ::before, a little way round the grid. */
+  isolation: isolate;
+}
+
+/* The field is a surface in the colour of the page, see-through and with what is behind it
+   blurred, so that the theme shows through (a wallpaper, a sky) as a soft wash and not as a
+   second picture the shapes have to compete with: they keep the contrast they were tested for. It
+   reaches a little round the grid, for the focus ring and the pen of a look that draws by hand. */
+.board::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -0.5rem;
+  border-radius: 1rem;
+  background: var(--board-surface, var(--page));
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
 }
 
 /* The lines are one picture behind the cells, in units of a cell (see lines.ts): they sit between
