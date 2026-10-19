@@ -33,28 +33,33 @@ body {
   margin-inline: auto;
   /* Room for the notch and the home bar. The top is the status bar and a margin on top of it, not
      the larger of the two: iOS fades the page a little way below the status bar, and the title
-     must start under that (issue #77). */
+     must start under that (issue #77). The bottom has the same room and some more, so that the footer
+     isn't pressed against the edge of the device and the page scrolls a little past it. */
   padding: calc(1rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+    calc(2.5rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   text-align: center;
 }
 
 /*
- * The status bar's part of the screen is a solid cover in the colour of the page's bar (`--chrome`,
- * the same colour `scheme.ts` gives the browser's bar), above everything, the play mode's layer
- * too. The game is drawn under the status bar (`viewport-fit=cover`, `black-translucent`), and iOS
- * 26 and later fade whatever scrolls under it, which put a shadow over the logo and the title
- * (issue #77). With the cover nothing is under the bar to be faded, and iOS has a solid fixed
- * element at the top to take its tint from. It is as high as the inset and so nothing at all where
- * there is no status bar. A look whose page is not one colour paints it with its own backdrop.
+ * The status bar's part of the screen is a cover (`StatusBarCover`): the page's own backdrop and
+ * the wallpaper in a fixed strip above everything, the play mode's layer too, so the page seems to
+ * run from the top to the bottom of the screen. The game is drawn under the status bar
+ * (`viewport-fit=cover`, `black-translucent`), and iOS 26 and later fade whatever scrolls under it,
+ * which put a shadow over the logo and the title (issue #77). With the cover nothing scrolls under
+ * the bar to be faded, and iOS has a fixed element at the top to take its tint from (the colour is
+ * `--chrome` where there is no backdrop of one colour, the same colour `scheme.ts` gives the
+ * browser's bar). It is as high as the inset and so nothing at all where there is no status bar.
+ * The strip clips the wallpaper, which is as big as the screen and lies where it lies everywhere.
  */
-body::before {
-  content: '';
+.status-bar-cover {
   position: fixed;
   inset: 0 0 auto;
   z-index: 200;
   height: env(safe-area-inset-top);
-  background: var(--chrome);
+  background:
+    var(--paper-grain, linear-gradient(transparent, transparent)),
+    var(--backdrop, var(--chrome)) fixed;
+  clip-path: inset(0);
   pointer-events: none;
 }
 

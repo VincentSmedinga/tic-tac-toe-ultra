@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import shared from './look-shared.css?raw'
-import playful from './look-playful.css?raw'
 
 const playMode = readFileSync('src/play/PlayMode.css', 'utf8')
 
@@ -12,11 +11,12 @@ function rule(css: string, selector: string) {
 }
 
 describe('the top of the screen on an iPhone (issue #77)', () => {
-  it('covers the status bar with a solid piece in the colour of the browser bar, above the play mode', () => {
-    const cover = rule(shared, 'body::before')
+  it('covers the status bar with the backdrop of the page and the wallpaper, above the play mode', () => {
+    const cover = rule(shared, '.status-bar-cover')
     expect(cover).toContain('position: fixed')
     expect(cover).toContain('height: env(safe-area-inset-top)')
-    expect(cover).toContain('background: var(--chrome)')
+    expect(cover).toContain('var(--backdrop, var(--chrome))')
+    expect(cover).toContain('clip-path: inset(0)')
     expect(cover).toContain('pointer-events: none')
     const layer = /z-index: (\d+)/.exec(rule(playMode, '.game[data-play-mode]'))
     const above = /z-index: (\d+)/.exec(cover)
@@ -27,9 +27,7 @@ describe('the top of the screen on an iPhone (issue #77)', () => {
     expect(rule(shared, '.app')).toContain('padding: calc(1rem + env(safe-area-inset-top))')
   })
 
-  it('paints the cover of Speels with the same fixed gradient as the page', () => {
-    expect(rule(playful, "html[data-look='playful'] body::before")).toContain(
-      'background: var(--backdrop) fixed',
-    )
+  it('leaves room under the footer, on top of the home bar', () => {
+    expect(rule(shared, '.app')).toContain('calc(2.5rem + env(safe-area-inset-bottom))')
   })
 })
