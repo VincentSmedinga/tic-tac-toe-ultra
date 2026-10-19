@@ -194,6 +194,76 @@ describe('RoomPage', () => {
     })
   })
 
+  describe('leaving after the game', () => {
+    const won = [
+      { player: 'cross', x: 0, y: 0 },
+      { player: 'circle', x: 0, y: 1 },
+      { player: 'cross', x: 1, y: 0 },
+      { player: 'circle', x: 1, y: 1 },
+      { player: 'cross', x: 2, y: 0 },
+    ]
+    const players: StateMessage['players'] = [
+      { id: 'X', shape: 'cross', connected: true },
+      { id: 'O', shape: 'circle', connected: true },
+    ]
+
+    afterEach(() => {
+      window.history.replaceState(null, '', '/')
+    })
+
+    it('says leave to the room, and when the room lets go forgets it and goes to the start', async () => {
+      window.history.replaceState(null, '', '/kamer/BCDF')
+      const user = userEvent.setup()
+      const { socket } = await connected()
+      socket.receive({ ...state(players), moves: won })
+      expect(getLastRoom()).toBe('BCDF')
+
+      await user.click(await screen.findByRole('button', { name: 'Stoppen' }))
+      // The question first: nothing is sent until it is answered.
+      expect(socket.sent).toHaveLength(1)
+      await user.click(screen.getByRole('button', { name: 'Stoppen' }))
+      expect(socket.sent.at(-1)).toEqual({ type: 'leave' })
+
+      socket.closeFromServer(4410)
+      await waitFor(() => {
+        expect(window.location.pathname).toBe('/')
+      })
+      expect(getLastRoom()).toBeNull()
+    })
+
+    it('stays in the room when the question is answered with Blijven', async () => {
+      const user = userEvent.setup()
+      const { socket } = await connected()
+      socket.receive({ ...state(players), moves: won })
+      await user.click(await screen.findByRole('button', { name: 'Stoppen' }))
+      await user.click(screen.getByRole('button', { name: 'Blijven' }))
+      expect(socket.sent).toHaveLength(1)
+      expect(screen.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
+      expect(getLastRoom()).toBe('BCDF')
+    })
+
+    it('waits for the connection: nobody can leave a room they are not in touch with', async () => {
+      const { socket } = await connected()
+      socket.receive({ ...state(players), moves: won })
+      await screen.findByRole('button', { name: 'Stoppen' })
+      socket.closeFromServer(1006)
+      expect(await screen.findByRole('button', { name: 'Stoppen' })).toBeDisabled()
+    })
+
+    it('forgets the room when it says that you left it before', async () => {
+      setLastRoom('BCDF')
+      const { socket } = await connected()
+      socket.receive({ type: 'error', error: 'left' })
+      expect(await screen.findByRole('alert')).toHaveTextContent('Je hebt dit spel verlaten')
+      await waitFor(() => {
+        expect(getLastRoom()).toBeNull()
+      })
+      // It is final: the page does not keep trying to come back.
+      socket.closeFromServer(4409)
+      expect(screen.getByRole('alert')).toBeVisible()
+    })
+  })
+
   describe('while waiting for a second player', () => {
     it('shows the code and the link, and who is here', async () => {
       setName('Anna')
@@ -673,7 +743,12 @@ describe.each([
     theirMove: "It is Circle's turn",
     won: 'You have won!',
     lost: 'Anna has won!',
-    actions: ['Play again', 'Watch again'],
+    actions: ['Play again', 'Watch again', 'Leave'],
+    leave: 'Leave',
+    sure: 'Your seat in this room will be gone. Leave?',
+    stay: 'Stay',
+    leftNotice: 'Circle has left the game.',
+    youLeft: 'You have left this game, so you cannot go back in.',
   },
   {
     language: 'fy',
@@ -693,7 +768,12 @@ describe.each([
     theirMove: 'Sirkel is oan de beurt',
     won: 'Do hast wûn!',
     lost: 'Anna hat wûn!',
-    actions: ['Noch ien kear', 'Sjoch werom'],
+    actions: ['Noch ien kear', 'Sjoch werom', 'Ophâlde'],
+    leave: 'Ophâlde',
+    sure: 'Dyn plak yn dizze keamer is dan fuort. Ophâlde?',
+    stay: 'Bliuwe',
+    leftNotice: 'Sirkel hat it spultsje ferlitten.',
+    youLeft: 'Do hast dit spultsje ferlitten, dus do kinst der net mear yn werom.',
   },
 ] as const)('the room in $language', (text) => {
   const { language } = text
@@ -760,6 +840,36 @@ describe.each([
 
     socket.receive({ ...state([anna, bo], 'O'), moves })
     expect(await screen.findByText(text.lost)).toBeVisible()
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('asks before leaving, tells the others who left, and says why you cannot come back', async () => {
+    setLanguage(language)
+    const { socket } = await connected()
+    const moves = [
+      { player: 'cross', x: 0, y: 0 },
+      { player: 'circle', x: 0, y: 1 },
+      { player: 'cross', x: 1, y: 0 },
+      { player: 'circle', x: 1, y: 1 },
+      { player: 'cross', x: 2, y: 0 },
+    ]
+    socket.receive({ ...state([anna, bo]), moves })
+    await userEvent.click(await screen.findByRole('button', { name: text.leave }))
+    expect(screen.getByRole('group', { name: text.sure })).toBeVisible()
+    expect(screen.getByRole('button', { name: text.stay })).toHaveFocus()
+    expect(dutchLeaks(language)).toEqual([])
+
+    socket.receive({ ...state([anna, { ...bo, left: true }]), moves })
+    expect(await screen.findByText(text.leftNotice)).toBeVisible()
+    expect(screen.queryByRole('button', { name: text.actions[0] })).not.toBeInTheDocument()
+    expect(dutchLeaks(language)).toEqual([])
+  })
+
+  it('says in the language that you have left when you come back', async () => {
+    setLanguage(language)
+    const { socket } = await connected()
+    socket.receive({ type: 'error', error: 'left' })
+    expect(await screen.findByRole('alert')).toHaveTextContent(text.youLeft)
     expect(dutchLeaks(language)).toEqual([])
   })
 

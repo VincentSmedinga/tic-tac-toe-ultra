@@ -8,12 +8,16 @@ import { roomApi } from './api.ts'
 /** The WebSocket close codes the room uses (server/room-session.ts). */
 const CLOSE_REPLACED = 4001
 const CLOSE_UNKNOWN_ROOM = 4404
+const CLOSE_LEFT = 4410
 
 /** Where a player stands: looking for the room, connected, or cut off. */
 export type Connection = 'connecting' | 'open' | 'closed'
 
-/** What went wrong with the room itself; the codes of the server, plus two that only the client knows. */
-export type RoomProblem = ErrorCode | 'unknown-room' | 'replaced' | 'unreachable'
+/**
+ * What went wrong with the room itself; the codes of the server, plus three that only the client
+ * knows. `you-left` is no problem: this player asked to leave and the room has let them go.
+ */
+export type RoomProblem = ErrorCode | 'unknown-room' | 'replaced' | 'unreachable' | 'you-left'
 
 export interface RoomView {
   connection: Connection
@@ -44,7 +48,12 @@ export const browserDeps: RoomDeps = {
  * message the room could not read (a join with a name or a token it refuses would otherwise leave
  * the page waiting for ever).
  */
-const STOPS_THE_GAME: readonly ErrorCode[] = ['room-full', 'game-started', 'invalid-message']
+const STOPS_THE_GAME: readonly ErrorCode[] = [
+  'room-full',
+  'game-started',
+  'left',
+  'invalid-message',
+]
 
 interface HookState {
   connection: Connection
@@ -69,6 +78,8 @@ const FINAL_PROBLEMS: readonly RoomProblem[] = [
   'unknown-room',
   'room-full',
   'game-started',
+  'left',
+  'you-left',
   'replaced',
 ]
 
@@ -154,6 +165,7 @@ export function useRoom(
       socket.onclose = (event) => {
         if (!session.active) return
         if (event.code === CLOSE_UNKNOWN_ROOM) dispatch({ type: 'closed', problem: 'unknown-room' })
+        else if (event.code === CLOSE_LEFT) dispatch({ type: 'closed', problem: 'you-left' })
         else if (event.code === CLOSE_REPLACED) dispatch({ type: 'closed', problem: 'replaced' })
         else dispatch({ type: 'closed' })
       }

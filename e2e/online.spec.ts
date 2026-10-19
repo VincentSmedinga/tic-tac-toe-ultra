@@ -397,3 +397,129 @@ test('three people play in a room of four seats, started by the one who made it'
   await expect(bo.getByText('Jij begint')).toBeVisible()
   await expect(anna.locator('.players-row .player')).toHaveCount(3)
 })
+
+/** Anna (kruis) wins on the top row. */
+async function annaWins(anna: Page, bo: Page) {
+  await cell(anna, 1, 1).click()
+  await cell(bo, 2, 1).click()
+  await cell(anna, 1, 2).click()
+  await cell(bo, 2, 2).click()
+  await cell(anna, 1, 3).click()
+  await expect(bo.getByText('Anna heeft gewonnen!')).toBeVisible()
+}
+
+test('a player who leaves after the game is gone from the room, and the game stays in the list', async ({
+  browser,
+}) => {
+  const { anna, bo, code } = await startGame(browser)
+  await annaWins(anna, bo)
+
+  // Bo is asked first, can stay, and then leaves: the start screen has no way back to the room.
+  await bo.getByRole('button', { name: 'Stoppen' }).click()
+  await expect(bo.getByRole('group', { name: /Stoppen\?$/ })).toBeVisible()
+  await bo.getByRole('button', { name: 'Blijven' }).click()
+  await expect(bo.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
+  await bo.getByRole('button', { name: 'Stoppen' }).click()
+  await bo
+    .getByRole('group', { name: /Stoppen\?$/ })
+    .getByRole('button', { name: 'Stoppen' })
+    .click()
+  await expect(bo.getByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
+  await expect(bo.getByRole('region', { name: 'Je speelt nog mee' })).toHaveCount(0)
+
+  // Anna is told, can no longer play on, and can still watch the game again.
+  await expect(anna.getByText('Bo heeft het spel verlaten.')).toBeVisible()
+  await expect(anna.getByText(/Bo is even weg/)).toHaveCount(0)
+  await expect(anna.getByRole('button', { name: 'Nog een keer' })).toHaveCount(0)
+  await anna.getByRole('button', { name: 'Kijk terug' }).click()
+  await expect(anna.getByText('Zet 0 van 5')).toBeVisible()
+
+  // The game stays in the list of the one who left.
+  await bo.getByRole('link', { name: 'Spellen' }).click()
+  await expect(bo.locator('main').getByRole('listitem')).toHaveCount(1)
+  await expect(bo.locator('main').getByRole('listitem')).toContainText(
+    'Anna (kruis) heeft gewonnen',
+  )
+
+  // The seat is not coming back: the link of the room says so.
+  await bo.goto(`/kamer/${code}`)
+  await expect(bo.getByRole('alert')).toContainText('Je hebt dit spel verlaten')
+})
+
+test('a room whose last person has left is gone, with the game kept', async ({ browser }) => {
+  const { anna, bo, code } = await startGame(browser)
+  await annaWins(anna, bo)
+  for (const player of [bo, anna]) {
+    await player.getByRole('button', { name: 'Stoppen' }).click()
+    await player
+      .getByRole('group', { name: /Stoppen\?$/ })
+      .getByRole('button', { name: 'Stoppen' })
+      .click()
+    await expect(player.getByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
+  }
+
+  // The room is deleted as soon as the archive has the game, which is a moment later.
+  const guest = await newPlayer(browser, 'Cor')
+  await expect(async () => {
+    await guest.goto(`/kamer/${code}`)
+    await expect(guest.getByRole('alert')).toContainText('bestaat niet', { timeout: 1000 })
+  }).toPass({ timeout: 15_000 })
+
+  await anna.getByRole('link', { name: 'Spellen' }).click()
+  await expect(anna.locator('main').getByRole('listitem')).toHaveCount(1)
+})
+
+test('three people play on after one has left, with the shapes of the two who are left', async ({
+  browser,
+}) => {
+  const anna = await newPlayer(browser, 'Anna')
+  await anna.getByRole('button', { name: /Aanpassen/ }).click()
+  await anna.getByLabel('Aantal spelers').selectOption('3')
+  await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
+  const code = (await anna.locator('.room-code').textContent()) ?? ''
+  await anna.getByRole('button', { name: 'kruis', exact: true }).click()
+  const players = [anna]
+  for (const [name, shape] of [
+    ['Bo', 'cirkel'],
+    ['Cas', 'ster'],
+  ] as const) {
+    const page = await newPlayer(browser, name)
+    await page.getByLabel('Code van de kamer').fill(code)
+    await page.getByRole('button', { name: 'Meedoen' }).click()
+    await page.getByRole('button', { name: shape, exact: true }).click()
+    players.push(page)
+  }
+  const [, bo, cas] = players as [Page, Page, Page]
+  await expect(anna.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+
+  // The cross wins with the others playing elsewhere.
+  for (const [page, row, col] of [
+    [anna, 1, 1],
+    [bo, 3, 1],
+    [cas, 3, 2],
+    [anna, 1, 2],
+    [bo, 2, 1],
+    [cas, 2, 3],
+    [anna, 1, 3],
+  ] as const) {
+    await cell(page, row, col).click()
+  }
+  await expect(anna.getByText('Je hebt gewonnen!')).toBeVisible()
+
+  await bo.getByRole('button', { name: 'Stoppen' }).click()
+  await bo
+    .getByRole('group', { name: /Stoppen\?$/ })
+    .getByRole('button', { name: 'Stoppen' })
+    .click()
+  await expect(bo.getByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
+  await expect(anna.getByText('Bo heeft het spel verlaten.')).toBeVisible()
+  await expect(cas.getByText('Bo heeft het spel verlaten.')).toBeVisible()
+
+  // The two who are left go on: the board has the cross and the star, and the star starts.
+  await cas.getByRole('button', { name: 'Nog een keer' }).click()
+  await expect(anna.locator('.players-row .player')).toHaveCount(2)
+  await expect(cas.getByText('Jij begint')).toBeVisible()
+  await cell(cas, 2, 2).click()
+  await expect(cell(anna, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: ster')
+  await expect(anna.getByText('Jij bent aan de beurt')).toBeVisible()
+})

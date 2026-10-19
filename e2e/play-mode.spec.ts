@@ -144,3 +144,38 @@ test('asks the browser for the real full screen where it has it, and ends both t
   await expect(page.locator('html')).not.toHaveAttribute('data-play-mode')
   await expect.poll(() => page.evaluate('document.fullscreenElement === null')).toBe(true)
 })
+
+test('a player in the full screen mode can leave after the game: the mode closes and the page is free', async ({
+  browser,
+}) => {
+  const anna = await newPlayer(browser, 'Anna')
+  await anna.getByRole('button', { name: 'Nieuwe kamer' }).click()
+  const code = (await anna.locator('.room-code').textContent()) ?? ''
+  await anna.getByRole('button', { name: 'kruis', exact: true }).click()
+  const bo = await newPlayer(browser, 'Bo')
+  await bo.getByLabel('Code van de kamer').fill(code)
+  await bo.getByRole('button', { name: 'Meedoen' }).click()
+  await bo.getByRole('button', { name: 'cirkel', exact: true }).click()
+  await expect(anna.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+  await expect(bo.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+
+  await bo.getByRole('button', { name: 'Volledig scherm' }).click()
+  await expect(bo.locator('html')).toHaveAttribute('data-play-mode', '')
+  await cell(anna, 1, 1).click()
+  await cell(bo, 2, 1).click()
+  await cell(anna, 1, 2).click()
+  await cell(bo, 2, 2).click()
+  await cell(anna, 1, 3).click()
+  await expect(bo.getByText('Anna heeft gewonnen!')).toBeVisible()
+
+  // The header and the menu are out of reach in the mode; the way out is on the screen of the game.
+  await bo.getByRole('button', { name: 'Stoppen' }).tap()
+  await bo
+    .getByRole('group', { name: /Stoppen\?$/ })
+    .getByRole('button', { name: 'Stoppen' })
+    .tap()
+  await expect(bo.getByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
+  await expect(bo.locator('html')).not.toHaveAttribute('data-play-mode')
+  await expect(bo.locator('nav.main-nav')).not.toHaveAttribute('inert')
+  await expect(anna.getByText('Bo heeft het spel verlaten.')).toBeVisible()
+})

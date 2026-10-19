@@ -192,6 +192,103 @@ describe('OnlineGame', () => {
       expect(screen.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
     })
 
+    it('offers to leave once the game is over, after a question, and sends it', async () => {
+      const send = vi.fn()
+      const user = userEvent.setup()
+      render(<OnlineGame state={stateOf(xWins, 'O')} send={send} />)
+      await user.click(screen.getByRole('button', { name: 'Stoppen' }))
+      expect(send).not.toHaveBeenCalled()
+      expect(screen.getByRole('group', { name: /Stoppen\?$/ })).toBeVisible()
+      expect(screen.queryByRole('button', { name: 'Nog een keer' })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Blijven' })).toHaveFocus()
+
+      const question = screen.getByRole('group', { name: /Stoppen\?$/ })
+      await user.click(within(question).getByRole('button', { name: 'Stoppen' }))
+      expect(send).toHaveBeenCalledWith({ type: 'leave' })
+    })
+
+    it('keeps the buttons when the question is answered with Blijven, and does not ask again in the next round', async () => {
+      const user = userEvent.setup()
+      const { rerender } = render(<OnlineGame state={stateOf(xWins, 'X')} send={vi.fn()} />)
+      await user.click(screen.getByRole('button', { name: 'Stoppen' }))
+      await user.click(screen.getByRole('button', { name: 'Blijven' }))
+      expect(screen.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
+
+      await user.click(screen.getByRole('button', { name: 'Stoppen' }))
+      rerender(<OnlineGame state={stateOf([], 'X', both, 1)} send={vi.fn()} />)
+      // In the next round the circle starts, and wins.
+      const circleWins = xWins.map((move) => ({
+        ...move,
+        player: move.player === 'cross' ? 'circle' : 'cross',
+      }))
+      rerender(<OnlineGame state={stateOf(circleWins, 'X', both, 1)} send={vi.fn()} />)
+      expect(screen.queryByRole('group', { name: /Stoppen\?$/ })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Stoppen' })).toBeVisible()
+    })
+
+    it('does not offer to leave while the game is on', () => {
+      render(<OnlineGame state={stateOf([x(0, 0)], 'X')} send={vi.fn()} />)
+      expect(screen.queryByRole('button', { name: 'Stoppen' })).not.toBeInTheDocument()
+    })
+
+    it('cannot leave while the connection is down', () => {
+      render(<OnlineGame state={stateOf(xWins, 'X')} send={vi.fn()} connected={false} />)
+      expect(screen.getByRole('button', { name: 'Stoppen' })).toBeDisabled()
+    })
+
+    it('says who has left instead of who is away, and has no rematch when nobody is left to play', () => {
+      const players: Players = [
+        { id: 'X', name: 'Anna', shape: 'cross', connected: true },
+        { id: 'O', shape: 'circle', connected: true, left: true },
+      ]
+      render(<OnlineGame state={stateOf(xWins, 'X', players)} send={vi.fn()} />)
+      expect(screen.getByText('Cirkel heeft het spel verlaten.')).toBeVisible()
+      expect(screen.queryByText(/even weg/)).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Nog een keer' })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Kijk terug' })).toBeVisible()
+      expect(screen.getByRole('button', { name: 'Stoppen' })).toBeVisible()
+    })
+
+    it('names several who left in one sentence', () => {
+      const config = { width: 7, height: 7, winLength: 5, players: ['cross', 'circle', 'star'] }
+      const state: StartedState = {
+        ...stateOf([], 'X'),
+        field: { width: 7, height: 7, winLength: 5 },
+        seats: 3,
+        players: [
+          { id: 'X', name: 'Anna', shape: 'cross', connected: true },
+          { id: 'O', name: 'Bo', shape: 'circle', connected: false, left: true },
+          { id: '3', name: 'Cas', shape: 'star', connected: false, left: true },
+        ],
+        config,
+        moves: [],
+      }
+      render(<OnlineGame state={state} send={vi.fn()} />)
+      expect(screen.getByText('Bo en Cas hebben het spel verlaten.')).toBeVisible()
+    })
+
+    it('leaves out of the players those who left before this round', () => {
+      const players: Players = [
+        { id: 'X', name: 'Anna', shape: 'cross', connected: true },
+        { id: 'O', shape: 'circle', connected: false, left: true },
+        { id: '3', name: 'Cas', shape: 'star', connected: true },
+      ]
+      const config = { width: 7, height: 7, winLength: 5, players: ['cross', 'star'] }
+      const state: StartedState = {
+        ...stateOf([], 'X'),
+        field: { width: 7, height: 7, winLength: 5 },
+        round: 1,
+        seats: 3,
+        players,
+        config,
+        moves: [],
+      }
+      render(<OnlineGame state={state} send={vi.fn()} />)
+      expect(screen.getByText('Cas')).toBeVisible()
+      expect(screen.queryByText('Cirkel')).not.toBeInTheDocument()
+      expect(screen.getByText('Cirkel heeft het spel verlaten.')).toBeVisible()
+    })
+
     it('offers no rematch while the game is on', () => {
       render(<OnlineGame state={stateOf([x(0, 0)], 'X')} send={vi.fn()} />)
       expect(screen.queryByRole('button', { name: 'Nog een keer' })).not.toBeInTheDocument()

@@ -10,6 +10,7 @@ import { Replay } from '../replay/Replay.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { SHAPES } from '../shapes/shapes.ts'
 import type { ShapeId } from '../shapes/shapes.ts'
+import { navigate } from '../online/route.ts'
 import { useScrollToTop } from '../online/scroll.ts'
 import { Board } from './Board.tsx'
 import { FieldPicker } from './FieldPicker.tsx'
@@ -257,6 +258,16 @@ function Play({
             }}
           >
             {t('play.replay')}
+          </button>
+          <button
+            type="button"
+            className="rematch rematch-quiet"
+            onClick={() => {
+              closeMode()
+              navigate('/')
+            }}
+          >
+            {t('play.leave')}
           </button>
         </div>
       )}

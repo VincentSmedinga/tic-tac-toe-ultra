@@ -85,6 +85,7 @@ export const en: Dictionary = {
   'play.rematch': 'Play again',
   'play.otherShapes': 'Other shapes',
   'play.replay': 'Watch again',
+  'play.leave': 'Leave',
   'playMode.open': 'Full screen',
   'playMode.close': 'Close',
   'shapePicker.taken': '{shape}, taken by {owner}',
@@ -176,12 +177,19 @@ export const en: Dictionary = {
   'problem.shapeTaken': 'The other player already has that shape. Choose another.',
   'problem.shapeLocked': 'The game has already begun: you can no longer change your shape.',
   'problem.generic': 'Something went wrong. Please try again.',
+  'problem.left': 'You have left this game, so you cannot go back in.',
 
   'online.label': 'Online game',
   'online.broken': 'Something went wrong with the game. Go back to the start and make a new room.',
   'online.away': {
     one: '{names} is away for a moment… The game is waiting for them to come back.',
     other: '{names} are away for a moment… The game is waiting for them to come back.',
+  },
+  'online.leave.question': 'Your seat in this room will be gone. Leave?',
+  'online.leave.stay': 'Stay',
+  'online.left': {
+    one: '{names} has left the game.',
+    other: '{names} have left the game.',
   },
   'copy.button': 'Copy link',
   'copy.done': 'Link copied.',
