@@ -17,5 +17,5 @@ The decision and its reasons are in [docs/plan.md](../plan.md), Full screen (iss
 - The board measures itself against its frame in container units, keeps the 2.75 rem cell minimum and scrolls what doesn't fit. Landscape puts the bar beside it.
 - The layer paints the look's backdrop and a wallpaper of its own, because the browser's real full screen draws nothing of the page behind it.
 - The mode is never shared with the room; a test checks that nothing is sent.
-- The button and F are left out in an installed app (`display-mode: standalone`).
+- The button and F are offered in an installed app too.
 - Tests: `src/play/playMode.test.tsx`, `src/online/OnlineGame.test.tsx`, `e2e/play-mode.spec.ts` and the stories "Volledig scherm".
