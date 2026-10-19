@@ -37,7 +37,7 @@ test('a link goes to the top of the next screen, and back puts the page where it
   page,
 }) => {
   await page.goto('/')
-  const link = page.getByRole('link', { name: 'Gespeelde spellen' })
+  const link = page.getByRole('link', { name: 'Spellen' })
   await link.scrollIntoViewIfNeeded()
   const before = await page.evaluate<number>('scrollY')
   expect(before).toBeGreaterThan(0)

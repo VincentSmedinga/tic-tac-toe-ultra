@@ -25,9 +25,11 @@ test('an English and a Frisian player play a whole game, each in their own langu
   await anna.getByRole('button', { name: 'cross', exact: true }).click()
 
   const bo = await newPlayer(browser, 'nl-NL')
+  await bo.getByRole('link', { name: 'Instellingen' }).click()
   await bo.getByRole('group', { name: 'Taal' }).getByRole('button', { name: 'Frysk' }).click()
   await expect(bo.locator('html')).toHaveAttribute('lang', 'fy')
   await expect(bo).toHaveTitle('Bûter, Tsiis en Aaien Ultra')
+  await bo.getByRole('link', { name: 'Begjin' }).click()
   await bo.getByLabel('Dyn namme (hoecht net)').fill('Bo')
   await bo.getByLabel('Koade fan de keamer').fill(code)
   await bo.getByRole('button', { name: 'Meidwaan' }).click()
@@ -93,11 +95,16 @@ test('a Dutch and an English player can play against each other, and change lang
   await expect(bo.getByText('Cross starts')).toBeVisible()
   await expect(anna.getByText('Jij begint')).toBeVisible()
 
-  // Bo changes to Dutch in the middle of the game: everything on the screen follows at once.
+  // Bo changes to Dutch in the middle of the game, on the settings page: everything on the screen
+  // follows at once, and the start screen gives the game back.
+  await bo.getByRole('link', { name: 'Back to the start' }).click()
+  await bo.getByRole('link', { name: 'Settings' }).click()
   await bo
     .getByRole('group', { name: 'Language' })
     .getByRole('button', { name: 'Nederlands' })
     .click()
+  await bo.getByRole('link', { name: 'Start', exact: true }).click()
+  await bo.getByRole('link', { name: `Terug naar kamer ${code}` }).click()
   await expect(bo.getByRole('group', { name: 'Speelveld' })).toBeVisible()
   await expect(bo.getByText('Kruis begint')).toBeVisible()
   await expect(bo.locator('html')).toHaveAttribute('lang', 'nl')

@@ -26,7 +26,7 @@ test('the first look is Getekend, and light or dark is what the system says', as
 test('a person chooses a theme and light or dark, which is there at once and after a reload', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/instellingen')
   await page.getByRole('button', { name: 'Speels' }).click()
   await page.getByRole('button', { name: 'Donker' }).click()
   await expect(html(page)).toHaveAttribute('data-look', 'playful')
@@ -38,6 +38,7 @@ test('a person chooses a theme and light or dark, which is there at once and aft
   await expect(html(page)).toHaveAttribute('data-scheme', 'dark')
 
   // It holds for the other screens too, and the game still plays.
+  await page.getByRole('link', { name: 'Start', exact: true }).click()
   await page.getByRole('link', { name: 'Samen spelen' }).click()
   await page.getByRole('button', { name: 'Start' }).click()
   await expect(page.getByRole('group', { name: 'Speelveld' })).toBeVisible()
@@ -47,8 +48,7 @@ test('a person chooses a theme and light or dark, which is there at once and aft
 test('every look paints its own background, and the page never scrolls sideways', async ({
   page,
 }) => {
-  await page.goto('/samen')
-  await page.getByRole('button', { name: 'Start' }).click()
+  await page.goto('/instellingen')
   const backgrounds = [
     ['Getekend', /url\(/],
     ['Speels', /linear-gradient/],
@@ -64,17 +64,23 @@ test('every look paints its own background, and the page never scrolls sideways'
   }
 })
 
-test('the controls for the look are in the footer, after the screen and never over it', async ({
-  page,
-}) => {
+test('the menu is part of the page, after the screen and never over it', async ({ page }) => {
   await page.goto('/')
-  const footer = page.getByRole('contentinfo')
-  await expect(footer.getByRole('region', { name: 'Uiterlijk' })).toBeVisible()
-  await expect(footer.getByRole('link', { name: 'Gespeelde spellen' })).toBeVisible()
-  // Nothing is fixed to the screen: the controls scroll with the page, below the last button.
-  await expect(footer.getByRole('button', { name: 'Rustig' })).toHaveCSS('position', 'static')
-  await expect(page.getByRole('region', { name: 'Uiterlijk' })).toHaveCSS('position', 'static')
-  const lastButton = await page.getByRole('button', { name: 'Meedoen' }).boundingBox()
-  const controls = await footer.getByRole('region', { name: 'Uiterlijk' }).boundingBox()
-  expect(controls && lastButton && controls.y > lastButton.y + lastButton.height).toBe(true)
+  const menu = page.getByRole('navigation', { name: 'Hoofdmenu' })
+  await expect(menu.getByRole('link', { name: 'Instellingen' })).toBeVisible()
+  await expect(page.getByRole('contentinfo')).toHaveCount(0)
+  // Nothing is fixed to the screen: the menu scrolls with the page.
+  await expect(menu).toHaveCSS('position', 'static')
+  await expect(menu.getByRole('link', { name: 'Spellen' })).toHaveCSS('position', 'static')
+})
+
+test('the choices of the look are on the settings page, which the menu opens', async ({ page }) => {
+  await page.goto('/')
+  await page
+    .getByRole('navigation', { name: 'Hoofdmenu' })
+    .getByRole('link', { name: 'Instellingen' })
+    .click()
+  await expect(page).toHaveURL(/\/instellingen$/)
+  await expect(page.getByRole('region', { name: 'Uiterlijk' })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Taal' })).toBeVisible()
 })

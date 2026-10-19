@@ -202,10 +202,12 @@ test('a played game is in the list of both players and opens for anyone with its
     [bo, '0 gewonnen, 1 verloren en 0 gelijk', 'cirkel'],
   ] as const) {
     await player.getByRole('link', { name: 'Terug naar het begin' }).click()
-    await player.getByRole('link', { name: 'Gespeelde spellen' }).click()
+    await player.getByRole('link', { name: 'Spellen' }).click()
     await expect(player.getByRole('heading', { name: 'Gespeelde spellen' })).toBeVisible()
-    await expect(player.getByRole('listitem')).toHaveCount(1)
-    await expect(player.getByRole('listitem')).toContainText('Anna (kruis) heeft gewonnen')
+    await expect(player.locator('main').getByRole('listitem')).toHaveCount(1)
+    await expect(player.locator('main').getByRole('listitem')).toContainText(
+      'Anna (kruis) heeft gewonnen',
+    )
     // A few lines about the games of this browser, worked out from the same list.
     const own = player.getByRole('region', { name: 'Jouw statistieken' })
     await expect(own).toContainText(`Je hebt 1 spel gespeeld: ${result}`)
@@ -213,7 +215,7 @@ test('a played game is in the list of both players and opens for anyone with its
   }
 
   // The link of the game is the right to see it: a browser that never played gets the replay.
-  await anna.getByRole('listitem').getByRole('link').click()
+  await anna.locator('main').getByRole('listitem').getByRole('link').click()
   await expect(anna.getByText('Zet 0 van 5')).toBeVisible()
   const link = anna.url()
   expect(link).toMatch(/\/spel\/[A-Za-z0-9_-]{16}$/)
@@ -227,7 +229,7 @@ test('a played game is in the list of both players and opens for anyone with its
   await expect(guest.getByText('Anna (kruis) heeft gewonnen!')).toBeVisible()
 
   // The guest's own list has nothing: what a browser played is for that browser.
-  await guest.getByRole('link', { name: 'Gespeelde spellen' }).click()
+  await guest.getByRole('link', { name: 'Spellen' }).click()
   await expect(guest.getByText(/nog geen spel online gespeeld/)).toBeVisible()
   await expect(guest.getByRole('region', { name: 'Jouw statistieken' })).toHaveCount(0)
 
