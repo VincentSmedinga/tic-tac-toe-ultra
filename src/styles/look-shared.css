@@ -16,6 +16,9 @@
 }
 
 body {
+  /* The wallpaper lies in the page (`.wallpaper`, absolute, as high as the body) and never in a
+     fixed layer: see docs/plan.md, Look and feel, the top of the screen on an iPhone (issue #77). */
+  position: relative;
   background: var(--backdrop, var(--page));
   color: var(--text);
   font-family: var(--font-body);
@@ -38,29 +41,6 @@ body {
   padding: calc(1rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
     calc(2.5rem + env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
   text-align: center;
-}
-
-/*
- * The status bar's part of the screen is a cover (`StatusBarCover`): the page's own backdrop and
- * the wallpaper in a fixed strip above everything, the play mode's layer too, so the page seems to
- * run from the top to the bottom of the screen. The game is drawn under the status bar
- * (`viewport-fit=cover`, `black-translucent`), and iOS 26 and later fade whatever scrolls under it,
- * which put a shadow over the logo and the title (issue #77). With the cover nothing scrolls under
- * the bar to be faded, and iOS has a fixed element at the top to take its tint from (the colour is
- * `--chrome` where there is no backdrop of one colour, the same colour `scheme.ts` gives the
- * browser's bar). It is as high as the inset and so nothing at all where there is no status bar.
- * The strip clips the wallpaper, which is as big as the screen and lies where it lies everywhere.
- */
-.status-bar-cover {
-  position: fixed;
-  inset: 0 0 auto;
-  z-index: 200;
-  height: env(safe-area-inset-top);
-  background:
-    var(--paper-grain, linear-gradient(transparent, transparent)),
-    var(--backdrop, var(--chrome)) fixed;
-  clip-path: inset(0);
-  pointer-events: none;
 }
 
 h1,

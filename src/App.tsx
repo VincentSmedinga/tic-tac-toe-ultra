@@ -10,7 +10,6 @@ import { RoomPage } from './online/RoomPage.tsx'
 import { useRoute } from './online/route.ts'
 import { StartScreen } from './online/StartScreen.tsx'
 import { Wallpaper } from './appearance/Wallpaper.tsx'
-import { StatusBarCover } from './appearance/StatusBarCover.tsx'
 import { Wordmark } from './appearance/Wordmark.tsx'
 
 export function App() {
@@ -23,7 +22,6 @@ export function App() {
   }, [language])
   return (
     <div className="app">
-      <StatusBarCover />
       <Wallpaper />
       <header>
         <Wordmark />

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import shared from './look-shared.css?raw'
 
-const playMode = readFileSync('src/play/PlayMode.css', 'utf8')
+const wallpaper = readFileSync('src/appearance/Wallpaper.css', 'utf8')
 
 /** The declarations of the first rule that has exactly this selector. */
 function rule(css: string, selector: string) {
@@ -10,17 +10,16 @@ function rule(css: string, selector: string) {
   return start < 0 ? '' : css.slice(start, css.indexOf('}', start))
 }
 
-describe('the top of the screen on an iPhone (issue #77)', () => {
-  it('covers the status bar with the backdrop of the page and the wallpaper, above the play mode', () => {
-    const cover = rule(shared, '.status-bar-cover')
-    expect(cover).toContain('position: fixed')
-    expect(cover).toContain('height: env(safe-area-inset-top)')
-    expect(cover).toContain('var(--backdrop, var(--chrome))')
-    expect(cover).toContain('clip-path: inset(0)')
-    expect(cover).toContain('pointer-events: none')
-    const layer = /z-index: (\d+)/.exec(rule(playMode, '.game[data-play-mode]'))
-    const above = /z-index: (\d+)/.exec(cover)
-    expect(Number(above?.[1])).toBeGreaterThan(Number(layer?.[1]))
+describe('the top and the bottom of the screen on an iPhone (issue #77)', () => {
+  it('lies the wallpaper in the page and not in a fixed layer, which iOS gives a bar of its own behind the status bar', () => {
+    const rules = `\n${wallpaper}`
+    expect(rule(rules, '.wallpaper')).toContain('position: absolute')
+    expect(rule(rules, '.wallpaper')).not.toMatch(/position:\s*fixed/)
+    expect(rule(shared, 'body')).toContain('position: relative')
+  })
+
+  it('has no fixed element of the page left at the top of the screen', () => {
+    expect(shared).not.toMatch(/position:\s*fixed/)
   })
 
   it('starts the page under the status bar and a margin, not at the larger of the two', () => {
