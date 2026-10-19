@@ -2,7 +2,19 @@ import { Resvg } from '@resvg/resvg-js'
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { PATHS } from '../src/shapes/shapes.ts'
-import { ICON_SHAPES, MASKABLE_SCALE, darkShapeColours, iconSvg, makeIcons } from './icons.ts'
+import {
+  ICON_SHAPES,
+  MASKABLE_SCALE,
+  OG_HEIGHT,
+  OG_TITLE,
+  OG_WIDTH,
+  darkShapeColours,
+  iconSvg,
+  makeIcons,
+  makeOgImage,
+  ogImageSvg,
+  ttfFromWoff,
+} from './icons.ts'
 
 const root = new URL('../', import.meta.url)
 const read = (path: string) => readFileSync(new URL(path, root), 'utf8')
@@ -83,6 +95,58 @@ describe('the icon', () => {
       }
     }
     expect(drawn).toBeGreaterThan(1000)
+  })
+})
+
+/** The pixels of a PNG, RGBA row by row: resvg draws it inside an SVG, which it can read. */
+function pngPixels(bytes: Buffer) {
+  const width = bytes.readUInt32BE(16)
+  const height = bytes.readUInt32BE(20)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width.toString()}" height="${height.toString()}"><image width="${width.toString()}" height="${height.toString()}" href="data:image/png;base64,${bytes.toString('base64')}"/></svg>`
+  return new Resvg(svg).render()
+}
+
+describe('the picture of a link (og:image)', () => {
+  it('is 1200 × 630, the size chats show', () => {
+    expect(pngSize('public/og-image.png')).toEqual({ width: OG_WIDTH, height: OG_HEIGHT })
+  })
+
+  it('has the icon and the title: the shapes of the icon and the title in the font of the game', () => {
+    const svg = ogImageSvg(tokens)
+    const colours = darkShapeColours(tokens)
+    for (const shape of ICON_SHAPES) {
+      for (const d of PATHS[shape]) expect(svg).toContain(`d="${d}"`)
+      expect(svg).toContain(`stroke="${colours[shape] ?? ''}"`)
+    }
+    for (const line of OG_TITLE) expect(svg).toContain(`>${line}</text>`)
+    expect(svg).toContain('font-family="Patrick Hand"')
+    expect(OG_TITLE.join(' ')).toBe('Boter, Kaas en Eieren Ultra')
+  })
+
+  it('is written with the font of the game: a WOFF turned into a TrueType file that resvg draws', () => {
+    const woff = readFileSync(
+      new URL(
+        'node_modules/@fontsource/patrick-hand/files/patrick-hand-latin-400-normal.woff',
+        root,
+      ),
+    )
+    const ttf = ttfFromWoff(woff)
+    // 0x00010000 is TrueType; a font that wasn't read would leave the title in another typeface.
+    expect(ttf.readUInt32BE(0)).toBe(0x00010000)
+    expect(ttf.readUInt16BE(4)).toBe(woff.readUInt16BE(12))
+    const light = (png: Buffer) => {
+      const { width, height, pixels } = pngPixels(png)
+      let count = 0
+      for (let y = 0; y < height; y++)
+        for (let x = 560; x < width; x++) if ((pixels[(y * width + x) * 4] ?? 0) > 200) count++
+      return count
+    }
+    expect(light(makeOgImage(tokens))).toBeGreaterThan(5000)
+    // The picture in public/ has the title too, and the dark of the page in its corners.
+    const committed = readFileSync(new URL('public/og-image.png', root))
+    expect(light(committed)).toBeGreaterThan(5000)
+    const { pixels } = pngPixels(committed)
+    expect([...pixels.subarray(0, 4)]).toEqual([0x1b, 0x1b, 0x1f, 255])
   })
 })
 
