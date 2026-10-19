@@ -2,23 +2,20 @@ import { useText } from '../i18n/store.ts'
 
 /**
  * "Volledig scherm" near the board, "Sluiten" in the mode: a pressed button that is as high as a
- * finger needs (48 px). Left out where the mode has nothing to do (an installed app). F on the board
+ * finger needs (48 px). F on the board
  * does the same.
  */
 export function PlayModeButton({
   on,
-  available,
   toggle,
   attachTrigger,
 }: {
   on: boolean
-  available: boolean
   toggle: () => void
   /** The `ref` of the button, so that the mode can give the focus back to it. */
   attachTrigger: (element: HTMLButtonElement | null) => void
 }) {
   const t = useText()
-  if (!available) return null
   return (
     <button
       ref={attachTrigger}

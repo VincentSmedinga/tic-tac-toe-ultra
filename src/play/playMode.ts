@@ -9,15 +9,6 @@ function marked(): boolean {
 }
 
 /**
- * An installed app (`display-mode: standalone`, or `navigator.standalone` on an iPhone) is
- * already without the address bar and the tabs, and the mode leaves its button out there.
- */
-export function isStandalone(): boolean {
-  const { standalone } = navigator as Navigator & { standalone?: boolean }
-  return window.matchMedia('(display-mode: standalone)').matches || standalone === true
-}
-
-/**
  * Makes everything on the page that is not the layer, nor holds it, `inert`: out of the tab order,
  * out of reach of a pointer and hidden from screen readers. Returns what puts it back, leaving
  * alone what was inert already.
@@ -78,8 +69,6 @@ function keepAwake(): () => void {
 export interface PlayMode {
   /** Whether the mode is on. */
   on: boolean
-  /** False where the mode has nothing to do (an installed app); the button is left out. */
-  available: boolean
   /** The `ref` of the section that is the layer. */
   attachLayer: (element: HTMLElement | null) => void
   /** The `ref` of the button that opens the mode, which gets the focus back when it ends. */
@@ -97,7 +86,6 @@ export interface PlayMode {
  */
 export function usePlayMode(): PlayMode {
   const [on, setOn] = useState(false)
-  const [available] = useState(() => !isStandalone())
   // The two elements, kept as they come and go (state, so that the effects follow them).
   const [layer, setLayer] = useState<HTMLElement | null>(null)
   const [trigger, setTrigger] = useState<HTMLButtonElement | null>(null)
@@ -115,13 +103,13 @@ export function usePlayMode(): PlayMode {
   }, [on, finish])
 
   const open = useCallback(() => {
-    if (on || !available) return
+    if (on) return
     window.history.pushState({ [MARK]: true }, '')
     setOn(true)
     // The real full screen, only where the browser has it (not an iPhone) and has to be asked
     // for in the tap itself. When it is refused, the mode is the same without it.
     if (document.fullscreenEnabled) layer?.requestFullscreen().catch(() => undefined)
-  }, [on, available, layer])
+  }, [on, layer])
 
   const toggle = useCallback(() => {
     if (on) close()
@@ -130,7 +118,6 @@ export function usePlayMode(): PlayMode {
 
   // F on the board, like the button.
   useEffect(() => {
-    if (!available) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() !== 'f' || event.repeat) return
       if (event.ctrlKey || event.metaKey || event.altKey) return
@@ -144,7 +131,7 @@ export function usePlayMode(): PlayMode {
     return () => {
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [available, layer, toggle])
+  }, [layer, toggle])
 
   useEffect(() => {
     if (!on) return
@@ -199,5 +186,5 @@ export function usePlayMode(): PlayMode {
     }
   }, [on])
 
-  return { on, available, attachLayer: setLayer, attachTrigger: setTrigger, toggle, close }
+  return { on, attachLayer: setLayer, attachTrigger: setTrigger, toggle, close }
 }
