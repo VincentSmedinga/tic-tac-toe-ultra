@@ -3,8 +3,9 @@
   "name": "tic-tac-toe-ultra",
   "main": "server/index.ts",
   "compatibility_date": "2026-10-01",
-  // The app is the static files of `pnpm build`; the Worker only answers /api/*, the rest goes
-  // to the files, with the page itself for any address the app handles in the browser.
+  // The app is the static files of `pnpm build`; the Worker answers /api/* and the pages of the
+  // app, the rest goes to the files, with the page itself for any address the app handles in the
+  // browser.
   // Two Durable Object classes, both with SQLite storage, which the free plan has too: a room of
   // the game, and the archive, one object that keeps the finished games of all rooms.
   "durable_objects": {
@@ -17,8 +18,19 @@
     { "tag": "v1", "new_sqlite_classes": ["Room"] },
     { "tag": "v2", "new_sqlite_classes": ["Archive"] },
   ],
+  // The Worker also answers the pages of the app (PAGE_PATHS in server/page.ts), to put the full
+  // address of the picture of a link in them; page.test.ts keeps the two lists equal.
   "assets": {
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"],
+    "run_worker_first": [
+      "/api/*",
+      "/",
+      "/samen",
+      "/spellen",
+      "/statistieken",
+      "/spel/*",
+      "/kamer/*",
+    ],
   },
 }
