@@ -22,6 +22,7 @@ import { CopyLink } from './CopyLink.tsx'
 import { Link } from './Link.tsx'
 import { OnlineGame } from './OnlineGame.tsx'
 import { roomPath } from './route.ts'
+import { useScrollToTop } from './scroll.ts'
 import { isStarted } from './started.ts'
 import { browserDeps, useRoom } from './useRoom.ts'
 import type { RoomDeps, RoomProblem } from './useRoom.ts'
@@ -138,6 +139,7 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
 /** The room before the game: the code, who is here, and everybody choosing their shape. */
 function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMessage) => void }) {
   const t = useText()
+  useScrollToTop('lobby')
   const { list } = useFormat()
   const mine = state.players.find((player) => player.id === state.you)
   const host = state.players[0]
