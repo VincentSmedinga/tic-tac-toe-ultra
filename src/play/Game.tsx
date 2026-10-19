@@ -183,7 +183,6 @@ function Play({
   const { player, text } = describe(t, names, game)
   const {
     on: modeOn,
-    available: modeAvailable,
     attachLayer,
     attachTrigger,
     toggle: toggleMode,
@@ -226,12 +225,7 @@ function Play({
           <span>{text}</span>
         </p>
         <p className="field-label">{fieldLabel(t, field)}</p>
-        <PlayModeButton
-          on={modeOn}
-          available={modeAvailable}
-          toggle={toggleMode}
-          attachTrigger={attachTrigger}
-        />
+        <PlayModeButton on={modeOn} toggle={toggleMode} attachTrigger={attachTrigger} />
       </div>
       <Board
         game={game}
