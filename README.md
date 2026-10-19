@@ -6,6 +6,7 @@ You play online and live, each on your own device, in a room with a code, or tog
 
 - **Plan and decisions:** [docs/plan.md](docs/plan.md)
 - **Way of working:** [AGENTS.md](AGENTS.md)
+- **How each area works:** [docs/architecture/](docs/architecture/)
 - **Planning:** the [milestones](https://github.com/VincentSmedinga/tic-tac-toe-ultra/milestones) and the project board "Tic-Tac-Toe Ultra"
 
 ## Local development
