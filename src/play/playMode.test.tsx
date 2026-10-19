@@ -244,7 +244,7 @@ describe('the play mode', () => {
     }
   })
 
-  it('has no button in an installed app, which has no chrome to hide', async () => {
+  it('is in an installed app too: the layer hides the title and the footer there as well', async () => {
     const original = window.matchMedia.bind(window)
     vi.stubGlobal('matchMedia', (query: string) => ({
       matches: query === '(display-mode: standalone)',
@@ -254,10 +254,13 @@ describe('the play mode', () => {
     }))
     try {
       await startGame()
-      expect(screen.queryByRole('button', { name: 'Volledig scherm' })).not.toBeInTheDocument()
+      await userEvent.click(opener())
+      expect(layer()).toHaveAttribute('data-play-mode')
+      expect(document.querySelector('header')).toHaveAttribute('inert')
+      await userEvent.click(closer())
       await userEvent.click(cell(2, 2))
       await userEvent.keyboard('f')
-      expect(layer()).not.toHaveAttribute('data-play-mode')
+      expect(layer()).toHaveAttribute('data-play-mode')
     } finally {
       vi.stubGlobal('matchMedia', original)
     }

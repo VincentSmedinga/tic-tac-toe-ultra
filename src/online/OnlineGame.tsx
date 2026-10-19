@@ -59,7 +59,6 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
   const t = useText()
   const {
     on: modeOn,
-    available: modeAvailable,
     attachLayer,
     attachTrigger,
     toggle: toggleMode,
@@ -159,12 +158,7 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
         </p>
 
         <p className="field-label">{fieldLabel(t, state.field)}</p>
-        <PlayModeButton
-          on={modeOn}
-          available={modeAvailable}
-          toggle={toggleMode}
-          attachTrigger={attachTrigger}
-        />
+        <PlayModeButton on={modeOn} toggle={toggleMode} attachTrigger={attachTrigger} />
       </div>
 
       <Board
