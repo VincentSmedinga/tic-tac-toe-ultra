@@ -3,7 +3,13 @@ import { replayGame } from '../shared/game/index.ts'
 import type { ServerMessage, StateMessage } from '../shared/protocol.ts'
 import { newRoom } from './room-logic.ts'
 import type { Finished, RoomState } from './room-logic.ts'
-import { CLOSE_REPLACED, CLOSE_ROOM_FULL, CLOSE_UNKNOWN_ROOM, RoomSession } from './room-session.ts'
+import {
+  CLOSE_LEFT,
+  CLOSE_REPLACED,
+  CLOSE_ROOM_FULL,
+  CLOSE_UNKNOWN_ROOM,
+  RoomSession,
+} from './room-session.ts'
 import type { Host } from './room-session.ts'
 
 const TOKEN_X = 'x'.repeat(20)
@@ -16,6 +22,7 @@ class FakeHost implements Host {
   code = 'BCDF'
   room: RoomState | null = newRoom()
   touched = 0
+  removed = 0
   /** The clock of the room: a test sets it, and moves it on. */
   time = 1_000
   readonly archived: { id: string; game: Finished }[] = []
@@ -50,6 +57,9 @@ class FakeHost implements Host {
   }
   now() {
     return this.time
+  }
+  remove() {
+    this.removed++
   }
   newGameId() {
     return `game-${(++this.ids).toString()}`
@@ -637,5 +647,107 @@ describe('a player who goes away and comes back', () => {
     host.sent.length = 0
     session.closed()
     expect(host.sent).toEqual([])
+  })
+})
+
+describe('leaving the evening', () => {
+  const WIN = [
+    ['a', 0, 0],
+    ['b', 0, 1],
+    ['a', 1, 0],
+    ['b', 1, 1],
+    ['a', 2, 0],
+  ] as const
+
+  function over() {
+    const setup = started()
+    for (const [id, x, y] of WIN) say(setup.session, id, { type: 'move', x, y })
+    setup.host.sent.length = 0
+    return setup
+  }
+
+  it('is refused while a round is on', () => {
+    const { host, session } = started()
+    say(session, 'b', { type: 'leave' })
+    expect(host.received('b')).toEqual([{ type: 'error', error: 'game-not-over' }])
+    expect(host.closes).toEqual([])
+    expect(host.room?.seats.every((seat) => seat.left === undefined)).toBe(true)
+  })
+
+  it('tells the others at once, and closes the socket of the one who left', () => {
+    const { host, session } = over()
+    say(session, 'b', { type: 'leave' })
+
+    expect(host.lastState('a').players.map(({ id, left }) => [id, left])).toEqual([
+      ['X', undefined],
+      ['O', true],
+    ])
+    expect(host.closes).toEqual([{ id: 'b', code: CLOSE_LEFT, reason: 'left' }])
+    expect(host.received('b')).toEqual([])
+    expect(host.removed).toBe(0)
+  })
+
+  it('leaves the game in the archive, and tells the id to those who stay', () => {
+    const { host, session } = over()
+    expect(host.archived).toHaveLength(1)
+    const [{ id, game }] = host.archived as [{ id: string; game: Finished }]
+    say(session, 'b', { type: 'leave' })
+
+    expect(host.archived).toHaveLength(1)
+    expect(game.owners).toEqual([TOKEN_X, TOKEN_O])
+    session.archived(id)
+    expect(host.lastState('a').gameId).toBe(id)
+  })
+
+  it('does not lose the game when the leave comes before the archive has it', () => {
+    const { host, session } = over()
+    say(session, 'b', { type: 'leave' })
+    say(session, 'a', { type: 'leave' })
+    // Nothing is deleted by the session: the host is asked, and its alarm waits for the queue.
+    expect(host.removed).toBe(1)
+    expect(host.archived).toHaveLength(1)
+  })
+
+  it('refuses a rematch when fewer than two are left, and a move or a rematch from a seat that left', () => {
+    const { host, session } = over()
+    say(session, 'b', { type: 'leave' })
+    host.sent.length = 0
+
+    say(session, 'a', { type: 'rematch' })
+    expect(host.received('a')).toEqual([{ type: 'error', error: 'room-over' }])
+    // The socket of the one who left is still known to the fake host: it is no use to them.
+    say(session, 'b', { type: 'rematch' })
+    say(session, 'b', { type: 'move', x: 2, y: 2 })
+    expect(host.received('b')).toEqual([
+      { type: 'error', error: 'not-joined' },
+      { type: 'error', error: 'not-joined' },
+    ])
+  })
+
+  it('refuses the same person when they come back', () => {
+    const { host, session } = over()
+    say(session, 'b', { type: 'leave' })
+    host.connect('b2')
+    say(session, 'b2', { type: 'join', token: TOKEN_O })
+    expect(host.received('b2')).toEqual([{ type: 'error', error: 'left' }])
+    expect(host.closes.at(-1)).toEqual({ id: 'b2', code: CLOSE_ROOM_FULL, reason: 'left' })
+  })
+
+  it('asks for the room to go only when the last person has left', () => {
+    const { host, session } = over()
+    say(session, 'a', { type: 'leave' })
+    expect(host.removed).toBe(0)
+    say(session, 'b', { type: 'leave' })
+    expect(host.removed).toBe(1)
+  })
+
+  it('handles a leave that comes just after a rematch as one in a round that is on', () => {
+    const { host, session } = over()
+    say(session, 'a', { type: 'rematch' })
+    host.sent.length = 0
+    say(session, 'b', { type: 'leave' })
+    expect(host.received('b')).toEqual([{ type: 'error', error: 'game-not-over' }])
+    expect(host.closes).toEqual([])
+    expect(host.removed).toBe(0)
   })
 })

@@ -5,6 +5,7 @@ import type { Pending } from './archive-queue.ts'
 import type { FieldSettings } from '../shared/room.ts'
 import type { Env } from './env.ts'
 import { newGameId } from './game-id.ts'
+import { EXPIRES_AFTER_MS, mayGo } from './room-expiry.ts'
 import { newRoom, upgradeRoom } from './room-logic.ts'
 import type { RoomState } from './room-logic.ts'
 import { RoomSession } from './room-session.ts'
@@ -15,8 +16,7 @@ const CODE_KEY = 'code'
 const ROOM_ID_KEY = 'room-id'
 const TOUCHED_KEY = 'touched'
 const PENDING_KEY = 'pending-archive'
-/** A room that nobody has touched for this long is deleted, with everything in it. */
-const EXPIRES_AFTER_MS = 24 * 60 * 60 * 1000
+const REMOVE_KEY = 'remove'
 /** A game the archive couldn't keep is tried again after this long. */
 const RETRY_AFTER_MS = 30 * 1000
 
@@ -105,22 +105,20 @@ export class Room extends DurableObject<Env> {
 
   /**
    * Runs for two reasons: a game the archive couldn't keep is tried again, and a room that nobody
-   * has touched for a day is deleted. The room is kept for as long as a game is waiting for the
-   * archive, so that a game is never lost with the room.
+   * has touched for a day, or that everybody has left, is deleted. The room is kept for as long as
+   * a game is waiting for the archive, so that a game is never lost with the room.
    */
   override async alarm(): Promise<void> {
     await this.queue.flush()
-    if (this.queue.size() > 0) {
-      this.schedule()
-      return
+    const standing = {
+      queued: this.queue.size(),
+      connected: this.ctx.getWebSockets().some((ws) => ws.readyState === WebSocket.OPEN),
+      asked: this.ctx.storage.kv.get(REMOVE_KEY) === true,
+      idleMs: Date.now() - (this.ctx.storage.kv.get<number>(TOUCHED_KEY) ?? 0),
     }
-    const connected = this.ctx.getWebSockets().some((ws) => ws.readyState === WebSocket.OPEN)
-    if (connected) {
-      this.touch()
-      return
-    }
-    const touched = this.ctx.storage.kv.get<number>(TOUCHED_KEY) ?? 0
-    if (Date.now() - touched >= EXPIRES_AFTER_MS) await this.ctx.storage.deleteAll()
+    if (mayGo(standing)) await this.ctx.storage.deleteAll()
+    // Someone is still connected: the room is in use, so its day starts again.
+    else if (standing.connected && standing.queued === 0) this.touch()
     else this.schedule()
   }
 
@@ -175,6 +173,10 @@ export class Room extends DurableObject<Env> {
         this.touch()
       },
       now: () => Date.now(),
+      remove: () => {
+        this.ctx.storage.kv.put(REMOVE_KEY, true)
+        void this.ctx.storage.setAlarm(Date.now())
+      },
       newGameId,
       archive: (id, game) => {
         // Written to storage first, so the game survives a failed call, a sleep and a rematch; the

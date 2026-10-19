@@ -12,6 +12,7 @@ The decisions and their reasons are in [docs/plan.md](../plan.md), Decisions (ro
 - The game is never stored in the room: it is rebuilt from the moves with the engine, with `roomConfig(round, shapes)`.
 - `upgradeRoom` reads a room stored before shapes could be chosen.
 - `room-session.ts` decides what happens when a socket says something or goes away, through a `Host` interface that the Durable Object implements and the tests fake.
+- `room-expiry.ts` is the rule for when a room is deleted (`mayGo`), tested without the Durable Object.
 - The server is authoritative: it validates every move with the engine and sends the new state to everyone.
 - The Node tests use a stub for `cloudflare:workers` (`server/testing/`).
 - The real Durable Object is tested end to end with two browsers (`e2e/online.spec.ts`).
@@ -31,10 +32,25 @@ The decisions and their reasons are in [docs/plan.md](../plan.md), Decisions (ro
 
 - Every message is validated with the schemas in `shared/protocol.ts`.
 - A client says `join` (optionally with the shape it had last time), `choose` (a shape, until the game starts), `start` (only the first seat, to begin with fewer people than seats), `move` or `rematch`.
+- A client may also say `leave`, once the round is over, see Leaving below.
 - A server message is a full `state` snapshot or an `error` (only to the sender).
 - The `state` says who sits where with which shape and how many `seats` the room has.
 - Once every seat has a shape, the `state` also carries the config plus the moves, which the receiver replays.
 - `gameId` in the `state` says where the game of a finished round is kept, and only once the archive has it.
+
+## Leaving
+
+- `leave` is accepted only when the round is over (or the room is damaged); during a round, before the game has started, and while choosing it answers `game-not-over`.
+- A seat that leaves gets `left`: the number of the round it was in. The seat stays (its id, token and shape), so the ids of the other seats don't move and nobody else can sit in it.
+- A seat counts in every round up to and including the one it left in (`playingSeats` in `room-logic.ts`) and in none after it. The round that was just played keeps all its players; the next one is played by the seats that are left.
+- `finishedGame` takes its `players` and `owners` from `playingSeats`, so both skip the seats that left and stay in the same order.
+- `stateFor` still lists a seat that left, with `left: true`, so the others can say who left; the one who left gets no more state.
+- `join` with the token of a seat that left answers `left` (final). `move`, `choose`, `start`, `rematch` and a second `leave` from such a token answer `not-joined`.
+- `rematch` with fewer than two seats left answers `room-over`.
+- The session closes the sockets of the one who left with `CLOSE_LEFT` (4410), after the others have been told; the app goes to the start on that code.
+- When nobody is left, the session calls `Host.remove()`: the Durable Object records it and sets its alarm for now, and the alarm deletes the room as soon as no game waits for the archive and no socket is open (`mayGo` in `room-expiry.ts`).
+- Leaving never touches the archive: the game was kept when the round ended and stays in the games of everybody who played it.
+- Tests: `room-logic.test.ts` (leaving after a round), `room-session.test.ts` (leaving the evening), `room-expiry.test.ts` and `e2e/online.spec.ts`.
 
 ## Tokens and privacy
 
