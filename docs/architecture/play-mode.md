@@ -8,7 +8,7 @@ The decision and its reasons are in [docs/plan.md](../plan.md), Full screen (iss
 - Destructure the hook's result. Don't read a property of it in a `ref={…}` position, or react-hooks/refs takes the whole object for a ref.
 - The section gets `data-play-mode`, and `PlayMode.css` turns it into a fixed layer over the page: the board, the bar (`.game-info`: players, status, `PlayModeButton`) and the actions.
 - A new screen that has a game on it gives it a layer of its own the same way: a `.game` section with the hook, a `.game-info` bar, the button.
-- Anything that has to stay visible in the mode goes inside the section. The room's connection notice is passed in as `banner`.
+- Anything that has to stay visible in the mode goes inside the section. The end-of-game actions are inside it too, so "Stoppen" is reachable in the mode and closes it. The room's connection notice is passed in as `banner`.
 - While the mode is on, the siblings of the layer and of its ancestors are `inert`, and `html[data-play-mode]` locks the page.
 - The real Fullscreen API is asked for where `document.fullscreenEnabled`. An iPhone has none, so there the mode is the layer alone.
 - A state `{ playMode: true }` in the history makes back close the mode. Escape, F on the board and leaving the game close it too.

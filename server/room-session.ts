@@ -5,7 +5,9 @@ import {
   finishedGame,
   isOver,
   join,
+  leave,
   play,
+  presentCount,
   rematch,
   startGame,
   stateFor,
@@ -36,12 +38,19 @@ export interface Host {
    * archive has it, the host tells the session with `archived`; until then the id stays secret.
    */
   archive(id: string, game: Finished): void
+  /**
+   * Everybody has left: the room can go as soon as no game waits for the archive. The host asks
+   * for its alarm at once; nothing is deleted from the session itself.
+   */
+  remove(): void
 }
 
 /** WebSocket close codes in the range for applications. */
 export const CLOSE_REPLACED = 4001
 export const CLOSE_UNKNOWN_ROOM = 4404
 export const CLOSE_ROOM_FULL = 4409
+/** The player asked to leave and has left: the app goes back to the start. */
+export const CLOSE_LEFT = 4410
 
 /**
  * What happens when a player's socket says something or goes away: read the message, let the rules
@@ -92,6 +101,11 @@ export class RoomSession {
       return
     }
 
+    if (message.type === 'leave') {
+      this.leave(socketId, room, token)
+      return
+    }
+
     let change: Change
     switch (message.type) {
       case 'move':
@@ -126,6 +140,25 @@ export class RoomSession {
       return
     }
     this.commit(played)
+  }
+
+  /**
+   * A player leaves for good: the others are told, the socket of the one who left is closed (so
+   * that the app goes on to the start), and the room is asked to go when nobody is left. The game
+   * of the round is already with the archive, which is not touched.
+   */
+  private leave(socketId: string, room: RoomState, token: string): void {
+    const change = leave(room, token)
+    if (!change.ok) {
+      this.error(socketId, change.error)
+      return
+    }
+    this.commit(change.room)
+    for (const socket of this.host.sockets()) {
+      if (socket.token === token) this.host.close(socket.id, CLOSE_LEFT, 'left')
+    }
+    // After the commit: the host has one alarm, and the one for the room's expiry was set there.
+    if (presentCount(change.room) === 0) this.host.remove()
   }
 
   /** The archive has the game with this id: from now on the players are told where it is kept. */

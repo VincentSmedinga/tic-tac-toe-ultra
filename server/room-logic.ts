@@ -25,6 +25,11 @@ export interface Seat {
   name?: string
   /** The shape this player chose; the game starts when every seat has one. */
   shape?: ShapeId
+  /**
+   * The round this person left after, for good: they played it to its end and are not in the next
+   * one. The seat stays (its id, its token and its shape), so the other seats keep their ids.
+   */
+  left?: number
 }
 
 export interface RoomState {
@@ -77,6 +82,26 @@ function isOn(room: RoomState): boolean {
   return room.started === true || room.seats.length >= seatCountOf(room)
 }
 
+/** Whether this seat is still part of the evening: it has not been left. */
+function isPresent(seat: Seat): boolean {
+  return seat.left === undefined
+}
+
+/** The seat of this token, unless it has been left: somebody who left is no longer in the room. */
+function seatOf(room: RoomState, token: string): Seat | undefined {
+  return room.seats.find((seat) => seat.token === token && isPresent(seat))
+}
+
+/** How many people are still in the evening. */
+export function presentCount(room: RoomState): number {
+  return room.seats.filter(isPresent).length
+}
+
+/** The seats that play the round the room is in: those still there, and those who left after it. */
+function playingSeats(room: RoomState): Seat[] {
+  return room.seats.filter((seat) => seat.left === undefined || seat.left >= room.round)
+}
+
 /** The field of a room: the one it was made with, or the classic one for a room from before. */
 export function fieldOf(room: RoomState): FieldSettings {
   return room.field ?? CLASSIC_FIELD
@@ -93,8 +118,9 @@ function fail(error: ErrorCode): Change {
 /** The shapes of the seats in seat order, when the game is on and each person has chosen. */
 function shapesOf(room: RoomState): ShapeId[] | null {
   if (!isOn(room)) return null
-  const shapes = room.seats.flatMap((seat) => (seat.shape === undefined ? [] : [seat.shape]))
-  return shapes.length === room.seats.length ? shapes : null
+  const seats = playingSeats(room)
+  const shapes = seats.flatMap((seat) => (seat.shape === undefined ? [] : [seat.shape]))
+  return shapes.length === seats.length ? shapes : null
 }
 
 /** The game of the room: it starts when it is on and every player has a shape. */
@@ -124,6 +150,7 @@ export function join(
   shape?: ShapeId,
 ): Change {
   const known = room.seats.find((seat) => seat.token === token)
+  if (known?.left !== undefined) return fail('left')
   if (known) {
     const seats = room.seats.map((seat) =>
       seat === known ? withShape(withName(seat, name), room, shape) : seat,
@@ -151,7 +178,7 @@ function withShape(seat: Seat, room: RoomState, shape: ShapeId | undefined): Sea
  * seat has one, and from then on the shapes are the players of the evening.
  */
 export function choose(room: RoomState, token: string, shape: ShapeId): Change {
-  const seat = room.seats.find((candidate) => candidate.token === token)
+  const seat = seatOf(room, token)
   if (!seat) return fail('not-joined')
   const current = gameOf(room)
   if (current.kind === 'game' || current.kind === 'damaged') return fail('shape-locked')
@@ -170,7 +197,7 @@ export function choose(room: RoomState, token: string, shape: ShapeId): Change {
  * seats are all taken starts by itself, as soon as everybody has chosen.
  */
 export function startGame(room: RoomState, token: string): Change {
-  if (!room.seats.some((seat) => seat.token === token)) return fail('not-joined')
+  if (!seatOf(room, token)) return fail('not-joined')
   if (room.seats[0]?.token !== token) return fail('not-host')
   if (isOn(room)) return fail('game-started')
   if (room.seats.length < PLAYER_LIMITS.min) return fail('not-enough-players')
@@ -180,7 +207,7 @@ export function startGame(room: RoomState, token: string): Change {
 
 /** A move of the player with this token; only the engine decides whether it is allowed. */
 export function play(room: RoomState, token: string, cell: Cell): Change {
-  const seat = room.seats.find((candidate) => candidate.token === token)
+  const seat = seatOf(room, token)
   if (!seat) return fail('not-joined')
   const current = gameOf(room)
   if (current.kind === 'waiting') return fail('waiting-for-opponent')
@@ -191,14 +218,18 @@ export function play(room: RoomState, token: string, cell: Cell): Change {
   return result.ok ? ok({ ...room, moves: [...result.state.moves] }) : fail(result.error)
 }
 
-/** A new round once the game is over (or damaged): the other player starts. */
+/**
+ * A new round once the game is over (or damaged): the next player starts. It is played by the
+ * people who are still there, so when fewer than two are left the room is over.
+ */
 export function rematch(room: RoomState, token: string): Change {
-  if (!room.seats.some((seat) => seat.token === token)) return fail('not-joined')
+  if (!seatOf(room, token)) return fail('not-joined')
   const current = gameOf(room)
   if (current.kind === 'waiting') return fail('waiting-for-opponent')
   if (current.kind === 'choosing') return fail('shape-needed')
   if (current.kind === 'game' && current.game.status.kind === 'playing')
     return fail('game-not-over')
+  if (presentCount(room) < PLAYER_LIMITS.min) return fail('room-over')
   return ok({
     field: room.field,
     seatCount: room.seatCount,
@@ -206,6 +237,25 @@ export function rematch(room: RoomState, token: string): Change {
     round: room.round + 1,
     seats: room.seats,
     moves: [],
+  })
+}
+
+/**
+ * Leaves the evening for good, once the round is over (or damaged): the seat is marked with the
+ * round it was in, so that this round still has all its players and the next one has not.
+ */
+export function leave(room: RoomState, token: string): Change {
+  const seat = seatOf(room, token)
+  if (!seat) return fail('not-joined')
+  const current = gameOf(room)
+  if (current.kind === 'waiting' || current.kind === 'choosing') return fail('game-not-over')
+  if (current.kind === 'game' && current.game.status.kind === 'playing')
+    return fail('game-not-over')
+  return ok({
+    ...room,
+    seats: room.seats.map((candidate) =>
+      candidate === seat ? { ...candidate, left: room.round } : candidate,
+    ),
   })
 }
 
@@ -234,12 +284,12 @@ export function finishedGame(room: RoomState): Finished | null {
     config: { ...config, players: [...config.players] },
     moves: [...moves],
     ...(room.startedAt === undefined ? {} : { startedAt: room.startedAt }),
-    // The players of a game are its shapes, in seat order.
-    players: room.seats.flatMap(({ shape, name }) =>
+    // The players of a game are its shapes, in seat order: those who play this round.
+    players: playingSeats(room).flatMap(({ shape, name }) =>
       shape === undefined ? [] : [{ id: shape, ...(name === undefined ? {} : { name }) }],
     ),
     result: status.kind === 'won' ? { kind: 'won', winner: status.winner } : { kind: 'draw' },
-    owners: room.seats.map((seat) => seat.token),
+    owners: playingSeats(room).map((seat) => seat.token),
   }
 }
 
@@ -250,7 +300,7 @@ export function stateFor(
   code: string,
   connected: ReadonlySet<string>,
 ): StateMessage | null {
-  const seat = room.seats.find((candidate) => candidate.token === token)
+  const seat = seatOf(room, token)
   if (!seat) return null
   const current = gameOf(room)
   // The game is there once everybody has a shape; a damaged room shows an empty board until
@@ -264,11 +314,12 @@ export function stateFor(
     field: { ...fieldOf(room) },
     seats: seatCountOf(room),
     round: room.round,
-    players: room.seats.map(({ token: seatToken, id, name, shape }) => ({
+    players: room.seats.map(({ token: seatToken, id, name, shape, left }) => ({
       id,
       ...(name === undefined ? {} : { name }),
       ...(shape === undefined ? {} : { shape }),
       connected: connected.has(seatToken),
+      ...(left === undefined ? {} : { left: true }),
     })),
     ...(config ? { config: { ...config, players: [...config.players] } } : {}),
     moves: current.kind === 'game' ? [...current.game.moves] : [],

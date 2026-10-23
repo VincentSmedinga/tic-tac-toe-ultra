@@ -86,6 +86,7 @@ export const fy: Dictionary = {
   'play.rematch': 'Noch ien kear',
   'play.otherShapes': 'Oare foarmen',
   'play.replay': 'Sjoch werom',
+  'play.leave': 'Ophâlde',
   'playMode.open': 'Folslein skerm',
   'playMode.close': 'Slute',
   'shapePicker.taken': '{shape}, fan {owner}',
@@ -179,6 +180,7 @@ export const fy: Dictionary = {
   'problem.shapeTaken': 'Dy foarm hat de oare al. Kies in oare.',
   'problem.shapeLocked': 'It spultsje is al begûn: dyn foarm kinst no net mear feroarje.',
   'problem.generic': 'Der gie wat mis. Besykje it opnij.',
+  'problem.left': 'Do hast dit spultsje ferlitten, dus do kinst der net mear yn werom.',
 
   'online.label': 'Online spultsje',
   'online.broken':
@@ -186,6 +188,12 @@ export const fy: Dictionary = {
   'online.away': {
     one: '{names} is efkes fuort… It spultsje wachtet op weromkomst.',
     other: '{names} binne efkes fuort… It spultsje wachtet op weromkomst.',
+  },
+  'online.leave.question': 'Dyn plak yn dizze keamer is dan fuort. Ophâlde?',
+  'online.leave.stay': 'Bliuwe',
+  'online.left': {
+    one: '{names} hat it spultsje ferlitten.',
+    other: '{names} hawwe it spultsje ferlitten.',
   },
   'copy.button': 'Kopiearje link',
   'copy.done': 'Link kopiearre.',

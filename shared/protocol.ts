@@ -65,6 +65,8 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
     y: z.number().int().min(0).max(99),
   }),
   z.object({ type: z.literal('rematch') }),
+  /** Leaves the evening for good: only once the round is over. */
+  z.object({ type: z.literal('leave') }),
 ])
 export type ClientMessage = z.infer<typeof clientMessageSchema>
 
@@ -73,6 +75,8 @@ export const errorCodeSchema = z.enum([
   'invalid-message',
   'not-joined',
   'room-full',
+  'left',
+  'room-over',
   'waiting-for-opponent',
   'room-damaged',
   'shape-needed',
@@ -277,6 +281,8 @@ export const stateMessageSchema = z.object({
       /** The shape this player has chosen, if they have. */
       shape: shapeSchema.optional(),
       connected: z.boolean(),
+      /** This person left the evening for good: they are not in the rounds that follow. */
+      left: z.boolean().optional(),
     }),
   ),
   /**

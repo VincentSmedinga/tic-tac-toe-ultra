@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
 import { replayGame } from '../../shared/game/index.ts'
 import type { GameState } from '../../shared/game/index.ts'
@@ -26,6 +26,8 @@ interface OnlineGameProps {
   send: (message: ClientMessage) => void
   /** What the room has to say about its connection: it goes with the game, also over the whole screen. */
   banner?: ReactNode
+  /** Whether the connection to the room is open: leaving needs the room, so it waits for it. */
+  connected?: boolean
 }
 
 /** The name a player goes by: the one they typed, or their shape ("Kruis"). `shape` is the player of the game. */
@@ -55,7 +57,7 @@ function statusText(t: Text, names: PlayerNames, state: StateMessage, game: Game
 }
 
 /** The game of a room: both players, whose turn it is, the board, and a rematch at the end. */
-export function OnlineGame({ state, send, banner }: OnlineGameProps) {
+export function OnlineGame({ state, send, banner, connected = true }: OnlineGameProps) {
   const t = useText()
   const {
     on: modeOn,
@@ -68,6 +70,12 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
   const names = usePlayerNames()
   // The round whose replay is open, so a rematch can't leave it open for the next round.
   const [replayRound, setReplayRound] = useState<number | null>(null)
+  // The round in which "Stoppen" asked its question, so that the next round starts without it.
+  const [leavingRound, setLeavingRound] = useState<number | null>(null)
+  // The answer that keeps you here has the focus: leaving is for good.
+  const focusStay = useCallback((node: HTMLButtonElement | null) => {
+    node?.focus()
+  }, [])
   // The game and its replay are two views of the room, each starting at the top.
   useScrollToTop(replayRound === state.round ? 'replay' : 'game')
   const replayed = replayGame(state.config, state.moves)
@@ -102,7 +110,13 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
     )
   }
   const myTurn = game.status.kind === 'playing' && game.status.next === myShapeOf(state)
-  const away = state.players.filter((player) => player.id !== state.you && !player.connected)
+  const away = state.players.filter(
+    (player) => player.id !== state.you && !player.connected && player.left !== true,
+  )
+  const gone = state.players.filter((player) => player.left === true)
+  // Fewer than two left: nobody to play with, so the room is over (the server refuses a rematch).
+  const roomOver = state.players.filter((player) => player.left !== true).length < 2
+  const leaving = leavingRound === state.round
 
   const toPlay = game.status.kind === 'playing' ? game.status.next : undefined
 
@@ -119,7 +133,8 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
 
         <div className="players players-row">
           {state.players.map((player) =>
-            player.shape === undefined ? null : (
+            // Whoever left before this round is not in it any more.
+            player.shape === undefined || !state.config.players.includes(player.shape) ? null : (
               <div
                 key={player.id}
                 className="player"
@@ -142,6 +157,15 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
             {t('online.away', {
               names: list(away.map((player) => displayName(state, names, player.shape ?? ''))),
               count: away.length,
+            })}
+          </p>
+        )}
+
+        {gone.length > 0 && (
+          <p className="message" role="status">
+            {t('online.left', {
+              names: list(gone.map((player) => displayName(state, names, player.shape ?? ''))),
+              count: gone.length,
             })}
           </p>
         )}
@@ -169,17 +193,19 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
         }}
       />
 
-      {game.status.kind !== 'playing' && (
+      {game.status.kind !== 'playing' && !leaving && (
         <div className="game-actions">
-          <button
-            type="button"
-            className="rematch"
-            onClick={() => {
-              send({ type: 'rematch' })
-            }}
-          >
-            {t('play.rematch')}
-          </button>
+          {!roomOver && (
+            <button
+              type="button"
+              className="rematch"
+              onClick={() => {
+                send({ type: 'rematch' })
+              }}
+            >
+              {t('play.rematch')}
+            </button>
+          )}
           <button
             type="button"
             className="rematch rematch-quiet"
@@ -190,6 +216,43 @@ export function OnlineGame({ state, send, banner }: OnlineGameProps) {
             }}
           >
             {t('play.replay')}
+          </button>
+          <button
+            type="button"
+            className="rematch rematch-quiet"
+            disabled={!connected}
+            onClick={() => {
+              setLeavingRound(state.round)
+            }}
+          >
+            {t('play.leave')}
+          </button>
+        </div>
+      )}
+
+      {game.status.kind !== 'playing' && leaving && (
+        <div className="game-actions leave-question" role="group" aria-labelledby="leave-question">
+          <p id="leave-question">{t('online.leave.question')}</p>
+          <button
+            type="button"
+            className="rematch rematch-quiet"
+            disabled={!connected}
+            onClick={() => {
+              closeMode()
+              send({ type: 'leave' })
+            }}
+          >
+            {t('play.leave')}
+          </button>
+          <button
+            type="button"
+            className="rematch"
+            ref={focusStay}
+            onClick={() => {
+              setLeavingRound(null)
+            }}
+          >
+            {t('online.leave.stay')}
           </button>
         </div>
       )}

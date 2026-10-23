@@ -21,7 +21,7 @@ import {
 import { CopyLink } from './CopyLink.tsx'
 import { Link } from './Link.tsx'
 import { OnlineGame } from './OnlineGame.tsx'
-import { roomPath } from './route.ts'
+import { navigate, roomPath } from './route.ts'
 import { useScrollToTop } from './scroll.ts'
 import { isStarted } from './started.ts'
 import { browserDeps, useRoom } from './useRoom.ts'
@@ -37,10 +37,12 @@ interface RoomPageProps {
  * What each code of the server (`ErrorCode`, plus the three the app has itself) is called to a
  * player. The server sends codes and no words, so this is the only place that turns them into text.
  */
-const PROBLEMS: Record<RoomProblem, PlainKey> = {
+const PROBLEMS: Record<Exclude<RoomProblem, 'you-left'>, PlainKey> = {
   'unknown-room': 'problem.unknownRoom',
   'room-full': 'problem.roomFull',
   'game-started': 'problem.gameStarted',
+  left: 'problem.left',
+  'room-over': 'problem.generic',
   'not-host': 'problem.notHost',
   'not-enough-players': 'problem.notEnoughPlayers',
   replaced: 'problem.replaced',
@@ -70,19 +72,33 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
   const { connection, state, problem, retry, send } = useRoom(code, identity, deps)
 
   // Remember the room once there is a seat in it, so that the start screen can lead back to it;
-  // forget it when it is gone or full, since going back would only show that.
+  // forget it when it is gone or full, or when this player has left it, since going back would
+  // only show that.
   const seated = state !== null
   useEffect(() => {
-    if (seated) setLastRoom(code)
-    else if (problem === 'unknown-room' || problem === 'room-full' || problem === 'game-started')
+    if (problem === 'you-left') clearLastRoom()
+    else if (seated) setLastRoom(code)
+    else if (
+      problem === 'unknown-room' ||
+      problem === 'room-full' ||
+      problem === 'game-started' ||
+      problem === 'left'
+    )
       clearLastRoom()
   }, [seated, problem, code])
+
+  // The room has let this player go: back to the start.
+  useEffect(() => {
+    if (problem === 'you-left') navigate('/')
+  }, [problem])
 
   // Remember the shape this browser plays with, so that the next room asks for it again.
   const myShape = state?.players.find((player) => player.id === state.you)?.shape
   useEffect(() => {
     if (myShape) setShape(myShape)
   }, [myShape])
+
+  if (problem === 'you-left') return null
 
   // While a connection that was lost is tried again, the game stays on screen; only a problem
   // that trying again won't solve (or one before the room ever answered) takes the page.
@@ -125,7 +141,12 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
     <div className="room">
       {isStarted(state) ? (
         // The game takes the banner in with it, so that it shows over the whole screen too.
-        <OnlineGame state={state} send={send} banner={lostBanner} />
+        <OnlineGame
+          state={state}
+          send={send}
+          banner={lostBanner}
+          connected={connection === 'open'}
+        />
       ) : (
         <>
           {lostBanner}

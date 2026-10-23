@@ -6,6 +6,8 @@ import {
   gameOf,
   isOver,
   join,
+  leave,
+  presentCount,
   newRoom,
   play,
   rematch,
@@ -708,5 +710,143 @@ describe('a room for more than two people', () => {
       expect(gameOf(next).kind).toBe('game')
       expect(join(next, TOKENS[3] ?? '', undefined)).toEqual({ ok: false, error: 'game-started' })
     })
+  })
+})
+
+describe('leaving after a round', () => {
+  const TOKENS = ['a'.repeat(20), 'b'.repeat(20), 'c'.repeat(20)]
+  const SHAPES = ['cross', 'circle', 'star'] as const
+  const field = { width: 7, height: 7, winLength: 5 }
+
+  function seated(people: number): RoomState {
+    let current = newRoom(field, people)
+    for (let i = 0; i < people; i++) {
+      current = room(join(current, TOKENS[i] ?? '', undefined, SHAPES[i]))
+    }
+    return current
+  }
+
+  /** Every shape plays its own row, in turn, until somebody has five in a row. */
+  function playToTheEnd(start: RoomState): RoomState {
+    let current = start
+    const played = new Map<string, number>()
+    for (;;) {
+      const game = gameOf(current)
+      if (game.kind !== 'game' || game.game.status.kind !== 'playing') return current
+      const shape = game.game.status.next
+      const row = SHAPES.indexOf(shape as (typeof SHAPES)[number]) * 2
+      const count = played.get(shape) ?? 0
+      played.set(shape, count + 1)
+      const seat = current.seats.find((candidate) => candidate.shape === shape)
+      current = room(play(current, seat?.token ?? '', { x: count, y: row }))
+    }
+  }
+
+  it('is refused before the game, and while a round is on', () => {
+    const waiting = room(join(newRoom(field, 3), TOKENS[0] ?? '', undefined, 'cross'))
+    expect(leave(waiting, TOKENS[0] ?? '')).toEqual({ ok: false, error: 'game-not-over' })
+
+    const undecidedRoom = room(join(room(join(newRoom(), TOKEN_X, undefined)), TOKEN_O, undefined))
+    expect(leave(undecidedRoom, TOKEN_X)).toEqual({ ok: false, error: 'game-not-over' })
+
+    const playing = playCells(twoPlayers(), [[0, 0]])
+    expect(leave(playing, TOKEN_X)).toEqual({ ok: false, error: 'game-not-over' })
+  })
+
+  it('is refused for somebody without a seat', () => {
+    const won = playCells(twoPlayers(), xWins)
+    expect(leave(won, TOKEN_Z)).toEqual({ ok: false, error: 'not-joined' })
+  })
+
+  it('marks the seat after a won round and after a drawn one, and keeps the round whole', () => {
+    for (const cells of [xWins, draw]) {
+      const over = playCells(twoPlayers(), cells)
+      const gone = room(leave(over, TOKEN_O))
+      expect(gone.seats.map(({ id, left }) => [id, left])).toEqual([
+        ['X', undefined],
+        ['O', 0],
+      ])
+      expect(presentCount(gone)).toBe(1)
+      // The round that was played still has both of its players and the same moves.
+      const game = gameOf(gone)
+      expect(game.kind === 'game' && game.game.config.players).toEqual(['cross', 'circle'])
+      expect(isOver(gone)).toBe(true)
+      expect(finishedGame(gone)?.owners).toEqual([TOKEN_X, TOKEN_O])
+    }
+  })
+
+  it('tells the others, and tells nothing to the one who left', () => {
+    const gone = room(leave(playCells(twoPlayers(), xWins), TOKEN_O))
+    const state = stateFor(gone, TOKEN_X, 'BCDF', new Set([TOKEN_X]))
+    expect(state?.players.map(({ id, left }) => [id, left])).toEqual([
+      ['X', undefined],
+      ['O', true],
+    ])
+    expect(stateFor(gone, TOKEN_O, 'BCDF', new Set([TOKEN_O]))).toBeNull()
+  })
+
+  it('is harmless a second time, and the seat can do nothing any more', () => {
+    const gone = room(leave(playCells(twoPlayers(), xWins), TOKEN_O))
+    expect(leave(gone, TOKEN_O)).toEqual({ ok: false, error: 'not-joined' })
+    expect(rematch(gone, TOKEN_O)).toEqual({ ok: false, error: 'not-joined' })
+    expect(choose(gone, TOKEN_O, 'star')).toEqual({ ok: false, error: 'not-joined' })
+    expect(play(gone, TOKEN_O, { x: 2, y: 2 })).toEqual({ ok: false, error: 'not-joined' })
+  })
+
+  it('refuses the same token joining again, and a new one taking the seat', () => {
+    const gone = room(leave(playCells(twoPlayers(), xWins), TOKEN_O))
+    expect(join(gone, TOKEN_O, undefined)).toEqual({ ok: false, error: 'left' })
+    expect(join(gone, TOKEN_Z, undefined)).toEqual({ ok: false, error: 'room-full' })
+  })
+
+  it('makes the room over when fewer than two are left: no rematch', () => {
+    const gone = room(leave(playCells(twoPlayers(), xWins), TOKEN_O))
+    expect(rematch(gone, TOKEN_X)).toEqual({ ok: false, error: 'room-over' })
+  })
+
+  it('goes on with the people who are left, in seat order, in the next round', () => {
+    const over = playToTheEnd(seated(3))
+    expect(isOver(over)).toBe(true)
+    const gone = room(leave(over, TOKENS[1] ?? ''))
+    const next = room(rematch(gone, TOKENS[0] ?? ''))
+    const game = gameOf(next)
+    expect(game.kind).toBe('game')
+    const state = stateFor(next, TOKENS[0] ?? '', 'BCDF', new Set())
+    expect(state?.config?.players.slice().sort()).toEqual(['cross', 'star'])
+    expect(state?.moves).toEqual([])
+    // The seat that left stays in the list, so everyone can see who left.
+    expect(state?.players.map(({ id, left }) => [id, left])).toEqual([
+      ['X', undefined],
+      ['O', true],
+      ['3', undefined],
+    ])
+    // The next round is played, and kept, by the two who are left.
+    const ended = playToTheEnd(next)
+    const finished = finishedGame(ended)
+    expect(finished?.players.map(({ id }) => id).sort()).toEqual(['cross', 'star'])
+    expect(finished?.owners).toHaveLength(2)
+    expect(finished?.owners).not.toContain(TOKENS[1])
+    // The owners are in the order of the players, as the archive needs.
+    const shapeOfOwner = finished?.owners.map(
+      (token) => ended.seats.find((seat) => seat.token === token)?.shape,
+    )
+    expect(shapeOfOwner).toEqual(finished?.players.map(({ id }) => id))
+  })
+
+  it('lets the others go on and leave in turn, until nobody is left', () => {
+    let current = playToTheEnd(seated(3))
+    current = room(leave(current, TOKENS[1] ?? ''))
+    expect(presentCount(current)).toBe(2)
+    current = playToTheEnd(room(rematch(current, TOKENS[0] ?? '')))
+    current = room(leave(current, TOKENS[0] ?? ''))
+    expect(rematch(current, TOKENS[2] ?? '')).toEqual({ ok: false, error: 'room-over' })
+    current = room(leave(current, TOKENS[2] ?? ''))
+    expect(presentCount(current)).toBe(0)
+  })
+
+  it('leaves a room stored before this as it was', () => {
+    const stored = JSON.parse(JSON.stringify(playCells(twoPlayers(), xWins))) as RoomState
+    expect(stored.seats.every((seat) => seat.left === undefined)).toBe(true)
+    expect(rematch(stored, TOKEN_X).ok).toBe(true)
   })
 })

@@ -396,6 +396,33 @@ describe('Game', () => {
   })
 })
 
+describe('leaving a finished game on one screen', () => {
+  it('goes to the start screen', async () => {
+    window.history.replaceState(null, '', '/samen')
+    const user = userEvent.setup()
+    render(<Game />)
+    await user.click(screen.getByRole('button', { name: 'Start' }))
+    expect(screen.queryByRole('button', { name: 'Stoppen' })).not.toBeInTheDocument()
+
+    // The cross wins on the top row.
+    for (const [y, x] of [
+      [1, 1],
+      [2, 1],
+      [1, 2],
+      [2, 2],
+      [1, 3],
+    ] as const) {
+      await user.click(
+        screen.getByRole('button', {
+          name: new RegExp(`^Rij ${y.toString()}, kolom ${x.toString()}`),
+        }),
+      )
+    }
+    await user.click(screen.getByRole('button', { name: 'Stoppen' }))
+    expect(window.location.pathname).toBe('/')
+  })
+})
+
 describe.each([
   {
     language: 'en',
@@ -404,7 +431,7 @@ describe.each([
     empty: 'Row 2, column 2: empty',
     turn: "It is Circle's turn",
     won: 'Cross has won!',
-    actions: ['Play again', 'Other shapes', 'Watch again'],
+    actions: ['Play again', 'Other shapes', 'Watch again', 'Leave'],
   },
   {
     language: 'fy',
@@ -413,7 +440,7 @@ describe.each([
     empty: 'Rige 2, kolom 2: leech',
     turn: 'Sirkel is oan de beurt',
     won: 'Krús hat wûn!',
-    actions: ['Noch ien kear', 'Oare foarmen', 'Sjoch werom'],
+    actions: ['Noch ien kear', 'Oare foarmen', 'Sjoch werom', 'Ophâlde'],
   },
 ] as const satisfies readonly Record<string, unknown>[])(
   'the game on one screen in $language',

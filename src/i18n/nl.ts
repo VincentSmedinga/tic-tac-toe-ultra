@@ -89,6 +89,7 @@ export const nl = {
   'play.rematch': 'Nog een keer',
   'play.otherShapes': 'Andere vormen',
   'play.replay': 'Kijk terug',
+  'play.leave': 'Stoppen',
   'playMode.open': 'Volledig scherm',
   'playMode.close': 'Sluiten',
   'shapePicker.taken': '{shape}, van {owner}',
@@ -183,6 +184,7 @@ export const nl = {
   'problem.shapeTaken': 'Die vorm heeft de ander al. Kies een andere.',
   'problem.shapeLocked': 'Het spel is al begonnen: je vorm kun je nu niet meer veranderen.',
   'problem.generic': 'Er ging iets mis. Probeer het opnieuw.',
+  'problem.left': 'Je hebt dit spel verlaten, dus je kunt er niet meer in terug.',
 
   'online.label': 'Online spel',
   'online.broken':
@@ -190,6 +192,12 @@ export const nl = {
   'online.away': {
     one: '{names} is even weg… Het spel wacht op terugkomst.',
     other: '{names} zijn even weg… Het spel wacht op terugkomst.',
+  },
+  'online.leave.question': 'Je plek in deze kamer is dan weg. Stoppen?',
+  'online.leave.stay': 'Blijven',
+  'online.left': {
+    one: '{names} heeft het spel verlaten.',
+    other: '{names} hebben het spel verlaten.',
   },
   'copy.button': 'Kopieer link',
   'copy.done': 'Link gekopieerd.',
