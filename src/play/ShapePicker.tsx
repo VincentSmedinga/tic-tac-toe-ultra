@@ -15,7 +15,7 @@ interface ShapePickerProps {
   onChange: (shape: ShapeId) => void
 }
 
-/** The twelve shapes to choose from: one tap picks, and the ones that are taken say by whom. */
+/** The shapes to choose from: one tap picks, and the ones that are taken say by whom. */
 export function ShapePicker({ label, value, taken = {}, onChange }: ShapePickerProps) {
   const t = useText()
   const shapes = useShapeNames()

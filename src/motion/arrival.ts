@@ -135,10 +135,22 @@ export function arrivalPlan(
     overlap: between(random, ...rhythm.overlap),
   }))
 
-  // total = k × (the weights, less what overlaps) + the gaps: k is the milliseconds per unit of weight.
-  const gaps = joins.reduce((sum, { gap }) => sum + gap, 0)
-  const weight = weights.reduce((sum, w, i) => sum - (joins[i]?.overlap ?? 0) * w + w, 0)
-  const speed = (total - gaps) / weight
+  // Every stroke ends at k × (the weight before it, less what overlaps, and its own) + the gaps before
+  // it, where k is the milliseconds per unit of weight. The shape is done when the last one of them
+  // has ended, which is usually the last stroke, but a short stroke that begins while a long one is
+  // still going (the dot of the noon after its bowl) can end first: so k is the one that makes the
+  // stroke that ends last end at the total.
+  let weightBefore = 0
+  let gapsBefore = 0
+  let speed = Infinity
+  weights.forEach((w, i) => {
+    speed = Math.min(speed, (total - gapsBefore) / (weightBefore + w))
+    const join = joins[i]
+    if (join) {
+      weightBefore += (1 - join.overlap) * w
+      gapsBefore += join.gap
+    }
+  })
 
   let delay = 0
   const strokes = order.map((path, i): StrokePlan => {

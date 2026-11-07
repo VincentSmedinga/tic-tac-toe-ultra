@@ -50,8 +50,9 @@ export const nl = {
   'animations.off': 'Uit',
   'animations.reduced': 'Je apparaat vraagt om minder beweging: alleen zacht verschijnen',
 
-  // The names of the shapes are chosen by the person who drew them. They are written as they are
-  // said in the middle of a sentence; a capital is put on when one starts a sentence.
+  // The names of the first twelve shapes are chosen by the person who drew them; those of the twenty-
+  // four after them (omega to oog) are a first version by Claude that nobody has read yet. They are
+  // written as they are said in the middle of a sentence; a capital is put on when one starts a sentence.
   'shape.cross': 'kruis',
   'shape.circle': 'cirkel',
   'shape.square': 'vierkant',
@@ -64,6 +65,30 @@ export const nl = {
   'shape.fort': 'fort',
   'shape.waves': 'golven',
   'shape.goldbar': 'goudstaaf',
+  'shape.omega': 'omega',
+  'shape.psi': 'psi',
+  'shape.sigma': 'sigma',
+  'shape.pi': 'pi',
+  'shape.curl': 'krul',
+  'shape.person': 'mens',
+  'shape.middle': 'midden',
+  'shape.hangul': 'hangul',
+  'shape.bowl': 'kom',
+  'shape.ya': 'ja',
+  'shape.bowtie': 'strikje',
+  'shape.thorn': 'doorn',
+  'shape.pa': 'pa',
+  'shape.aleph': 'alef',
+  'shape.braille': 'braille',
+  'shape.ogham': 'ogham',
+  'shape.ankh': 'ankh',
+  'shape.infinity': 'oneindig',
+  'shape.triangle': 'driehoek',
+  'shape.moon': 'maan',
+  'shape.bolt': 'bliksem',
+  'shape.drop': 'druppel',
+  'shape.anchor': 'anker',
+  'shape.eye': 'oog',
   'player.withShape': '{name} ({shape})',
   'player.anonymous': 'Nieuwe speler',
   'player.you': 'jij',

@@ -19,7 +19,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** All twelve shapes, large and at the smallest sizes they are used at, with the marker each was drawn with and their names in every language (the unreviewed ones too, for the person who drew them to confirm). */
+/** All thirty-six shapes, large and at the smallest sizes they are used at, with the marker each was drawn with (or what it was taken from) and their names in every language (the unreviewed ones too, for the person who drew them to confirm). */
 export const Gallery: Story = {
   render: () => (
     <section className="guide" aria-labelledby="gallery-title">
@@ -33,7 +33,7 @@ export const Gallery: Story = {
         ))}
       </div>
       <div className="guide-shapes">
-        {SHAPES.map(({ id, marker }) => (
+        {SHAPES.map(({ id, marker, origin }) => (
           <figure key={id}>
             <ShapeIcon shape={id} size={80} />
             <div className="guide-shape-sizes">
@@ -47,7 +47,7 @@ export const Gallery: Story = {
                   {shapeNamesFor(language).name(id)}
                 </span>
               ))}
-              <small>{marker}</small>
+              <small>{marker ?? origin}</small>
             </figcaption>
           </figure>
         ))}
@@ -56,7 +56,7 @@ export const Gallery: Story = {
   ),
 }
 
-/** Every pair of shapes that can play against each other: twelve shapes make 66 pairs. */
+/** Every pair of shapes that can play against each other: thirty-six shapes make 630 pairs. */
 export const Pairs: Story = {
   render: () => {
     const nameOf = (id: ShapeId) => shapeNamesFor('nl').name(id)
@@ -115,6 +115,51 @@ export const Writing: Story = {
                     ? undefined
                     : {
                         plan: arrivalPlan(seed, 0, strokeLengths(id), isRing(id)),
+                        mode: motion,
+                      }
+                }
+              />
+            </figure>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setSeed((current) => current + 1)
+          }}
+        >
+          Schrijf opnieuw
+        </button>
+      </section>
+    )
+  },
+}
+
+/**
+ * Every shape, written the way it is when it is placed on the field, stroke by stroke: the same for
+ * the twelve drawn ones as for the twenty-four after them, whatever their strokes are (one long
+ * line, a bowl and its dot, five dots). Press the button to write them all again.
+ */
+export const WritingAll: Story = {
+  name: 'Alle vormen schrijven',
+  render: function Render() {
+    const [seed, setSeed] = useState(1)
+    const motion = useMotion()
+    return (
+      <section className="guide" aria-labelledby="writing-all-title">
+        <h2 id="writing-all-title">Alle vormen schrijven</h2>
+        <p className="guide-note">Elke vorm duurt even lang, ongeacht hoeveel streken hij heeft.</p>
+        <div className="guide-shapes">
+          {SHAPES.map(({ id }, index) => (
+            <figure key={id}>
+              <ShapeIcon
+                shape={id}
+                size={80}
+                arrival={
+                  motion === 'off'
+                    ? undefined
+                    : {
+                        plan: arrivalPlan(seed, index, strokeLengths(id), isRing(id)),
                         mode: motion,
                       }
                 }
