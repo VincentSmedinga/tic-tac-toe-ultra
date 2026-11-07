@@ -82,7 +82,7 @@ export const en: Dictionary = {
   'shape.infinity': 'infinity',
   'shape.triangle': 'triangle',
   'shape.moon': 'moon',
-  'shape.bolt': 'lightning',
+  'shape.bolt': 'bolt',
   'shape.drop': 'drop',
   'shape.anchor': 'anchor',
   'shape.eye': 'eye',
