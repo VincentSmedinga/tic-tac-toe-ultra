@@ -183,7 +183,7 @@ html[data-look='drawn'] .shape-choice {
 
 html[data-look='drawn'] .shape-choice {
   font-family: var(--font-body);
-  font-size: 1rem;
+  font-size: var(--shape-name-size);
 }
 
 html[data-look='drawn'] .shape-choice[aria-pressed='true'] {

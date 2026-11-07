@@ -126,7 +126,7 @@ html[data-look='calm'] .shape-choice {
 }
 
 html[data-look='calm'] .shape-choice {
-  font-size: 0.875rem;
+  font-size: var(--shape-name-size);
 }
 
 html[data-look='calm'] .shape-choice[aria-pressed='true'] {
