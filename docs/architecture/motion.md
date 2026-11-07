@@ -20,6 +20,8 @@ The decisions are in [docs/plan.md](../plan.md), Animations; the ideas are issue
 - `arrival.ts` is pure: a function of (seed, number of the move, lengths of the strokes from `shapes/length.ts`) into an `ArrivalPlan`.
 - A variant is never the one of the move before; the plan has the order, direction, delay and duration of every stroke.
 - Every shape takes the same time, `MIN_ARRIVAL_MS` to `MAX_ARRIVAL_MS` (0.8 to 1 second), shared out over its strokes by length, so one speed holds for all.
+- The time is that of the whole shape: a short stroke that begins while a long one is still going (the dot of the noon after its bowl) can end first, so the speed is worked out from the stroke that ends last (`arrivalPlan`, tested with a bowl and a dot).
+- Every shape is animated the same way, from its paths alone: a new shape needs no animation of its own, and `shapes.test.tsx` checks that every shape's strokes are all written.
 - The circle, the oval and the diamond are one line, written with the clock or against it; the square goes round from any of its sides either way. `isRing` in `shapes/closure.ts` says which shapes are rings.
 - `random.ts` is a seedable generator (`createRandom`, `seedFrom`).
 - `play.ts` plays a plan on a shape's SVG and returns what cancels it.

@@ -11,7 +11,8 @@ The product decisions are in [docs/plan.md](../plan.md), Decisions and Architect
 - `replayGame(config, moves)` and `stateAfter(state, count)` (`replay.ts`) read a stored game back and step through it.
 - The engine works for any field size, winning length and number of players (two to twelve).
 - The player of a game is the shape: the player id, the `player` of a move and the players of a stored game are shape ids (`cross`, `heart`, …).
-- `shared/shapes.ts` has the shape ids; `src/shapes/shapes.ts` has the names and drawings.
+- `shared/shapes.ts` has the shape ids (thirty-six; new ones go at the end); `src/shapes/shapes.ts` has the drawings and what each comes from, the dictionaries the names.
+- The number of players is limited by the room (`PLAYER_LIMITS`), not by the number of shapes.
 - The players `X` and `O` only occur in games and rooms stored before shapes could be chosen. They are read as the cross and the circle (`src/play/players.ts`, `upgradeRoom` in `server/room-logic.ts`).
 - `shared/room.ts` has the limits of a field and `isValidField`, which the room, the protocol and the field picker (`src/play/FieldPicker.tsx`) share.
 - `shared/protocol.ts` has every message and API shape as zod schemas, see [server.md](server.md).

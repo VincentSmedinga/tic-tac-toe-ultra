@@ -1,15 +1,18 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { arrivalPlan } from '../motion/arrival.ts'
 import { SHAPE_IDS } from '../../shared/shapes.ts'
 import { contrast, themes } from '../styles/tokens.ts'
 import { LANGUAGES } from '../i18n/language.ts'
+import { isRing } from './closure.ts'
+import { strokeLengths } from './length.ts'
 import { ShapeIcon } from './ShapeIcon.tsx'
 import { shapeNamesFor } from './names.ts'
 import { PATHS, SHAPES } from './shapes.ts'
 
 describe('the set of shapes', () => {
-  it('has the twelve shapes of the drawn sets, each once', () => {
-    expect(SHAPES.map(({ id }) => id)).toEqual([
+  it('has the twelve shapes of the drawn sets first, each once', () => {
+    expect(SHAPES.slice(0, 12).map(({ id }) => id)).toEqual([
       'cross',
       'circle',
       'square',
@@ -23,9 +26,22 @@ describe('the set of shapes', () => {
       'waves',
       'goldbar',
     ])
+    expect(SHAPES.slice(0, 12).every(({ marker }) => marker !== undefined)).toBe(true)
+  })
+
+  it('has twenty-four more after them, each with what it comes from', () => {
+    expect(SHAPES).toHaveLength(36)
+    expect(new Set(SHAPES.map(({ id }) => id)).size).toBe(36)
+    for (const shape of SHAPES.slice(12)) {
+      expect(shape.origin, shape.id).toBeTruthy()
+      expect(shape.marker, shape.id).toBeUndefined()
+    }
+  })
+
+  it('has a name in every language, and no two shapes with the same name', () => {
     for (const { id } of LANGUAGES) {
       const { name } = shapeNamesFor(id)
-      expect(new Set(SHAPES.map((shape) => name(shape.id))).size).toBe(12)
+      expect(new Set(SHAPES.map((shape) => name(shape.id))).size).toBe(36)
     }
   })
 
@@ -63,6 +79,21 @@ describe('ShapeIcon', () => {
     const icon = screen.getByRole('img', { name })
     expect(icon).toHaveStyle({ stroke: `var(--shape-${id})` })
     expect(icon.querySelectorAll('path')).toHaveLength(PATHS[id].length)
+  })
+
+  describe('when it arrives', () => {
+    afterEach(() => {
+      Reflect.deleteProperty(Element.prototype, 'animate')
+    })
+
+    it.each(SHAPES)('writes every stroke of the $id, one animation each', ({ id }) => {
+      const animate = vi.fn(() => ({ cancel: vi.fn() }) as unknown as Animation)
+      Object.defineProperty(Element.prototype, 'animate', { value: animate, configurable: true })
+      const plan = arrivalPlan(5, 1, strokeLengths(id), isRing(id))
+      render(<ShapeIcon shape={id} arrival={{ plan, mode: 'full' }} />)
+      expect(animate).toHaveBeenCalledTimes(PATHS[id].length)
+      expect(plan.strokes).toHaveLength(PATHS[id].length)
+    })
   })
 
   it('can be left out for screen readers when the text next to it says what it is', () => {
