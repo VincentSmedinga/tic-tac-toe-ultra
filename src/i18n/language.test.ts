@@ -25,11 +25,12 @@ afterEach(() => {
 })
 
 describe('the languages', () => {
-  it('are Dutch first, English and Frisian, each named in its own language', () => {
+  it('are Dutch first, then English, Frisian and Romanian, each named in its own language', () => {
     expect(LANGUAGES.map(({ id, name }) => [id, name])).toEqual([
       ['nl', 'Nederlands'],
       ['en', 'English'],
       ['fy', 'Frysk'],
+      ['ro', 'Română'],
     ])
     expect(DEFAULT_LANGUAGE).toBe('nl')
     expect(isLanguage('fy')).toBe(true)
@@ -37,18 +38,30 @@ describe('the languages', () => {
     expect(isLanguage(null)).toBe(false)
   })
 
-  it('are all read by a person who speaks them, and so all offered', () => {
-    expect(LANGUAGES.map(({ reviewed }) => reviewed)).toEqual([true, true, true])
+  it('are offered once a person who speaks them has read them: Romanian is not yet', () => {
+    expect(LANGUAGES.map(({ reviewed }) => reviewed)).toEqual([true, true, true, false])
     expect(offeredLanguages(false, 'nl').map(({ id }) => id)).toEqual(['nl', 'en', 'fy'])
+    expect(offeredLanguages(true, 'nl').map(({ id }) => id)).toEqual(['nl', 'en', 'fy', 'ro'])
+    expect(offeredLanguages(false, 'ro').map(({ id }) => id)).toEqual(['nl', 'en', 'fy', 'ro'])
   })
 
   describe('that nobody has read yet (a new one, say)', () => {
     // The registry as it will be when a language is added: written, but not read by a person.
-    const unread = [...LANGUAGES.slice(0, 2), { ...LANGUAGES[2], reviewed: false }] as const
+    const unread = [
+      LANGUAGES[0],
+      LANGUAGES[1],
+      { ...LANGUAGES[2], reviewed: false },
+      LANGUAGES[3],
+    ] as const
 
     it('are not offered, until the address asks for every language', () => {
       expect(offeredLanguages(false, 'nl', unread).map(({ id }) => id)).toEqual(['nl', 'en'])
-      expect(offeredLanguages(true, 'nl', unread).map(({ id }) => id)).toEqual(['nl', 'en', 'fy'])
+      expect(offeredLanguages(true, 'nl', unread).map(({ id }) => id)).toEqual([
+        'nl',
+        'en',
+        'fy',
+        'ro',
+      ])
     })
 
     it('keep the language in use in the list, so that it can be changed back', () => {
@@ -80,6 +93,11 @@ describe('following the browser', () => {
     expect(matchLanguage([])).toBe('nl')
   })
 
+  it('does not pick Romanian, which nobody has read yet', () => {
+    expect(matchLanguage(['ro-RO', 'en'])).toBe('en')
+    expect(matchLanguage(['ro'])).toBe('nl')
+  })
+
   it('picks Frisian for a browser that asks for it', () => {
     expect(matchLanguage(['fy-NL', 'en'])).toBe('fy')
     expect(matchLanguage(['fy'])).toBe('fy')
@@ -96,6 +114,11 @@ describe('the language of this device', () => {
   it('keeps a chosen Frisian', () => {
     saveLanguage('fy')
     expect(readLanguage(undefined, ['nl'])).toBe('fy')
+  })
+
+  it('keeps a chosen Romanian, even though the browser does not pick it', () => {
+    saveLanguage('ro')
+    expect(readLanguage(undefined, ['nl'])).toBe('ro')
   })
 
   it('ignores anything in storage that is not a language', () => {
@@ -117,6 +140,7 @@ describe('the locale for dates and numbers', () => {
     expect(localeOf('nl')).toBe('nl-NL')
     expect(localeOf('en')).toBe('en-GB')
     expect(localeOf('fy')).toBe('fy-NL')
+    expect(localeOf('ro')).toBe('ro-RO')
   })
 
   it('is Dutch where the browser does not know the language', () => {
@@ -171,6 +195,8 @@ describe('public/appearance.js, which sets the language before the first paint',
     [null, ['fy-NL', 'en']],
     ['en', ['nl']],
     ['fy', ['nl']],
+    ['ro', ['nl']],
+    [null, ['ro-RO', 'en']],
     ['nl', ['en']],
     ['xx', ['en']],
   ] as const)('does what the app does: saved %s, browser %j', (saved, tags) => {
@@ -200,12 +226,15 @@ describe('public/offline.html, the page of the service worker', () => {
     }
   })
 
-  it.each(['en', 'fy'] as const)('has the texts of %s in a script that reads the choice', (id) => {
-    for (const key of ['offline.title', 'offline.body', 'offline.retry'] as const) {
-      expect(page).toContain(DICTIONARIES[id][key] as string)
-    }
-    expect(page).toContain(STORAGE_KEY)
-  })
+  it.each(['en', 'fy', 'ro'] as const)(
+    'has the texts of %s in a script that reads the choice',
+    (id) => {
+      for (const key of ['offline.title', 'offline.body', 'offline.retry'] as const) {
+        expect(page).toContain(DICTIONARIES[id][key] as string)
+      }
+      expect(page).toContain(STORAGE_KEY)
+    },
+  )
 })
 
 describe('textFor', () => {

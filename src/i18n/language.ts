@@ -1,6 +1,6 @@
 /**
- * The languages of the game, which everyone chooses for themselves: Dutch first, then English and
- * Frisian. The choice is kept per device, like the look; the first time it follows the browser's
+ * The languages of the game, which everyone chooses for themselves: Dutch first, then English,
+ * Frisian and Romanian. The choice is kept per device, like the look; the first time it follows the browser's
  * languages (`navigator.languages`), and Dutch is what there is when it is none of ours.
  * public/appearance.js sets `<html lang>` and the title before the first paint; `applyLanguage`
  * keeps them up to date afterwards. Keep the two in sync (`language.test.ts` runs the script).
@@ -13,6 +13,7 @@ export const LANGUAGES = [
   { id: 'nl', name: 'Nederlands', locale: 'nl-NL', dir: 'ltr', reviewed: true },
   { id: 'en', name: 'English', locale: 'en-GB', dir: 'ltr', reviewed: true },
   { id: 'fy', name: 'Frysk', locale: 'fy-NL', dir: 'ltr', reviewed: true },
+  { id: 'ro', name: 'Română', locale: 'ro-RO', dir: 'ltr', reviewed: false },
 ] as const
 
 export type LanguageId = (typeof LANGUAGES)[number]['id']
