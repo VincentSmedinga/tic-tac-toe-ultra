@@ -86,6 +86,15 @@ describe('arrivalPlan', () => {
     }
   })
 
+  it('takes the time for the whole shape when a short stroke ends before the long one it overlaps', () => {
+    // A bowl and its dot: the dot may begin while the bowl is still being written, and end first.
+    for (let seed = 0; seed < 200; seed++) {
+      const plan = arrivalPlan(seed, seed % 9, [100, 6])
+      expect(end(plan)).toBeGreaterThanOrEqual(MIN_ARRIVAL_MS - 3)
+      expect(end(plan)).toBeLessThanOrEqual(MAX_ARRIVAL_MS + 3)
+    }
+  })
+
   it('does not draw a long stroke faster than a short one', () => {
     const lengths = [200, 50, 100]
     for (let seed = 0; seed < 100; seed++) {
