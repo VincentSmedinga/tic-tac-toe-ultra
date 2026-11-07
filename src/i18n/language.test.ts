@@ -79,6 +79,13 @@ describe('the languages', () => {
     expect(isPreview('?alle-talen=1&x=2')).toBe(true)
     expect(isPreview('')).toBe(false)
   })
+
+  it('are always offered on the preview of a pull request, and nowhere else', () => {
+    expect(isPreview('', 'tic-tac-toe-ultra-pr-90.v-smedinga.workers.dev')).toBe(true)
+    expect(isPreview('', 'tic-tac-toe-ultra.v-smedinga.workers.dev')).toBe(false)
+    expect(isPreview('', 'tic-tac-toe-ultra-styleguide-pr-90.v-smedinga.workers.dev')).toBe(false)
+    expect(isPreview('', 'localhost')).toBe(false)
+  })
 })
 
 describe('following the browser', () => {
