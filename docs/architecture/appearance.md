@@ -18,7 +18,7 @@ The decisions are in [docs/plan.md](../plan.md), Shapes and colours and Look and
 - `src/styles/look-shared.css` is the layer all looks share; `look-drawn.css`, `look-playful.css` and `look-calm.css` paint under `html[data-look=…]`.
 - Dark is `[data-scheme='dark']`, never a `prefers-color-scheme` query. `tokens.css` holds the colours of both schemes, and tests read them from there.
 - A part's own CSS sits above the looks only where a rule says so (`Replay.css`, `PlayMode.css`, the bottom of `Stats.css`).
-- The wallpaper is the twelve shapes drawn from the same paths; its loudness is a token of the look.
+- The wallpaper is all the shapes drawn from the same paths, in a tile of six rows of six (`PLACES` in `Wallpaper.tsx`, a bit off a grid and turned); its loudness is a token of the look.
 
 ## The top and the bottom of the screen on iOS
 
@@ -31,9 +31,13 @@ The decisions are in [docs/plan.md](../plan.md), Shapes and colours and Look and
 
 ## Shapes and colours
 
-- `src/shapes/shapes.ts` is the registry of the twelve shapes (id, Dutch name, the marker's name) and their drawings. `ShapeIcon` draws one in its own colour.
+- `src/shapes/shapes.ts` is the registry of the thirty-six shapes (the id, and the marker of the first twelve or what each of the other twenty-four is taken from) and their drawings. `ShapeIcon` draws one in its own colour.
+- A shape's paths use only M, L, C, Q, T and Z in absolute coordinates (`pathLength` in `length.ts` throws at any other), every stroke is more than 5 units long (`length.test.ts`), and strokes of one shape are kept apart so that they don't run together under the thick line.
+- A dot is a short stroke (about 6 units), never a zero-length one: it has to have a direction and a time to be written in.
+- The first twelve shapes keep their place in `SHAPE_IDS` and `SHAPES`: stored games and the default choice depend on it. New shapes go at the end.
 - Colours are tokens in `src/styles/tokens.css`, named after the shape (`--shape-cross`), with a lighter set for the dark theme.
-- `src/styles/palette.test.ts` (with `color.ts`) keeps every shape at 3:1 against the page, the twelve colours apart from each other (also for red-green colour blindness), colourful, and in the hue family of their marker.
+- `src/styles/palette.test.ts` (with `color.ts`) keeps every shape at 3:1 against the page, the thirty-six colours apart from each other (also for red-green colour blindness; the first twelve keep the wider minimum they had), colourful, in one band of lightness, and in the hue family of their marker (or, for the twenty-four without one, of the hue they were found at).
+- A new shape's colour is added to both sets in `tokens.css`, a hue window to the test, and a name to all three dictionaries; plan.md, Shapes and colours, says what the colours may vary in.
 - When you change a colour, run it: the failing message says which pair is too close.
 - The interface colours (`--line`, `--win`, `--focus`) are tokens too, with a contrast test.
 - Shapes are always drawn on `--page`; their contrast is tested against it.

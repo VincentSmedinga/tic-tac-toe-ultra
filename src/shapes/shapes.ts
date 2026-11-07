@@ -1,11 +1,24 @@
 import type { ShapeId } from '../../shared/shapes.ts'
 
+/** One shape of the set: its id and where its drawing comes from (a marker, or a script or a symbol). */
+export interface ShapeInfo {
+  readonly id: ShapeId
+  /** The marker the shape was drawn with on paper (docs/reference/shapes.png, shapes-2.png). */
+  readonly marker?: string
+  /** What the shape is taken from: a letter of an alphabet, or a symbol. */
+  readonly origin?: string
+}
+
 /**
- * The shapes a player can have: the sets drawn by hand (docs/reference/shapes.png has the first
- * seven, shapes-2.png adds the other five). A player is assigned one of these; the game engine
- * only knows the player's id. Their names are in the dictionaries (`shape.<id>`), chosen by the person who drew them.
+ * The shapes a player can have. The first twelve were drawn by hand (docs/reference/shapes.png has
+ * the first seven, shapes-2.png adds the other five), each with a marker. The other twenty-four
+ * were drawn on the same 64 × 64 field in the same thick, slightly wobbly line: most are a letter
+ * of an alphabet or a writing system (Greek, Japanese, Chinese, Korean, Arabic, Cyrillic, Runic,
+ * Devanagari, Hebrew, Braille, Ogham, an Egyptian hieroglyph), the rest are symbols. A player is
+ * assigned one of these; the game engine only knows the player's id. Their names are in the
+ * dictionaries (`shape.<id>`).
  */
-export const SHAPES = [
+export const SHAPES: readonly ShapeInfo[] = [
   { id: 'cross', marker: 'vivid red 4' },
   { id: 'circle', marker: 'royal blue 70' },
   { id: 'square', marker: 'grass green 47' },
@@ -18,7 +31,31 @@ export const SHAPES = [
   { id: 'fort', marker: 'prussian blue 69' },
   { id: 'waves', marker: 'orange 23' },
   { id: 'goldbar', marker: 'lemon yellow 35' },
-] as const
+  { id: 'omega', origin: 'Greek Ω, omega' },
+  { id: 'psi', origin: 'Greek Ψ, psi' },
+  { id: 'sigma', origin: 'Greek Σ, sigma' },
+  { id: 'pi', origin: 'Greek π, pi' },
+  { id: 'curl', origin: 'Japanese hiragana の, no' },
+  { id: 'person', origin: 'Chinese 人, person' },
+  { id: 'middle', origin: 'Chinese 中, middle' },
+  { id: 'hangul', origin: 'Korean hangul ㅎ, hieut' },
+  { id: 'bowl', origin: 'Arabic ن, noon' },
+  { id: 'ya', origin: 'Cyrillic Я, ya' },
+  { id: 'bowtie', origin: 'Runic ᛞ, dagaz' },
+  { id: 'thorn', origin: 'Runic ᚦ, thurisaz' },
+  { id: 'pa', origin: 'Devanagari प, pa' },
+  { id: 'aleph', origin: 'Hebrew א, aleph' },
+  { id: 'braille', origin: 'Braille dots' },
+  { id: 'ogham', origin: 'Ogham ᚋ, muin' },
+  { id: 'ankh', origin: 'Egyptian hieroglyph ☥, ankh' },
+  { id: 'infinity', origin: 'the sign for infinity ∞' },
+  { id: 'triangle', origin: 'a triangle' },
+  { id: 'moon', origin: 'a crescent moon' },
+  { id: 'bolt', origin: 'a lightning bolt' },
+  { id: 'drop', origin: 'a drop of water' },
+  { id: 'anchor', origin: 'an anchor' },
+  { id: 'eye', origin: 'an eye' },
+]
 
 /** The ids are shared with the room, which has to know which shapes exist (shared/shapes.ts). */
 export type { ShapeId }
@@ -59,6 +96,51 @@ export const PATHS: Record<ShapeId, readonly string[]> = {
     'M8 30 L18 18 L56 18 L46 30',
     'M46 30 L56 18 L56 42 L46 54',
   ],
+  // The two feet of the omega turn outwards, as a pen leaves them.
+  omega: [
+    'M7 55 L23 54 C13 47 9 37 9 28 C9 15 19 7 32 7 C45 7 56 15 56 28 C56 37 51 47 41 54 L57 55',
+  ],
+  psi: ['M11 9 C11 38 17 46 32 46 C47 46 53 38 53 9', 'M32 5 L33 59'],
+  sigma: ['M51 15 L51 10 L13 11 L35 32 L12 53 L53 52 L53 46'],
+  pi: [
+    'M7 17 C20 13 40 15 57 12',
+    'M22 16 C21 30 20 42 19 54',
+    'M43 14 C42 32 42 46 50 53 C53 55 56 54 57 52',
+  ],
+  // A spiral that starts inside and winds out: the turns stay far enough apart for a thick line.
+  curl: ['M32 32 C26 28 18 34 18 43 C18 56 38 60 49 50 C60 40 56 18 40 11 C28 6 14 12 9 25'],
+  person: ['M31 7 C31 28 23 44 9 55', 'M30 24 C34 38 44 49 57 55'],
+  middle: ['M10 19 L53 18 L53 43 L11 44 L11 16', 'M32 6 L31 59'],
+  hangul: [
+    'M32 4 L32 10',
+    'M12 16 L52 16',
+    'M32 26 C22 26 16 33 17 42 C18 52 28 58 38 56 C48 54 52 44 49 36 C46 28 40 26 33 27',
+  ],
+  // The dot of the noon is a short stroke too (see braille).
+  bowl: ['M9 16 C9 40 20 54 32 54 C46 54 56 40 55 16', 'M30 26 L33 31'],
+  ya: ['M50 7 L51 57', 'M50 8 L27 8 C13 8 13 31 27 31 L50 31', 'M28 32 L12 57'],
+  bowtie: ['M10 11 L11 54 L53 10 L54 55 L10 11 L13 17'],
+  thorn: ['M20 5 L21 59', 'M21 18 L45 32 L21 46'],
+  pa: ['M7 14 L57 15', 'M44 15 L45 57', 'M44 30 C30 26 16 29 17 40 C18 51 33 50 44 43'],
+  aleph: ['M51 8 L14 56', 'M12 9 L12 22 L27 29', 'M52 55 L52 42 L37 35'],
+  // Five dots of a braille cell (the middle one on the left is left out), each a short stroke, so that it still has a direction to be written in.
+  braille: ['M22 10 L23 16', 'M22 48 L23 54', 'M42 10 L43 16', 'M42 29 L43 35', 'M42 48 L43 54'],
+  // A stem with three slanting strokes across it.
+  ogham: ['M5 33 L59 32', 'M12 20 L22 46', 'M26 18 L36 46', 'M40 18 L50 46'],
+  ankh: ['M31 58 L32 34 C19 30 17 8 32 7 C47 8 46 30 33 34', 'M11 37 L53 36'],
+  infinity: ['M32 32 C38 20 56 16 57 32 C58 48 40 44 32 32 C25 20 7 16 7 32 C7 48 24 44 31 31'],
+  triangle: ['M32 8 L58 53 L7 55 L28 14'],
+  moon: ['M44 8 C20 8 8 24 10 38 C13 54 34 62 52 50 C34 50 25 34 30 20 C33 13 38 10 44 8'],
+  // One line with two bends: a closed outline would fill up under a thick line.
+  bolt: ['M42 5 L18 34 L34 33 L23 60'],
+  drop: ['M32 6 C26 18 12 32 12 43 C12 54 22 59 32 59 C43 59 52 54 52 43 C52 32 38 18 32 6 L29 12'],
+  anchor: [
+    'M32 5 C24 5 24 19 32 19 C40 19 40 5 32 5',
+    'M32 19 L32 58',
+    'M20 29 L44 29',
+    'M9 36 C11 52 22 58 32 57 C42 58 53 52 55 36',
+  ],
+  eye: ['M5 32 C18 14 46 14 59 32 C46 50 18 50 5 32', 'M30 28 L33 34'],
 }
 
 export function shapeById(id: ShapeId) {

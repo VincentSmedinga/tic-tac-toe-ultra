@@ -1,7 +1,7 @@
 /*
  * Design tokens. Each shape has a colour of its own, and the colour belongs to the shape, so the
  * tokens are named after the shape. The colours start from the markers the shapes were drawn with
- * (docs/reference/shapes.png and shapes-2.png, named in the comments), but telling twelve shapes
+ * (docs/reference/shapes.png and shapes-2.png, named in the comments), but telling shapes
  * apart at a glance and being colourful come first: every colour stays in the hue family of its
  * marker (a window of degrees, kept by src/styles/palette.test.ts) and was then moved to be as far
  * from all the others as it can be. How far, how colourful and how they look with red-green colour
@@ -33,6 +33,33 @@
   --shape-fort: #134dc7; /* prussian blue 69 */
   --shape-waves: #ba6319; /* orange 23 */
   --shape-goldbar: #ab8c1a; /* lemon yellow 35 */
+
+  /* The twenty-four shapes after the drawn twelve have no marker: their colours were found by a
+     search, see docs/plan.md, Shapes and colours. */
+  --shape-middle: #d82860;
+  --shape-person: #984042;
+  --shape-triangle: #e15950;
+  --shape-bowtie: #6d3527;
+  --shape-ankh: #8a5d3c;
+  --shape-bolt: #9f7d4d;
+  --shape-pi: #696316;
+  --shape-ogham: #638830;
+  --shape-sigma: #385b11;
+  --shape-bowl: #2e6451;
+  --shape-eye: #4e9d88;
+  --shape-anchor: #477a88;
+  --shape-drop: #2e75b5;
+  --shape-hangul: #32598a;
+  --shape-omega: #2d1dc0;
+  --shape-moon: #8580d2;
+  --shape-aleph: #6b3fe2;
+  --shape-psi: #835ed8;
+  --shape-infinity: #5b3079;
+  --shape-pa: #8c1fb2;
+  --shape-braille: #791363;
+  --shape-ya: #8f3f74;
+  --shape-thorn: #db2ba2;
+  --shape-curl: #b5518e;
 }
 
 :root[data-scheme='dark'] {
@@ -56,4 +83,29 @@
   --shape-fort: #7e72f8;
   --shape-waves: #f69a27;
   --shape-goldbar: #edca3c;
+
+  --shape-middle: #f99993;
+  --shape-person: #dc788f;
+  --shape-triangle: #efccbe;
+  --shape-bowtie: #c85759;
+  --shape-ankh: #ce7a49;
+  --shape-bolt: #eeb477;
+  --shape-pi: #b7983f;
+  --shape-ogham: #38cf44;
+  --shape-sigma: #7b8922;
+  --shape-bowl: #5cbc7d;
+  --shape-eye: #7dd7a7;
+  --shape-anchor: #69b2bd;
+  --shape-drop: #2fa7df;
+  --shape-hangul: #4f87ad;
+  --shape-omega: #347de6;
+  --shape-moon: #d0c3ea;
+  --shape-aleph: #8488df;
+  --shape-psi: #cba5ea;
+  --shape-infinity: #a56ad1;
+  --shape-pa: #cf2fe5;
+  --shape-braille: #d72a9b;
+  --shape-ya: #d162bd;
+  --shape-thorn: #fab2d0;
+  --shape-curl: #e290bf;
 }

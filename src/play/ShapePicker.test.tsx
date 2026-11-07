@@ -4,12 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { ShapePicker } from './ShapePicker.tsx'
 
 describe('ShapePicker', () => {
-  it('offers all twelve shapes, by their Dutch names, in a group with the label', () => {
+  it('offers all thirty-six shapes, by their Dutch names, in a group with the label', () => {
     render(<ShapePicker label="Kies je vorm" value={null} onChange={vi.fn()} />)
     expect(screen.getByRole('group', { name: 'Kies je vorm' })).toBeVisible()
-    expect(screen.getAllByRole('button')).toHaveLength(12)
+    expect(screen.getAllByRole('button')).toHaveLength(36)
     expect(screen.getByRole('button', { name: 'kruis' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'goudstaaf' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'omega' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'anker' })).toBeVisible()
   })
 
   it('passes on the shape that is tapped', async () => {

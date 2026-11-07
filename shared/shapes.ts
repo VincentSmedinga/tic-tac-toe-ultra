@@ -1,5 +1,6 @@
 /**
- * The ids of the twelve shapes a player can have (the drawings, names and colours are in src/shapes/).
+ * The ids of the thirty-six shapes a player can have: the twelve drawn by hand first, then twenty-four
+ * more, many of them from the world's alphabets (the drawings, names and colours are in src/shapes/).
  * They are shared because the room has to know which ones exist, and because the shape is what a
  * player is in the game: the engine's player id is the id of the shape.
  */
@@ -16,6 +17,30 @@ export const SHAPE_IDS = [
   'fort',
   'waves',
   'goldbar',
+  'omega',
+  'psi',
+  'sigma',
+  'pi',
+  'curl',
+  'person',
+  'middle',
+  'hangul',
+  'bowl',
+  'ya',
+  'bowtie',
+  'thorn',
+  'pa',
+  'aleph',
+  'braille',
+  'ogham',
+  'ankh',
+  'infinity',
+  'triangle',
+  'moon',
+  'bolt',
+  'drop',
+  'anchor',
+  'eye',
 ] as const
 
 export type ShapeId = (typeof SHAPE_IDS)[number]

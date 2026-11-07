@@ -3,7 +3,8 @@ import type { Dictionary } from './types.ts'
 /**
  * The texts of the game in Frisian (Frysk): a first version written by Claude, read through by a
  * native speaker (Vincent, 2026-10-18), who found nothing to change; the registry in language.ts
- * therefore has Frysk as `reviewed`. The names of the twelve shapes were confirmed by Vincent too.
+ * therefore has Frysk as `reviewed`. The names of the first twelve shapes were confirmed by Vincent too; those of the
+ * twenty-four after them (omega to each) are a first version by Claude that nobody has read yet.
  */
 export const fy: Dictionary = {
   'app.title': 'Bûter, Tsiis en Aaien Ultra',
@@ -61,6 +62,30 @@ export const fy: Dictionary = {
   'shape.fort': 'fort',
   'shape.waves': 'weagen',
   'shape.goldbar': 'goudbaar',
+  'shape.omega': 'omega',
+  'shape.psi': 'psi',
+  'shape.sigma': 'sigma',
+  'shape.pi': 'pi',
+  'shape.curl': 'krul',
+  'shape.person': 'minske',
+  'shape.middle': 'midden',
+  'shape.hangul': 'hangul',
+  'shape.bowl': 'kom',
+  'shape.ya': 'ja',
+  'shape.bowtie': 'strikje',
+  'shape.thorn': 'toarn',
+  'shape.pa': 'pa',
+  'shape.aleph': 'alef',
+  'shape.braille': 'braille',
+  'shape.ogham': 'ogham',
+  'shape.ankh': 'ankh',
+  'shape.infinity': 'ûneinich',
+  'shape.triangle': 'trijehoek',
+  'shape.moon': 'moanne',
+  'shape.bolt': 'bliksem',
+  'shape.drop': 'drip',
+  'shape.anchor': 'anker',
+  'shape.eye': 'each',
   'player.withShape': '{name} ({shape})',
   'player.anonymous': 'Nije spiler',
   'player.you': 'do',

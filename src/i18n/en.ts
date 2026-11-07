@@ -2,7 +2,9 @@ import type { Dictionary } from './types.ts'
 
 /**
  * The texts of the game in English, written by Claude and read through by Vincent, who confirmed
- * them on 2026-10-18, together with the names of the twelve shapes in all three languages.
+ * them on 2026-10-18, together with the names of the first twelve shapes in all three languages.
+ * The names of the twenty-four shapes after them (omega to eye) are a first version by Claude that
+ * nobody has read yet, in all three languages.
  */
 export const en: Dictionary = {
   'app.title': 'Tic-Tac-Toe Ultra',
@@ -60,6 +62,30 @@ export const en: Dictionary = {
   'shape.fort': 'fort',
   'shape.waves': 'waves',
   'shape.goldbar': 'gold bar',
+  'shape.omega': 'omega',
+  'shape.psi': 'psi',
+  'shape.sigma': 'sigma',
+  'shape.pi': 'pi',
+  'shape.curl': 'curl',
+  'shape.person': 'person',
+  'shape.middle': 'middle',
+  'shape.hangul': 'hangul',
+  'shape.bowl': 'bowl',
+  'shape.ya': 'ya',
+  'shape.bowtie': 'bow tie',
+  'shape.thorn': 'thorn',
+  'shape.pa': 'pa',
+  'shape.aleph': 'aleph',
+  'shape.braille': 'braille',
+  'shape.ogham': 'ogham',
+  'shape.ankh': 'ankh',
+  'shape.infinity': 'infinity',
+  'shape.triangle': 'triangle',
+  'shape.moon': 'moon',
+  'shape.bolt': 'lightning',
+  'shape.drop': 'drop',
+  'shape.anchor': 'anchor',
+  'shape.eye': 'eye',
   'player.withShape': '{name} ({shape})',
   'player.anonymous': 'New player',
   'player.you': 'you',
