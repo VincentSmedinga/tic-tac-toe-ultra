@@ -21,8 +21,12 @@ Read this before changing a workflow, a deploy or how a pull request shows scree
 - The app is a Cloudflare Worker with static assets (`wrangler.jsonc`, the Worker in `server/index.ts`, built with `@cloudflare/vite-plugin`).
 - The `Deploy` job puts the build that `Checks` made on Cloudflare with `wrangler deploy`.
 - A ready pull request is a Worker of its own, `tic-tac-toe-ultra-pr-<number>`; CI comments its address on the pull request, and `preview-cleanup.yml` deletes it when the pull request closes.
-- `main` is production, `tic-tac-toe-ultra`.
-- After a deploy it checks that the page and `/api/health` answer.
+- `main` is production, `tic-tac-toe-ultra`, at https://tttu.nl and its workers.dev address.
+- Only the deploy of `main` adds the domain, from the repository variable `PRODUCTION_DOMAIN`, as a custom domain in `routes` of the built `wrangler.json`; `wrangler.jsonc` has no `routes`, so a preview never claims it.
+- With the variable empty, production is only on workers.dev.
+- The token needs Zone · Workers Routes · Edit and Zone · DNS · Edit for tttu.nl for the domain, next to Account · Workers Scripts · Edit.
+- The DNS of tttu.nl is on Cloudflare; the registration is at mijn.host, and so are the name servers it points to and DNSSEC.
+- After a deploy it checks that the page and `/api/health` answer on the workers.dev address, and for production on the domain too, for up to five minutes, because a new certificate takes a while.
 - It is skipped, with a notice, for a draft, for a fork, and until the one-time setup in the README is done.
 - `public/_headers` holds the security headers; a full Content-Security-Policy comes with the rooms.
 

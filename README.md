@@ -22,7 +22,7 @@ pnpm dev
 
 ## Deploys
 
-The app is a Cloudflare Worker with static assets: the Worker answers `/api/*` (the rooms of the game come here), the rest is the built app. CI deploys it: every ready pull request gets a Worker of its own as a preview (`https://tic-tac-toe-ultra-pr-<number>.<subdomain>.workers.dev`, commented on the pull request, deleted when the pull request closes), and a merge to `main` goes to production at `https://tic-tac-toe-ultra.<subdomain>.workers.dev`. The style guide (Storybook) is deployed the same way, as its own Worker with nothing of the game in it: `https://tic-tac-toe-ultra-styleguide.<subdomain>.workers.dev` for `main`, and a preview per ready pull request. A draft pull request runs the checks only. Until the one-time setup below is done, the deploy is skipped with a notice.
+The app is a Cloudflare Worker with static assets: the Worker answers `/api/*` (the rooms of the game come here), the rest is the built app. CI deploys it: every ready pull request gets a Worker of its own as a preview (`https://tic-tac-toe-ultra-pr-<number>.<subdomain>.workers.dev`, commented on the pull request, deleted when the pull request closes), and a merge to `main` goes to production at https://tttu.nl (and still at `https://tic-tac-toe-ultra.<subdomain>.workers.dev`). The style guide (Storybook) is deployed the same way, as its own Worker with nothing of the game in it: `https://tic-tac-toe-ultra-styleguide.<subdomain>.workers.dev` for `main`, and a preview per ready pull request. A draft pull request runs the checks only. Until the one-time setup below is done, the deploy is skipped with a notice.
 
 ## One-time setup
 
@@ -34,5 +34,17 @@ Done once, by Vincent, in about a quarter of an hour. It uses the Cloudflare acc
 4. If the secrets don't exist yet: `gh secret set CLOUDFLARE_API_TOKEN` and `gh secret set CLOUDFLARE_ACCOUNT_ID` (the account id is in the dashboard, under Workers & Pages).
 5. Run the CI workflow on `main` again (Actions, CI, Run workflow) to deploy production as a Worker.
 6. When production answers at its new address, delete the old Pages project `tic-tac-toe-ultra` (dashboard, Workers & Pages, the project, Settings, Delete): its address, tic-tac-toe-ultra.pages.dev, stops working then.
+
+### The domain tttu.nl
+
+Done once, by Vincent. tttu.nl is registered at mijn.host; its DNS moves to Cloudflare, because a Worker only gets a custom domain in a zone that is on Cloudflare. Previews stay on workers.dev.
+
+1. **DNSSEC off.** In the customer panel of mijn.host (not DirectAdmin), turn DNSSEC off for tttu.nl, so that the DS record at SIDN goes. Wait an hour (its TTL), until `dig +short tttu.nl DS @ns1.dns.nl` answers nothing. Name servers that change while the DS record is there make the domain unreachable.
+2. **Add the domain to Cloudflare.** In the [dashboard](https://dash.cloudflare.com), Add a domain, `tttu.nl`, the Free plan. Delete the A and AAAA records it imports for `tttu.nl` and `www` (they point at mijn.host's web server). Keep the MX and SPF records, as DNS only, only if tttu.nl should have mail at mijn.host.
+3. **Name servers.** In the customer panel of mijn.host, set the name servers of tttu.nl to the two Cloudflare shows. Cloudflare mails when the zone is active (for .nl usually within an hour).
+4. **www.** In Cloudflare, add a DNS record `AAAA www 100::`, proxied, and a redirect rule from the template "Redirect from WWW to root" (Rules, Redirect Rules), so that `www.tttu.nl` goes to `tttu.nl`.
+5. **The token.** Give `tic-tac-toe-ultra GitHub deploy` Zone · Workers Routes · Edit and Zone · DNS · Edit, for the zone tttu.nl only.
+6. **The variable.** `gh variable set PRODUCTION_DOMAIN --body tttu.nl`, then run the CI workflow on `main` again. The deploy waits until https://tttu.nl/api/health answers.
+7. **DNSSEC on again**, now at Cloudflare: DNS, Settings, Enable DNSSEC, and put the DS record it shows in the customer panel of mijn.host.
 
 The deploy of a pull request that comes from a fork is always skipped: forks can't use the secrets.
