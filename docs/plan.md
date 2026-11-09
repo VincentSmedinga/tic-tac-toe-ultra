@@ -42,6 +42,7 @@ A game where many players play noughts and crosses together on one big field, ea
   The first to join is the one who made it and holds the first seat; the seats are named `X`, `O`, `3`, `4`, … in order.
   The game starts by itself when every seat is taken and every person has chosen a shape, and the one who made the room can also start it earlier, with the people who are there, when there are at least two and all have chosen (`start` message, "Start met 3 spelers").
   From then on nobody new can sit down (`game-started`); the people who play stay for the rematches, with the seats that were left over staying empty.
+  The one exception is a room made from a house, whose owner can invite a guest to sit down for the next round (see House).
   The turn order is the order of the seats, and every round the starting player moves one seat on.
   **When somebody doesn't come back the game waits for them**, as it does with two; a way to go on without them is for later.
   **The name is "Boter, Kaas en Eieren Ultra"** from here on, with capitals, as one title: "Ultra" is part of the name and not a label next to it, since it is what the game is once it can be played with many people on a bigger field.
@@ -99,6 +100,7 @@ A game where many players play noughts and crosses together on one big field, ea
   A player chooses while waiting for the other one, or after joining (`choose` message, validated in the room: the shape must exist and be free); a join may carry the shape this browser had last time (kept in localStorage), which the room takes when it is free, so nothing has to be chosen twice.
   The game starts when every seat has a shape, and **the room waits for as long as it takes**: there is no default, because someone who is there can choose.
   From then on **the shapes are fixed for the evening**: a rematch keeps them, and another shape means another room (a choice between rounds would need a pause after every game; it can come later).
+  In a room made from a house nobody chooses: the room takes the shapes the people have in the house, which are unique there (see House).
   In a game on one screen each player chooses too, with the cross and the circle ready, and "Andere vormen" after a game goes back to choosing.
   Games that were stored (or rooms in progress) before this, with the players X and O, are read as the cross and the circle.
 
@@ -199,6 +201,7 @@ Issue #88. Before it, a room could not be left: closing the page or going to the
 - **A room nobody is in is deleted at once**, as soon as no game waits for the archive and no socket is open; a room in which somebody is left lives its 24 hours as before. The code is free again.
 - **Leaving forgets the room on this device** (`clearLastRoom`), and only this way: the header link and the menu keep the offer on the start screen.
 - **A question first in a room, none on one screen.** Leaving is for good and the button sits next to "Nog een keer"; "Blijven" has the focus. On `/samen` nothing is kept anywhere, so "Stoppen" goes to the start.
+- **From a room made from a house, "Stoppen" goes back to the house** and not to the start (see House).
 - **No leaving without a connection.** The button is disabled while the connection isn't open; there is no local-only "leave" that would promise a freed seat it can't deliver.
 - **The game stays.** The archive is not touched: a game is kept when its round ends, with the tokens of everyone who played it, and stays in their lists.
 - **The words:** Stoppen (nl), Leave (en), Ophâlde (fy), and "{names} heeft/hebben het spel verlaten." in place of "even weg" for a seat that left.
@@ -337,6 +340,34 @@ The game is offered in Dutch (the first language, and the one that is written fi
 - **Adding a language.** One line in `LANGUAGES` (id, name in its own language, locale, `dir`, `reviewed: false` until a person who speaks it has read it, then `true` in `LANGUAGES` and in `public/appearance.js`), one dictionary file with the same keys (plural categories as `Intl.PluralRules(locale)` says), the title in `public/appearance.js` and the three offline texts in `public/offline.html`; `dictionaries.test.ts`, `language.test.ts` and the TypeScript compiler check the rest.
   Fonts for other scripts, right-to-left layout and the CSS that depends on a language's length are for #71.
 
+## House
+
+Issue #94, milestone `6 · Huis`. A room is found with its code, and that is all: the people who want to play have to agree somewhere else who makes a room and pass the code on, and nobody can see what the others are playing. A house is the lobby of other games: one place for an evening, where the family sees who is there, starts games together and watches them. Decided with Vincent on 2026-11-08; built in #95 (the house itself), #96 (inviting) and #97 (the games and guests).
+
+- **A house is made like a room, and entered with its code or its link** (`/huis/<code>`). Its name is "Huis" (nl), "House" (en) and "Hûs" (fy).
+  It sits on the start screen, "Maak een huis" and "Naar een huis", not as a fifth place in the menu: four tabs already fill a quarter of a phone each.
+- **The code of a house is digits, six of them.** A room's code is four consonants, so one field on the start screen can tell which of the two a code is, and the person typing it doesn't have to say.
+  Six and not four, because a house shows the names of the family and four digits are quickly guessed; six are still easy to read out.
+- **A house has no owner.** Everybody in it may do the same, and nobody can be put out of it; that can come later, if a family ever needs it.
+- **A house lives while people are in it, and a day after the last one left**, as a room lives a day after its last move. A browser that comes back is the same person (its token, as in a room).
+- **In a house a name is required.** The field holds the name of last time (as the settings page has it), and can be changed every time someone comes in.
+  Two people with the same name may both be there: the second is shown with " (2)" after it, the third " (3)".
+- **The shape is chosen in the house, and is unique in it.** Two people in one house never have the same shape, so everybody is a name and a shape from the moment they come in, and a room made from the house takes the shapes it already has: nothing is chosen twice.
+  The shape of last time is taken when it is free.
+- **Who is there** is the people who have the house open, each free, invited, playing or watching. Someone who closes the app is gone from the list after a few seconds; coming back is coming in again.
+- **Inviting.** You choose one or more free players and the field (the same choices as on the start screen) and send it.
+  The invited see "<naam> nodigt je uit" with "Speel mee" and "Nee, dank je".
+  Next to everyone invited to the same room the house shows how they answered: "Ook uitgenodigd", "Uitnodiging geaccepteerd" or "Uitnodiging afgeslagen".
+- **An invitation lapses after one minute.** The room starts when everybody has answered or the minute is over, with those who said yes, as soon as there are at least two (the one who invited counts); with fewer the invitation is off, and the one who invited is told.
+  The house makes the room and sends everybody to it: nobody types a code. The one who invited holds the first seat and is the room's owner.
+- **After a game "Stoppen" goes back to the house**, not to the start screen, for a room made from a house. A rematch in the same room works as in any room.
+- **The games of a house** are the games started from it, and only those (a room made with a code elsewhere is not in it): the ones being played, with the names, the shapes and the field, and the ones that were played, with who won and a link to watch it again.
+- **A guest watches a game live and can't play.** The players see "<naam> kijkt mee" and a row of the guests by the board, and the house shows the guest as watching.
+  A guest can leave at any time, also in the middle of a round, and is never in the stored game or the statistics.
+- **The owner of a room can invite a guest for the next round.** A guest who says yes gets a seat from the next round on, with the shape it has in the house (which is free, since the shapes of a house are unique), up to the room's twelve.
+  This is the one way to sit down in a room whose game has started (see the seats under Decisions).
+- **Not now:** a chat, sending emoji, and putting someone out of a house.
+
 ## Milestones
 
 - **0 · Foundation:** project, CI, deploy.
@@ -345,6 +376,7 @@ The game is offered in Dutch (the first language, and the one that is written fi
 - **3 · Big field:** configurable size and winning length, three or more players, choosing a shape, a field that grows with the game.
 - **4 · History:** finished games are saved and can be watched again move by move, from a list of played games or a link. The engine already keeps the moves (milestone 1), so this builds on that.
 - **5 · Polish:** the game in more languages (see Languages), animations, and the rest of what makes it nicer to play.
+- **6 · Huis:** a house where the family meets: who is there, inviting players to a game, the games of the house and watching as a guest (see House).
 
 ## Open questions
 
