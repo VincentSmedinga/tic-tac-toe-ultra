@@ -238,6 +238,9 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       PRODUCTION: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+      # The domain of production (tttu.nl), a repository variable that is set once the domain's zone
+      # is active on Cloudflare and the token may change it (README, One-time setup). Empty: no domain.
+      DOMAIN: ${{ vars.PRODUCTION_DOMAIN }}
     steps:
       - name: Check the one-time setup
         id: setup
@@ -276,6 +279,11 @@ jobs:
           WRANGLER_OUTPUT_FILE_PATH: ${{ runner.temp }}/wrangler-output.json
         run: |
           config=$(ls dist/*/wrangler.json)
+          # Only production claims the domain: a preview is a Worker of its own and stays on workers.dev.
+          if [ "$PRODUCTION" = "true" ] && [ -n "$DOMAIN" ]; then
+            jq --arg domain "$DOMAIN" '.routes = [{ "pattern": $domain, "custom_domain": true }]' "$config" > "$config.tmp"
+            mv "$config.tmp" "$config"
+          fi
           pnpm exec wrangler deploy --config "$config" --name "$WORKER"
           url=$(jq -r 'select(.type == "deploy") | .targets[0]' "$WRANGLER_OUTPUT_FILE_PATH" | tail -n 1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
@@ -300,6 +308,23 @@ jobs:
             sleep 10
           done
           echo "::error title=The page doesn't answer::$URL fails after the deploy"
+          exit 1
+      # A new domain needs a certificate first, which can take a few minutes, so this waits longer than
+      # the check above, which looks at the workers.dev address that wrangler prints.
+      - name: Check that the domain answers
+        if: steps.setup.outputs.ready == 'true' && env.PRODUCTION == 'true' && env.DOMAIN != ''
+        run: |
+          URL="https://$DOMAIN"
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --max-time 20 "$URL/kamer/BCDF" | grep -qF "content=\"$URL/og-image.png\"" &&
+              curl --fail --silent --max-time 20 "$URL/api/health" | jq -e '.status == "ok"' > /dev/null; then
+              echo "The domain answers: $URL" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "The domain doesn't answer yet (try $attempt of 30)"
+            sleep 10
+          done
+          echo "::error title=The domain doesn't answer::$URL fails after the deploy"
           exit 1
       - name: Put the preview address on the pull request
         if: steps.setup.outputs.ready == 'true' && github.event_name == 'pull_request'

@@ -37,6 +37,12 @@ A game where many players play noughts and crosses together on one big field, ea
 - **One Cloudflare Worker for the site and the rooms.** A Durable Object can't live in a Pages project, so the app is a Worker with static assets (`wrangler.jsonc`, `@cloudflare/vite-plugin`) and the rooms are Durable Objects in the same Worker; `pnpm dev` runs all of it in one Vite server.
   A pull request's preview is a Worker of its own (`tic-tac-toe-ultra-pr-<number>`, with its own rooms), deleted when the pull request closes, because Workers with Durable Objects get no version-URL previews.
   SQLite-backed Durable Objects run on the Workers Free plan; the WebSocket Hibernation API keeps an idle room free of duration charges.
+- **Production is at tttu.nl, on the Worker (#36).** Decided with Vincent on 2026-11-09.
+  The domain is registered at mijn.host, which has a shared hosting package (DirectAdmin, Node.js through Passenger, MariaDB) for it, but the game doesn't run there: its rooms are Durable Objects that hold WebSockets, and that package keeps no process running and is not sure to pass WebSockets on, so it would mean a new server, rooms that a restart loses, and no preview per pull request.
+  So the registration stays at mijn.host and the DNS of tttu.nl moves to Cloudflare (free plan): a Worker only gets a custom domain in a zone that is active on Cloudflare.
+  Only the deploy of `main` claims the domain (the repository variable `PRODUCTION_DOMAIN`); a preview stays on workers.dev, and the workers.dev address of production keeps working.
+  `www.tttu.nl` is a redirect rule of Cloudflare to `tttu.nl`, not the Worker's: files that don't wake the Worker would be served on `www` too.
+  The cost: an installed app and its data (the list of played games, the seat in a room, the settings) are tied to the address, so who installed the workers.dev address keeps that one until they install tttu.nl.
 - **Players can type an optional name.** It is kept in the room, not in an account; the shape is what identifies a player.
 - **A room has two to twelve seats.** Whoever makes the room says how many (two when nobody says), together with the field (`players` in the body of `POST /api/rooms`, validated with the field).
   The first to join is the one who made it and holds the first seat; the seats are named `X`, `O`, `3`, `4`, … in order.
