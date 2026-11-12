@@ -16,6 +16,7 @@ export const PAGE_PATHS = [
   '/instellingen',
   '/spel/*',
   '/kamer/*',
+  '/huis/*',
 ]
 
 /** The picture that goes with a link (scripts/icons.ts); index.html names it with this address. */

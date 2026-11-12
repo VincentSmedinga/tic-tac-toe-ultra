@@ -19,6 +19,7 @@ const askedFor: string[] = []
 
 function fakeEnv(existing: readonly string[] = []) {
   const rooms = new Set(existing)
+  const houses = new Set(existing)
   const forwarded: Request[] = []
   const fields: unknown[] = []
   const seatCounts: number[] = []
@@ -35,6 +36,20 @@ function fakeEnv(existing: readonly string[] = []) {
         list: (token: string, limit: number, before?: string) => {
           listed.push({ token, limit, before })
           return Promise.resolve({ games: [] })
+        },
+      }),
+    },
+    HOUSE: {
+      getByName: (code: string) => ({
+        create: (newCode: string) => {
+          if (houses.has(code)) return Promise.resolve(false)
+          houses.add(newCode)
+          return Promise.resolve(true)
+        },
+        exists: () => Promise.resolve(houses.has(code)),
+        fetch: (request: Request) => {
+          forwarded.push(request)
+          return Promise.resolve(new Response(null, { status: houses.has(code) ? 200 : 404 }))
         },
       }),
     },
@@ -55,7 +70,7 @@ function fakeEnv(existing: readonly string[] = []) {
       }),
     },
   } as unknown as Env
-  return { env, rooms, forwarded, listed, fields, seatCounts }
+  return { env, rooms, houses, forwarded, listed, fields, seatCounts }
 }
 
 const call = (path: string, init?: RequestInit, env = fakeEnv().env) =>
@@ -309,5 +324,41 @@ describe('GET /api/stats/mine', () => {
     expect((await ask(TOKEN, { method: 'POST' })).status).toBe(405)
     expect((await call('/api/stats/mine/more')).status).toBe(404)
     expect((await call('/api/stats/other')).status).toBe(404)
+  })
+})
+
+describe('a house', () => {
+  it('is made with a code of six digits, and then exists', async () => {
+    const { env, houses } = fakeEnv()
+    const response = await call('/api/houses', { method: 'POST' }, env)
+    expect(response.status).toBe(201)
+    const { code } = await response.json<{ code: string }>()
+    expect(code).toMatch(/^\d{6}$/)
+    expect(houses.has(code)).toBe(true)
+    const asked = await call(`/api/houses/${code}`, undefined, env)
+    expect(await asked.json()).toEqual({ exists: true })
+  })
+
+  it('is only made with POST, and only asked about with GET', async () => {
+    expect((await call('/api/houses')).status).toBe(405)
+    expect((await call('/api/houses/123456', { method: 'POST' })).status).toBe(405)
+  })
+
+  it('says when a house does not exist, and knows no code that is not six digits', async () => {
+    expect(await (await call('/api/houses/123456')).json()).toEqual({ exists: false })
+    for (const path of ['/api/houses/12345', '/api/houses/BCDF', '/api/houses/123456/other']) {
+      expect((await call(path)).status, path).toBe(404)
+    }
+  })
+
+  it('hands its WebSocket to the house, from this site only', async () => {
+    const { env, forwarded } = fakeEnv(['123456'])
+    const upgrade = { Upgrade: 'websocket' }
+    expect((await call('/api/houses/123456/ws', undefined, env)).status).toBe(426)
+    const elsewhere = { ...upgrade, Origin: 'https://evil.example' }
+    expect((await call('/api/houses/123456/ws', { headers: elsewhere }, env)).status).toBe(403)
+    const here = { ...upgrade, Origin: 'https://game.example' }
+    expect((await call('/api/houses/123456/ws', { headers: here }, env)).status).toBe(200)
+    expect(forwarded).toHaveLength(1)
   })
 })
