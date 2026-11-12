@@ -21,7 +21,7 @@ import {
 import { CopyLink } from './CopyLink.tsx'
 import { Link } from './Link.tsx'
 import { OnlineGame } from './OnlineGame.tsx'
-import { navigate, roomPath } from './route.ts'
+import { housePath, navigate, roomPath } from './route.ts'
 import { useScrollToTop } from './scroll.ts'
 import { isStarted } from './started.ts'
 import { browserDeps, useRoom } from './useRoom.ts'
@@ -87,10 +87,11 @@ export function RoomPage({ code, deps = browserDeps }: RoomPageProps) {
       clearLastRoom()
   }, [seated, problem, code])
 
-  // The room has let this player go: back to the start.
+  // The room has let this player go: back to the house it was made from, or to the start.
+  const house = state?.house
   useEffect(() => {
-    if (problem === 'you-left') navigate('/')
-  }, [problem])
+    if (problem === 'you-left') navigate(house === undefined ? '/' : housePath(house))
+  }, [problem, house])
 
   // Remember the shape this browser plays with, so that the next room asks for it again.
   const myShape = state?.players.find((player) => player.id === state.you)?.shape

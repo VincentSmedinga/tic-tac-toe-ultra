@@ -231,6 +231,19 @@ describe('RoomPage', () => {
       expect(getLastRoom()).toBeNull()
     })
 
+    it('goes back to the house when the room was made from one', async () => {
+      window.history.replaceState(null, '', '/kamer/BCDF')
+      const user = userEvent.setup()
+      const { socket } = await connected()
+      socket.receive({ ...state(players), moves: won, house: '123456' })
+      await user.click(await screen.findByRole('button', { name: 'Stoppen' }))
+      await user.click(screen.getByRole('button', { name: 'Stoppen' }))
+      socket.closeFromServer(4410)
+      await waitFor(() => {
+        expect(window.location.pathname).toBe('/huis/123456')
+      })
+    })
+
     it('stays in the room when the question is answered with Blijven', async () => {
       const user = userEvent.setup()
       const { socket } = await connected()

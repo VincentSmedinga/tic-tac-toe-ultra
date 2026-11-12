@@ -227,6 +227,25 @@ export const ro: Dictionary = {
   'house.person.free': 'liber',
   'house.person.playing': 'joacă',
   'house.person.watching': 'se uită',
+  'house.person.inviting': 'invită',
+  'house.person.invited': 'invitat',
+  'house.answer.open': 'invitat și el',
+  'house.answer.yes': 'a acceptat invitația',
+  'house.answer.no': 'a refuzat invitația',
+  'house.invite.title': 'Începe un joc',
+  'house.invite.who': 'Cine joacă?',
+  'house.invite.nobodyFree': 'Nimeni nu e liber acum să fie invitat.',
+  'house.invite.needShape': 'Alege-ți mai întâi forma, apoi îi poți invita pe ceilalți.',
+  'house.invite.button': 'Invită',
+  'house.invite.pickSomeone': 'Alege cine joacă.',
+  'house.invited.title': '{name} te invită',
+  'house.invited.body': 'La un joc pe {field}. Ai un minut să răspunzi.',
+  'house.invited.yes': 'Joacă',
+  'house.invited.no': 'Nu, mulțumesc',
+  'house.waiting':
+    'Se așteaptă răspunsul tuturor. După un minut jocul începe cu cei care au spus da.',
+  'house.playing.title': 'Joci un joc',
+  'house.playing.link': 'Mergi la jocul tău',
 
   'problem.unknownRoom':
     'Această cameră nu există (sau nu mai există). Verifică codul sau fă o cameră nouă.',
@@ -247,6 +266,10 @@ export const ro: Dictionary = {
   'problem.houseShapeTaken': 'Altcineva din casă are deja forma aceea. Alege alta.',
   'problem.houseUnreachable':
     'Casa nu poate fi contactată chiar acum. Verifică conexiunea și încearcă din nou.',
+  'problem.houseNotFree': 'Cineva tocmai a fost invitat sau joacă. Alege din nou.',
+  'problem.noInvitation': 'Invitația s-a terminat deja.',
+  'problem.invitationOff': 'Nu joacă nimeni: invitația a expirat.',
+  'problem.noRoom': 'Camera nu a putut fi făcută. Invită-i din nou.',
   'problem.generic': 'Ceva nu a mers bine. Te rugăm să încerci din nou.',
   'problem.left': 'Ai părăsit acest joc, așa că nu mai poți intra înapoi.',
 
