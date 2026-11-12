@@ -26,6 +26,7 @@
     { id: 'nl', title: 'Boter, Kaas en Eieren Ultra', reviewed: true },
     { id: 'en', title: 'Tic-Tac-Toe Ultra', reviewed: true },
     { id: 'fy', title: 'Bûter, Tsiis en Aaien Ultra', reviewed: true },
+    { id: 'ro', title: 'X și 0 Ultra', reviewed: false },
   ]
   let chosen = languages[0]
   try {

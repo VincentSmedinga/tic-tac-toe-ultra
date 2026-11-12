@@ -1,6 +1,6 @@
 /**
- * The languages of the game, which everyone chooses for themselves: Dutch first, then English and
- * Frisian. The choice is kept per device, like the look; the first time it follows the browser's
+ * The languages of the game, which everyone chooses for themselves: Dutch first, then English,
+ * Frisian and Romanian. The choice is kept per device, like the look; the first time it follows the browser's
  * languages (`navigator.languages`), and Dutch is what there is when it is none of ours.
  * public/appearance.js sets `<html lang>` and the title before the first paint; `applyLanguage`
  * keeps them up to date afterwards. Keep the two in sync (`language.test.ts` runs the script).
@@ -13,6 +13,7 @@ export const LANGUAGES = [
   { id: 'nl', name: 'Nederlands', locale: 'nl-NL', dir: 'ltr', reviewed: true },
   { id: 'en', name: 'English', locale: 'en-GB', dir: 'ltr', reviewed: true },
   { id: 'fy', name: 'Frysk', locale: 'fy-NL', dir: 'ltr', reviewed: true },
+  { id: 'ro', name: 'Română', locale: 'ro-RO', dir: 'ltr', reviewed: false },
 ] as const
 
 export type LanguageId = (typeof LANGUAGES)[number]['id']
@@ -55,9 +56,19 @@ export function offeredLanguages(
   return languages.filter(({ id, reviewed }) => reviewed || preview || id === current)
 }
 
-/** Whether the address asks for every language, to read the ones that are not ready. */
-export function isPreview(search: string = window.location.search): boolean {
-  return new URLSearchParams(search).has(PREVIEW_PARAMETER)
+/** The Worker of a pull request's preview, `tic-tac-toe-ultra-pr-<number>` (docs/architecture/ops.md). */
+const PULL_REQUEST_PREVIEW = /^tic-tac-toe-ultra-pr-\d+\./
+
+/**
+ * Whether to offer every language, to read the ones that are not ready: when the address asks for
+ * it, and always on a pull request's preview, so that a language that waits for a reader can be
+ * tried there without knowing the parameter.
+ */
+export function isPreview(
+  search: string = window.location.search,
+  hostname: string = window.location.hostname,
+): boolean {
+  return new URLSearchParams(search).has(PREVIEW_PARAMETER) || PULL_REQUEST_PREVIEW.test(hostname)
 }
 
 /** The first of the browser's languages that we have ("nl-BE" is Dutch), or Dutch. */
