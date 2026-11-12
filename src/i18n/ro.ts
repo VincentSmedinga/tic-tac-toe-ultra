@@ -144,7 +144,8 @@ export const ro: Dictionary = {
   'field.inARow.other': '{row} la rând',
 
   'start.badCode': 'Acesta nu este un cod valid. Cere din nou codul de la cine a făcut camera.',
-  'start.codeLength': 'Un cod are {length} litere, fără vocale.',
+  'start.codeKinds':
+    'O cameră are un cod de patru litere fără vocale, o casă un cod de șase cifre.',
   'start.noSuchRoom': 'Camera aceea nu există. Verifică codul.',
   'start.searchFailed':
     'Nu a mers să căutăm camera chiar acum. Te rugăm să încerci din nou peste puțin timp.',
@@ -164,8 +165,22 @@ export const ro: Dictionary = {
   'start.create.adjust': 'Schimbă',
   'start.create.button': 'Cameră nouă',
   'start.join.title': 'Intră cu un cod',
-  'start.join.code': 'Codul camerei',
+  'start.join.code': 'Codul camerei sau al casei',
   'start.join.button': 'Intră',
+  'start.badHouseCode':
+    'Acesta nu este un cod valid pentru o casă. Cere din nou codul de la cineva din casă.',
+  'start.noSuchHouse': 'Casa aceea nu există. Verifică codul.',
+  'start.searchHouseFailed':
+    'Nu a mers să căutăm casa chiar acum. Te rugăm să încerci din nou peste puțin timp.',
+  'start.resumeHouse.title': 'Ai fost într-o casă',
+  'start.resumeHouse.body': 'Casa {code} mai există. Întoarce-te și vezi cine e acolo.',
+  'start.resumeHouse.link': 'Înapoi în casa {code}',
+  'start.house.title': 'O casă pentru familie',
+  'start.house.body':
+    'Într-o casă vezi cine e acolo. Primești un cod de șase cifre pe care îl dai celorlalți.',
+  'start.house.button': 'Fă o casă',
+  'start.house.failed':
+    'Nu a mers să facem o casă chiar acum. Te rugăm să încerci din nou peste puțin timp.',
   'start.local.title': 'Împreună pe un singur ecran',
 
   'room.title': 'Cameră',
@@ -196,6 +211,23 @@ export const ro: Dictionary = {
   'room.lost.connecting': 'Ne reconectăm…',
   'room.lost.broken': 'Conexiunea s-a pierdut. Se încearcă din nou.',
   'room.lost.retry': 'Reconectează-te acum',
+  'house.title': 'Casă',
+  'house.code': 'Cod {digits}',
+  'house.share': 'Dă acest cod sau acest link celor pe care îi vrei alături:',
+  'house.connecting': 'Ne conectăm la casă…',
+  'house.enter.title': 'Cine ești?',
+  'house.enter.body': 'Intri în casa {code}. Ceilalți îți văd numele.',
+  'house.enter.name': 'Numele tău',
+  'house.enter.nameNeeded': 'Scrie-ți numele, ca ceilalți să vadă cine ești.',
+  'house.enter.button': 'Intră',
+  'house.people': 'Cine e aici',
+  'house.alone': 'Deocamdată ești singur. Dă codul celorlalți.',
+  'house.pickShape': 'Alege-ți forma',
+  'house.person.number': '{name} ({number})',
+  'house.person.free': 'liber',
+  'house.person.playing': 'joacă',
+  'house.person.watching': 'se uită',
+
   'problem.unknownRoom':
     'Această cameră nu există (sau nu mai există). Verifică codul sau fă o cameră nouă.',
   'problem.roomFull': 'Această cameră este plină: toate locurile sunt ocupate.',
@@ -209,6 +241,12 @@ export const ro: Dictionary = {
   'problem.shapeNeeded': 'Alege mai întâi o formă.',
   'problem.shapeTaken': 'Celălalt jucător are deja forma aceea. Alege alta.',
   'problem.shapeLocked': 'Jocul a început deja: nu îți mai poți schimba forma.',
+  'problem.unknownHouse':
+    'Această casă nu există (sau nu mai există). Verifică codul sau fă o casă nouă.',
+  'problem.houseFull': 'Această casă e plină: fiecare formă e deja a cuiva.',
+  'problem.houseShapeTaken': 'Altcineva din casă are deja forma aceea. Alege alta.',
+  'problem.houseUnreachable':
+    'Casa nu poate fi contactată chiar acum. Verifică conexiunea și încearcă din nou.',
   'problem.generic': 'Ceva nu a mers bine. Te rugăm să încerci din nou.',
   'problem.left': 'Ai părăsit acest joc, așa că nu mai poți intra înapoi.',
 

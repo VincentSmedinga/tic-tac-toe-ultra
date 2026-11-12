@@ -9,17 +9,20 @@
   // The app is the static files of `pnpm build`; the Worker answers /api/* and the pages of the
   // app, the rest goes to the files, with the page itself for any address the app handles in the
   // browser.
-  // Two Durable Object classes, both with SQLite storage, which the free plan has too: a room of
-  // the game, and the archive, one object that keeps the finished games of all rooms.
+  // Three Durable Object classes, all with SQLite storage, which the free plan has too: a room of
+  // the game, the archive, one object that keeps the finished games of all rooms, and a house,
+  // where the family meets (docs/architecture/house.md).
   "durable_objects": {
     "bindings": [
       { "name": "ROOM", "class_name": "Room" },
       { "name": "ARCHIVE", "class_name": "Archive" },
+      { "name": "HOUSE", "class_name": "House" },
     ],
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["Room"] },
     { "tag": "v2", "new_sqlite_classes": ["Archive"] },
+    { "tag": "v3", "new_sqlite_classes": ["House"] },
   ],
   // The Worker also answers the pages of the app (PAGE_PATHS in server/page.ts), to put the full
   // address of the picture of a link in them; page.test.ts keeps the two lists equal.
@@ -35,6 +38,7 @@
       "/instellingen",
       "/spel/*",
       "/kamer/*",
+      "/huis/*",
     ],
   },
 }

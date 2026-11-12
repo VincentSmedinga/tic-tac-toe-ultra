@@ -145,7 +145,8 @@ export const nl = {
 
   'start.badCode':
     'Dat is geen geldige code. Vraag de code opnieuw aan degene die de kamer maakte.',
-  'start.codeLength': 'Een code heeft {length} letters, zonder klinkers.',
+  'start.codeKinds':
+    'Een kamer heeft een code van vier letters zonder klinkers, een huis een code van zes cijfers.',
   'start.noSuchRoom': 'Die kamer bestaat niet. Controleer de code.',
   'start.searchFailed': 'Het zoeken naar de kamer lukt nu niet. Probeer het zo nog eens.',
   'start.resume.title': 'Je speelt nog mee',
@@ -164,8 +165,20 @@ export const nl = {
   'start.create.adjust': 'Aanpassen',
   'start.create.button': 'Nieuwe kamer',
   'start.join.title': 'Meedoen met een code',
-  'start.join.code': 'Code van de kamer',
+  'start.join.code': 'Code van de kamer of het huis',
   'start.join.button': 'Meedoen',
+  'start.badHouseCode':
+    'Dat is geen geldige code voor een huis. Vraag de code opnieuw aan iemand in het huis.',
+  'start.noSuchHouse': 'Dat huis bestaat niet. Controleer de code.',
+  'start.searchHouseFailed': 'Het zoeken naar het huis lukt nu niet. Probeer het zo nog eens.',
+  'start.resumeHouse.title': 'Je was in een huis',
+  'start.resumeHouse.body': 'Huis {code} is er nog. Ga terug en zie wie er is.',
+  'start.resumeHouse.link': 'Terug naar huis {code}',
+  'start.house.title': 'Een huis voor de familie',
+  'start.house.body':
+    'In een huis zie je wie er is. Je krijgt een code van zes cijfers die je aan de anderen geeft.',
+  'start.house.button': 'Maak een huis',
+  'start.house.failed': 'Het maken van een huis lukt nu niet. Probeer het zo nog eens.',
   'start.local.title': 'Samen op één scherm',
 
   'room.title': 'Kamer',
@@ -194,6 +207,23 @@ export const nl = {
   'room.lost.connecting': 'Opnieuw verbinden…',
   'room.lost.broken': 'De verbinding is verbroken. Er wordt opnieuw geprobeerd.',
   'room.lost.retry': 'Nu opnieuw verbinden',
+  'house.title': 'Huis',
+  'house.code': 'Code {digits}',
+  'house.share': 'Geef deze code of deze link aan wie je erbij wilt hebben:',
+  'house.connecting': 'Verbinden met het huis…',
+  'house.enter.title': 'Wie ben je?',
+  'house.enter.body': 'Je gaat naar huis {code}. De anderen zien je naam.',
+  'house.enter.name': 'Je naam',
+  'house.enter.nameNeeded': 'Vul je naam in, zodat de anderen zien wie je bent.',
+  'house.enter.button': 'Kom binnen',
+  'house.people': 'Wie er is',
+  'house.alone': 'Je bent nog alleen. Geef de code aan de anderen.',
+  'house.pickShape': 'Kies je vorm',
+  'house.person.number': '{name} ({number})',
+  'house.person.free': 'vrij',
+  'house.person.playing': 'speelt',
+  'house.person.watching': 'kijkt mee',
+
   // What the server's error codes (shared/protocol.ts) are called; the server itself has no words.
   'problem.unknownRoom':
     'Deze kamer bestaat niet (meer). Controleer de code, of maak een nieuwe kamer.',
@@ -208,6 +238,12 @@ export const nl = {
   'problem.shapeNeeded': 'Kies eerst een vorm.',
   'problem.shapeTaken': 'Die vorm heeft de ander al. Kies een andere.',
   'problem.shapeLocked': 'Het spel is al begonnen: je vorm kun je nu niet meer veranderen.',
+  'problem.unknownHouse':
+    'Dit huis bestaat niet (meer). Controleer de code, of maak een nieuw huis.',
+  'problem.houseFull': 'Dit huis is vol: elke vorm is al van iemand.',
+  'problem.houseShapeTaken': 'Die vorm heeft iemand anders in het huis al. Kies een andere.',
+  'problem.houseUnreachable':
+    'Het huis is nu niet te bereiken. Controleer je verbinding en probeer het opnieuw.',
   'problem.generic': 'Er ging iets mis. Probeer het opnieuw.',
   'problem.left': 'Je hebt dit spel verlaten, dus je kunt er niet meer in terug.',
 

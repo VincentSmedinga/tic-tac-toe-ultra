@@ -142,7 +142,8 @@ export const fy: Dictionary = {
 
   'start.badCode':
     'Dat is gjin jildige koade. Freegje de koade opnij oan wa’t de keamer makke hat.',
-  'start.codeLength': 'In koade hat {length} letters, sûnder klinkers.',
+  'start.codeKinds':
+    'In keamer hat in koade fan fjouwer letters sûnder klinkers, in hûs in koade fan seis sifers.',
   'start.noSuchRoom': 'Dy keamer bestiet net. Kontrolearje de koade.',
   'start.searchFailed': 'It sykjen nei de keamer slagget no net. Besykje it sa noch ris.',
   'start.resume.title': 'Do spilest noch mei',
@@ -161,8 +162,20 @@ export const fy: Dictionary = {
   'start.create.adjust': 'Oanpasse',
   'start.create.button': 'Nije keamer',
   'start.join.title': 'Meidwaan mei in koade',
-  'start.join.code': 'Koade fan de keamer',
+  'start.join.code': 'Koade fan de keamer of it hûs',
   'start.join.button': 'Meidwaan',
+  'start.badHouseCode':
+    'Dat is gjin jildige koade foar in hûs. Freegje de koade opnij oan ien yn it hûs.',
+  'start.noSuchHouse': 'Dat hûs bestiet net. Kontrolearje de koade.',
+  'start.searchHouseFailed': 'It sykjen nei it hûs slagget no net. Besykje it sa noch ris.',
+  'start.resumeHouse.title': 'Do wiest yn in hûs',
+  'start.resumeHouse.body': 'Hûs {code} is der noch. Gean werom en sjoch wa’t der is.',
+  'start.resumeHouse.link': 'Werom nei hûs {code}',
+  'start.house.title': 'In hûs foar de famylje',
+  'start.house.body':
+    'Yn in hûs sjochst wa’t der is. Do krijst in koade fan seis sifers dy’tst oan de oaren joust.',
+  'start.house.button': 'Meitsje in hûs',
+  'start.house.failed': 'It meitsjen fan in hûs slagget no net. Besykje it sa noch ris.',
   'start.local.title': 'Tegearre op ien skerm',
 
   'room.title': 'Keamer',
@@ -191,6 +204,23 @@ export const fy: Dictionary = {
   'room.lost.connecting': 'Opnij ferbine…',
   'room.lost.broken': 'De ferbining is ferbrutsen. Der wurdt opnij besocht.',
   'room.lost.retry': 'No opnij ferbine',
+  'house.title': 'Hûs',
+  'house.code': 'Koade {digits}',
+  'house.share': 'Jou dizze koade of dizze link oan wa’tst derby ha wolst:',
+  'house.connecting': 'Ferbine mei it hûs…',
+  'house.enter.title': 'Wa bisto?',
+  'house.enter.body': 'Do giest nei hûs {code}. De oaren sjogge dyn namme.',
+  'house.enter.name': 'Dyn namme',
+  'house.enter.nameNeeded': 'Folje dyn namme yn, sadat de oaren sjogge wa’tst bist.',
+  'house.enter.button': 'Kom deryn',
+  'house.people': 'Wa’t der is',
+  'house.alone': 'Do bist noch allinnich. Jou de koade oan de oaren.',
+  'house.pickShape': 'Kies dyn foarm',
+  'house.person.number': '{name} ({number})',
+  'house.person.free': 'frij',
+  'house.person.playing': 'spilet',
+  'house.person.watching': 'sjocht mei',
+
   'problem.unknownRoom':
     'Dizze keamer bestiet net (mear). Kontrolearje de koade, of meitsje in nije keamer.',
   'problem.roomFull': 'Dizze keamer sit fol: alle plakken binne beset.',
@@ -204,6 +234,12 @@ export const fy: Dictionary = {
   'problem.shapeNeeded': 'Kies earst in foarm.',
   'problem.shapeTaken': 'Dy foarm hat de oare al. Kies in oare.',
   'problem.shapeLocked': 'It spultsje is al begûn: dyn foarm kinst no net mear feroarje.',
+  'problem.unknownHouse':
+    'Dit hûs bestiet net (mear). Kontrolearje de koade, of meitsje in nij hûs.',
+  'problem.houseFull': 'Dit hûs is fol: elke foarm is al fan ien.',
+  'problem.houseShapeTaken': 'Dy foarm hat in oar yn it hûs al. Kies in oare.',
+  'problem.houseUnreachable':
+    'It hûs is no net te berikken. Kontrolearje dyn ferbining en besykje it opnij.',
   'problem.generic': 'Der gie wat mis. Besykje it opnij.',
   'problem.left': 'Do hast dit spultsje ferlitten, dus do kinst der net mear yn werom.',
 

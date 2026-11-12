@@ -30,7 +30,7 @@ async function startGame(browser: Browser, preset?: RegExp) {
   await anna.getByRole('button', { name: 'kruis', exact: true }).click()
 
   const bo = await newPlayer(browser, 'Bo')
-  await bo.getByLabel('Code van de kamer').fill(code)
+  await bo.getByLabel('Code van de kamer of het huis').fill(code)
   await bo.getByRole('button', { name: 'Meedoen' }).click()
   await bo.getByRole('button', { name: 'cirkel', exact: true }).click()
 
@@ -110,7 +110,7 @@ test('a player whose connection drops is shown as away, and comes back by themse
   await anna.getByRole('button', { name: 'kruis', exact: true }).click()
 
   const bo = await newPlayer(browser, 'Bo')
-  await bo.getByLabel('Code van de kamer').fill(code)
+  await bo.getByLabel('Code van de kamer of het huis').fill(code)
   await bo.getByRole('button', { name: 'Meedoen' }).click()
   await bo.getByRole('button', { name: 'cirkel', exact: true }).click()
   await expect(bo.getByRole('group', { name: 'Speelveld' })).toBeVisible()
@@ -151,14 +151,14 @@ test('a player who goes to the start screen finds the way back to the same room 
 test('a third player is told the room is full', async ({ browser }) => {
   const { code } = await startGame(browser)
   const third = await newPlayer(browser, 'Cas')
-  await third.getByLabel('Code van de kamer').fill(code)
+  await third.getByLabel('Code van de kamer of het huis').fill(code)
   await third.getByRole('button', { name: 'Meedoen' }).click()
   await expect(third.getByRole('alert')).toContainText('Deze kamer zit vol')
 })
 
 test('a code that does not exist is refused on the start screen', async ({ browser }) => {
   const player = await newPlayer(browser, 'Anna')
-  await player.getByLabel('Code van de kamer').fill('BCDF')
+  await player.getByLabel('Code van de kamer of het huis').fill('BCDF')
   await player.getByRole('button', { name: 'Meedoen' }).click()
   await expect(player.getByRole('alert')).toContainText('Die kamer bestaat niet')
 })
@@ -256,7 +256,7 @@ test('players choose their own shapes, which are kept for the evening and the ne
   await expect(anna.getByText('Anna (ster) – jij')).toBeVisible()
 
   const bo = await newPlayer(browser, 'Bo')
-  await bo.getByLabel('Code van de kamer').fill(code)
+  await bo.getByLabel('Code van de kamer of het huis').fill(code)
   await bo.getByRole('button', { name: 'Meedoen' }).click()
 
   // The shape of Anna is hers: Bo can't take it, and sees whose it is, and the game waits for Bo.
@@ -348,7 +348,7 @@ test('three people play in a room of four seats, started by the one who made it'
     ['Cas', 'ster'],
   ] as const) {
     const page = await newPlayer(browser, name)
-    await page.getByLabel('Code van de kamer').fill(code)
+    await page.getByLabel('Code van de kamer of het huis').fill(code)
     await page.getByRole('button', { name: 'Meedoen' }).click()
     await page.getByRole('button', { name: shape, exact: true }).click()
     players.push(page)
@@ -369,7 +369,7 @@ test('three people play in a room of four seats, started by the one who made it'
 
   // A fourth person who comes now is told that the game has started.
   const late = await newPlayer(browser, 'Dirk')
-  await late.getByLabel('Code van de kamer').fill(code)
+  await late.getByLabel('Code van de kamer of het huis').fill(code)
   await late.getByRole('button', { name: 'Meedoen' }).click()
   await expect(late.getByRole('alert')).toContainText('al begonnen')
 
@@ -484,7 +484,7 @@ test('three people play on after one has left, with the shapes of the two who ar
     ['Cas', 'ster'],
   ] as const) {
     const page = await newPlayer(browser, name)
-    await page.getByLabel('Code van de kamer').fill(code)
+    await page.getByLabel('Code van de kamer of het huis').fill(code)
     await page.getByRole('button', { name: 'Meedoen' }).click()
     await page.getByRole('button', { name: shape, exact: true }).click()
     players.push(page)

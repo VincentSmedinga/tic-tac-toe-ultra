@@ -7,14 +7,17 @@ import {
   roomCodeSchema,
   tokenSchema,
 } from '../shared/protocol.ts'
+import { houseCodeSchema } from '../shared/house-protocol.ts'
 import { CLASSIC_FIELD, DEFAULT_PLAYERS } from '../shared/room.ts'
 import type { FieldSettings } from '../shared/room.ts'
 import { ARCHIVE_NAME } from './archive.ts'
 import type { Env } from './env.ts'
+import { newHouseCode } from './house-code.ts'
 import { isPage, servePage } from './page.ts'
 import { newRoomCode } from './room-code.ts'
 
 export { Archive } from './archive.ts'
+export { House } from './house.ts'
 export { Room } from './room.ts'
 
 /** How often a new room code is tried before giving up: a clash is rare, 160,000 codes are free. */
@@ -31,6 +34,9 @@ const STATS_MAX_AGE = 30
  *                            without one it is classic 3×3 for two
  *   GET  /api/rooms/:code    answers { exists }
  *   GET  /api/rooms/:code/ws the WebSocket of the room, which is a Durable Object
+ *   POST /api/houses         make a house, answers { code }, six digits
+ *   GET  /api/houses/:code   answers { exists }
+ *   GET  /api/houses/:code/ws the WebSocket of the house, which is a Durable Object
  *   GET  /api/games/:id      a finished game as it was kept, for anyone who has the id
  *   GET  /api/games          the games of the browser whose token is in the X-Player-Token header
  *                            (never in the address), newest first, ?before=<next> and ?limit=<n>
@@ -48,6 +54,7 @@ export default {
     if (parts[1] === 'stats' && parts.length === 2) return getStats(request, env)
     if (parts[1] === 'stats' && parts[2] === 'mine' && parts.length === 3)
       return getOwnStats(request, env)
+    if (parts[1] === 'houses') return houses(parts, request, env)
     if (parts[1] !== 'rooms') return notFound()
 
     if (parts.length === 2) {
@@ -65,19 +72,50 @@ export default {
     }
 
     if (parts.length === 4 && parts[3] === 'ws') {
-      if (request.headers.get('Upgrade') !== 'websocket') {
-        return new Response('Expected a WebSocket', { status: 426 })
-      }
-      // A browser says which site opened the socket; only this site may, or any page could use ours.
-      const origin = request.headers.get('Origin')
-      if (origin !== null && new URL(origin).host !== url.host) {
-        return new Response('Wrong origin', { status: 403 })
-      }
-      return room.fetch(request)
+      return refusedSocket(request) ?? room.fetch(request)
     }
     return notFound()
   },
 } satisfies ExportedHandler<Env>
+
+/**
+ * Why a request for a WebSocket is refused, or null when it may go on: it must ask for one, and a
+ * browser says which site opened the socket; only this site may, or any page could use ours.
+ */
+function refusedSocket(request: Request): Response | null {
+  if (request.headers.get('Upgrade') !== 'websocket') {
+    return new Response('Expected a WebSocket', { status: 426 })
+  }
+  const origin = request.headers.get('Origin')
+  if (origin !== null && new URL(origin).host !== new URL(request.url).host) {
+    return new Response('Wrong origin', { status: 403 })
+  }
+  return null
+}
+
+/** /api/houses: make one, ask whether one exists, or open its WebSocket. */
+async function houses(parts: string[], request: Request, env: Env): Promise<Response> {
+  if (parts.length === 2) {
+    if (request.method !== 'POST') return methodNotAllowed('POST')
+    for (let attempt = 0; attempt < CREATE_ATTEMPTS; attempt++) {
+      const code = newHouseCode()
+      if (await env.HOUSE.getByName(code).create(code)) {
+        return Response.json({ code }, { status: 201 })
+      }
+    }
+    return Response.json({ error: 'no-free-code' }, { status: 503 })
+  }
+
+  const code = houseCodeSchema.safeParse(parts[2])
+  if (!code.success) return notFound()
+  const house = env.HOUSE.getByName(code.data)
+  if (parts.length === 3) {
+    if (request.method !== 'GET') return methodNotAllowed('GET')
+    return Response.json({ exists: await house.exists() })
+  }
+  if (parts.length === 4 && parts[3] === 'ws') return refusedSocket(request) ?? house.fetch(request)
+  return notFound()
+}
 
 async function getGame(parts: string[], request: Request, env: Env): Promise<Response> {
   if (parts.length === 2) return listGames(request, env)

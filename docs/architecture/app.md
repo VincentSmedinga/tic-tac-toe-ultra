@@ -5,7 +5,7 @@ The decisions are in [docs/plan.md](../plan.md), Decisions and Scrolling between
 
 ## Screens and the router
 
-- `src/online/route.ts` and `Link.tsx` are a minimal router on `history.pushState`: `/` the start screen, `/samen` the game on one screen, `/kamer/<code>` a room, `/spellen`, `/spel/<id>`, `/statistieken`, `/instellingen`.
+- `src/online/route.ts` and `Link.tsx` are a minimal router on `history.pushState`: `/` the start screen, `/samen` the game on one screen, `/kamer/<code>` a room, `/huis/<code>` a house (see [house.md](house.md)), `/spellen`, `/spel/<id>`, `/statistieken`, `/instellingen`.
 - The addresses stay Dutch in every language.
 - A new address goes in the router, in `PAGE_PATHS` and in `run_worker_first`, see [pwa.md](pwa.md).
 - `StartScreen.tsx` is about one thing: "Nieuwe kamer", a room made with what the last one was made with (`getRoomChoice` in `identity.ts`, a classic room for two the first time). A line "2 spelers · 3 × 3, drie op een rij · Aanpassen" opens the number of players and the field picker. Joining with a code is one row, "Samen op één scherm" a button, and a line says whose name is used and links to the settings.

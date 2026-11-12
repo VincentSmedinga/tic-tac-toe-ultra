@@ -236,7 +236,13 @@ function Lobby({ state, send }: { state: StateMessage; send: (message: ClientMes
 }
 
 /** The connection is gone; it is tried again by itself, and a button does it now. */
-function Lost({ onRetry, connecting = false }: { onRetry: () => void; connecting?: boolean }) {
+export function Lost({
+  onRetry,
+  connecting = false,
+}: {
+  onRetry: () => void
+  connecting?: boolean
+}) {
   const t = useText()
   return (
     <div className="lost" role="alert">

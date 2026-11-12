@@ -1,13 +1,16 @@
 import { useSyncExternalStore } from 'react'
 import { flushSync } from 'react-dom'
+import { houseCodeSchema } from '../../shared/house-protocol.ts'
 import { roomCodeSchema } from '../../shared/protocol.ts'
 import { pushEntry } from './scroll.ts'
 
-/** Where in the app we are: the start screen, the game on one screen, a room, played games, the statistics, or the settings. */
+/** Where in the app we are: the start screen, the game on one screen, a room, a house, played games, the statistics, or the settings. */
 export type Route =
-  | { name: 'start'; notice?: 'bad-code' }
+  | { name: 'start'; notice?: 'bad-code' | 'bad-house-code' }
   | { name: 'local' }
   | { name: 'room'; code: string }
+  /** A house, where the family meets: see docs/architecture/house.md. */
+  | { name: 'house'; code: string }
   | { name: 'games' }
   | { name: 'stats' }
   | { name: 'settings' }
@@ -28,11 +31,21 @@ export function parseRoute(pathname: string): Route {
       ? { name: 'room', code }
       : { name: 'start', notice: 'bad-code' }
   }
+  if (parts.length === 2 && parts[0] === 'huis') {
+    const code = parts[1] ?? ''
+    return houseCodeSchema.safeParse(code).success
+      ? { name: 'house', code }
+      : { name: 'start', notice: 'bad-house-code' }
+  }
   return { name: 'start' }
 }
 
 export function roomPath(code: string): string {
   return `/kamer/${code}`
+}
+
+export function housePath(code: string): string {
+  return `/huis/${code}`
 }
 
 export function gamePath(id: string): string {

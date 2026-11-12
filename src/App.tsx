@@ -9,6 +9,7 @@ import { GamePage } from './games/GamePage.tsx'
 import { GamesPage } from './games/GamesPage.tsx'
 import { StatsPage } from './stats/StatsPage.tsx'
 import { Game } from './play/Game.tsx'
+import { HousePage } from './house/HousePage.tsx'
 import { RoomPage } from './online/RoomPage.tsx'
 import { useRoute } from './online/route.ts'
 import { StartScreen } from './online/StartScreen.tsx'
@@ -34,6 +35,7 @@ export function App() {
         {route.name === 'start' && <StartScreen notice={route.notice} />}
         {route.name === 'local' && <Game />}
         {route.name === 'room' && <RoomPage key={route.code} code={route.code} />}
+        {route.name === 'house' && <HousePage key={route.code} code={route.code} />}
         {route.name === 'games' && <GamesPage />}
         {route.name === 'stats' && <StatsPage />}
         {route.name === 'settings' && <SettingsPage />}

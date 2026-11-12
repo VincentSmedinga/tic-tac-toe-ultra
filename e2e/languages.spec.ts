@@ -33,7 +33,7 @@ test('an English and a Frisian player play a whole game, each in their own langu
   await expect(bo).toHaveTitle('Bûter, Tsiis en Aaien Ultra')
   await bo.getByLabel('Dyn namme (hoecht net)').fill('Bo')
   await bo.getByRole('link', { name: 'Begjin' }).click()
-  await bo.getByLabel('Koade fan de keamer').fill(code)
+  await bo.getByLabel('Koade fan de keamer of it hûs').fill(code)
   await bo.getByRole('button', { name: 'Meidwaan' }).click()
   await bo.getByRole('button', { name: 'sirkel', exact: true }).click()
 
@@ -90,7 +90,7 @@ test('a Dutch and an English player can play against each other, and change lang
   await anna.getByRole('button', { name: 'kruis', exact: true }).click()
 
   const bo = await newPlayer(browser, 'en-US')
-  await bo.getByLabel('Code of the room').fill(code)
+  await bo.getByLabel('Code of the room or the house').fill(code)
   await bo.getByRole('button', { name: 'Join' }).click()
   await bo.getByRole('button', { name: 'circle', exact: true }).click()
   await expect(bo.getByRole('group', { name: 'Playing field' })).toBeVisible()

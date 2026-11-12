@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { SyntheticEvent } from 'react'
+import { HOUSE_CODE_LENGTH } from '../../shared/house.ts'
+import { houseCodeSchema } from '../../shared/house-protocol.ts'
 import { roomCodeSchema } from '../../shared/protocol.ts'
 import {
   CLASSIC_FIELD,
@@ -14,27 +16,46 @@ import { useText } from '../i18n/store.ts'
 import type { PlainKey } from '../i18n/types.ts'
 import { FieldPicker } from '../play/FieldPicker.tsx'
 import { fieldLabel, isClassic } from '../play/field.ts'
+import type { HouseApi } from '../house/api.ts'
+import { houseApi as browserHouseApi } from '../house/api.ts'
 import type { RoomApi } from './api.ts'
 import { roomApi } from './api.ts'
-import { clearLastRoom, getLastRoom, getName, getRoomChoice, setRoomChoice } from './identity.ts'
+import {
+  clearLastHouse,
+  clearLastRoom,
+  getLastHouse,
+  getLastRoom,
+  getName,
+  getRoomChoice,
+  setRoomChoice,
+} from './identity.ts'
 import { Link } from './Link.tsx'
-import { navigate, roomPath } from './route.ts'
+import { housePath, navigate, roomPath } from './route.ts'
 import './Online.css'
 
 interface StartScreenProps {
-  /** Set when the address of a room was no code. */
-  notice?: 'bad-code'
+  /** Set when the address of a room or a house was no code. */
+  notice?: 'bad-code' | 'bad-house-code'
   api?: RoomApi
+  houseApi?: HouseApi
 }
 
-/** Only the letters a room code has, in capitals, and no more than a code is long. */
+/**
+ * What can be in the field for a code: a room's code (only the letters it has, in capitals, no
+ * longer than a code), or a house's once there is a digit in it (only digits, no more than six).
+ */
 function cleanCode(text: string): string {
+  if (/\d/.test(text)) return text.replace(/\D/g, '').slice(0, HOUSE_CODE_LENGTH)
   const letters = new RegExp(`[^${ROOM_CODE_ALPHABET}]`, 'g')
   return text.toUpperCase().replace(letters, '').slice(0, ROOM_CODE_LENGTH)
 }
 
-/** Where you start: a new room, a room of someone else, or the game on one screen. */
-export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
+/** Where you start: a new room, a house, a room or house of someone else, or the game on one screen. */
+export function StartScreen({
+  notice,
+  api = roomApi,
+  houseApi = browserHouseApi,
+}: StartScreenProps) {
   const t = useText()
   // The name is chosen on the settings page; the start screen only says whose it is.
   const name = getName()
@@ -42,9 +63,15 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
   // Which choice a message is about, so that it shows in that choice and not somewhere else.
   // The message is kept as its key, so that it changes language with the page.
   const [message, setMessage] = useState<{
-    card: 'create' | 'join'
-    key: PlainKey | 'start.codeLength'
-  } | null>(notice === 'bad-code' ? { card: 'join', key: 'start.badCode' } : null)
+    card: 'create' | 'house' | 'join'
+    key: PlainKey
+  } | null>(
+    notice === 'bad-code'
+      ? { card: 'join', key: 'start.badCode' }
+      : notice === 'bad-house-code'
+        ? { card: 'join', key: 'start.badHouseCode' }
+        : null,
+  )
   const [busy, setBusy] = useState(false)
   // A new room is made with what the last one was made with, and a classic room the first time.
   const [last] = useState(getRoomChoice)
@@ -54,6 +81,8 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
   const [adjusting, setAdjusting] = useState(false)
   // The room this browser last sat in, when it is still there: a way back after going to the start.
   const [resume, setResume] = useState<string | null>(null)
+  // The same for the house this browser was last in.
+  const [resumeHouse, setResumeHouse] = useState<string | null>(null)
 
   useEffect(() => {
     const last = getLastRoom()
@@ -73,6 +102,25 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
       current = false
     }
   }, [api])
+
+  useEffect(() => {
+    const last = getLastHouse()
+    if (last === null) return
+    let current = true
+    void houseApi
+      .houseExists(last)
+      .then((exists) => {
+        if (!current) return
+        if (exists) setResumeHouse(last)
+        else clearLastHouse()
+      })
+      .catch(() => {
+        // Can't ask just now: leave the offer out.
+      })
+    return () => {
+      current = false
+    }
+  }, [houseApi])
 
   function setField(next: FieldSettings) {
     setFieldState(next)
@@ -95,32 +143,43 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
     }
   }
 
+  async function createHouse() {
+    setBusy(true)
+    setMessage(null)
+    try {
+      navigate(housePath(await houseApi.createHouse()))
+    } catch {
+      setMessage({ card: 'house', key: 'start.house.failed' })
+      setBusy(false)
+    }
+  }
+
+  /** The code is a room's or a house's: the field takes both, and the code says which. */
   async function join(event: SyntheticEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (!roomCodeSchema.safeParse(code).success) {
-      setMessage({ card: 'join', key: 'start.codeLength' })
+    const house = houseCodeSchema.safeParse(code).success
+    if (!house && !roomCodeSchema.safeParse(code).success) {
+      setMessage({ card: 'join', key: 'start.codeKinds' })
       return
     }
     setBusy(true)
     setMessage(null)
     try {
-      if (await api.roomExists(code)) {
-        navigate(roomPath(code))
+      if (house ? await houseApi.houseExists(code) : await api.roomExists(code)) {
+        navigate(house ? housePath(code) : roomPath(code))
         return
       }
-      setMessage({ card: 'join', key: 'start.noSuchRoom' })
+      setMessage({ card: 'join', key: house ? 'start.noSuchHouse' : 'start.noSuchRoom' })
     } catch {
-      setMessage({ card: 'join', key: 'start.searchFailed' })
+      setMessage({ card: 'join', key: house ? 'start.searchHouseFailed' : 'start.searchFailed' })
     }
     setBusy(false)
   }
 
-  const alert = (card: 'create' | 'join') =>
+  const alert = (card: 'create' | 'house' | 'join') =>
     message?.card === card && (
       <p className="message" role="alert">
-        {message.key === 'start.codeLength'
-          ? t('start.codeLength', { length: ROOM_CODE_LENGTH })
-          : t(message.key)}
+        {t(message.key)}
       </p>
     )
 
@@ -137,6 +196,21 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
           </p>
           <Link to={roomPath(resume)} className="button button-primary">
             {t('start.resume.link', { code: resume })}
+          </Link>
+        </section>
+      )}
+
+      {resumeHouse !== null && (
+        <section className="choice choice-primary" aria-labelledby="resume-house-title">
+          <h2 id="resume-house-title">{t('start.resumeHouse.title')}</h2>
+          <p>
+            <Rich
+              text="start.resumeHouse.body"
+              values={{ code: <strong className="resume-code">{resumeHouse}</strong> }}
+            />
+          </p>
+          <Link to={housePath(resumeHouse)} className="button button-primary">
+            {t('start.resumeHouse.link', { code: resumeHouse })}
           </Link>
         </section>
       )}
@@ -197,6 +271,22 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
         {alert('create')}
       </section>
 
+      <section className="choice" aria-labelledby="house-title">
+        <h2 id="house-title">{t('start.house.title')}</h2>
+        <p>{t('start.house.body')}</p>
+        <button
+          type="button"
+          className="button"
+          disabled={busy}
+          onClick={() => {
+            void createHouse()
+          }}
+        >
+          {t('start.house.button')}
+        </button>
+        {alert('house')}
+      </section>
+
       <section className="choice" aria-labelledby="join-title">
         <h2 id="join-title">{t('start.join.title')}</h2>
         <form className="join" onSubmit={(event) => void join(event)}>
@@ -210,7 +300,7 @@ export function StartScreen({ notice, api = roomApi }: StartScreenProps) {
               autoCapitalize="characters"
               autoComplete="off"
               spellCheck={false}
-              maxLength={ROOM_CODE_LENGTH}
+              maxLength={HOUSE_CODE_LENGTH}
               placeholder="BCDF"
               value={code}
               onChange={(event) => {

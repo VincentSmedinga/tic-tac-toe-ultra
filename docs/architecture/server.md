@@ -22,6 +22,7 @@ The decisions and their reasons are in [docs/plan.md](../plan.md), Decisions (ro
 - `POST /api/rooms`: make a room; the body may carry the field and the number of seats.
 - `GET /api/rooms/:code`: whether the room exists.
 - `GET /api/rooms/:code/ws`: the WebSocket.
+- `POST /api/houses`, `GET /api/houses/:code` and `GET /api/houses/:code/ws`: the same for a house, see [house.md](house.md).
 - `GET /api/games/:id`: a `StoredGame` for anyone who has the id.
 - `GET /api/games`: the games of one browser, as `GameSummary`s, newest first, a page at a time.
 - `GET /api/stats` and `GET /api/stats/mine`: see [stats.md](stats.md).

@@ -3,8 +3,16 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { setLanguage } from '../i18n/store.ts'
 import { dutchLeaks } from '../i18n/testing.ts'
+import type { HouseApi } from '../house/api.ts'
 import type { RoomApi } from './api.ts'
-import { getLastRoom, getRoomChoice, setLastRoom, setName } from './identity.ts'
+import {
+  getLastHouse,
+  getLastRoom,
+  getRoomChoice,
+  setLastHouse,
+  setLastRoom,
+  setName,
+} from './identity.ts'
 import { StartScreen } from './StartScreen.tsx'
 
 /** The players and the field are behind the line that says what the room is made with. */
@@ -16,6 +24,14 @@ function fakeApi(overrides: Partial<RoomApi> = {}): RoomApi {
   return {
     createRoom: vi.fn(() => Promise.resolve('BCDF')),
     roomExists: vi.fn(() => Promise.resolve(true)),
+    ...overrides,
+  }
+}
+
+function fakeHouseApi(overrides: Partial<HouseApi> = {}): HouseApi {
+  return {
+    createHouse: vi.fn(() => Promise.resolve('123456')),
+    houseExists: vi.fn(() => Promise.resolve(true)),
     ...overrides,
   }
 }
@@ -80,7 +96,7 @@ describe('StartScreen', () => {
     expect(create.getByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
     const join = within(screen.getByRole('region', { name: 'Meedoen met een code' }))
     expect(join.getByRole('button', { name: 'Meedoen' })).toBeVisible()
-    expect(screen.getByLabelText('Code van de kamer')).toBeVisible()
+    expect(screen.getByLabelText('Code van de kamer of het huis')).toBeVisible()
     expect(screen.getByRole('link', { name: 'Samen op één scherm' })).toHaveAttribute(
       'href',
       '/samen',
@@ -266,33 +282,120 @@ describe('StartScreen', () => {
     })
   })
 
+  describe('a house', () => {
+    it('makes a house and goes to it', async () => {
+      const houseApi = fakeHouseApi()
+      const user = userEvent.setup()
+      render(<StartScreen api={fakeApi()} houseApi={houseApi} />)
+      const card = within(screen.getByRole('region', { name: 'Een huis voor de familie' }))
+      await user.click(card.getByRole('button', { name: 'Maak een huis' }))
+      await vi.waitFor(() => {
+        expect(window.location.pathname).toBe('/huis/123456')
+      })
+    })
+
+    it('says so when a house cannot be made', async () => {
+      const houseApi = fakeHouseApi({ createHouse: vi.fn(() => Promise.reject(new Error('down'))) })
+      const user = userEvent.setup()
+      render(<StartScreen api={fakeApi()} houseApi={houseApi} />)
+      await user.click(screen.getByRole('button', { name: 'Maak een huis' }))
+      const card = within(screen.getByRole('region', { name: 'Een huis voor de familie' }))
+      expect(await card.findByRole('alert')).toHaveTextContent(
+        'Het maken van een huis lukt nu niet',
+      )
+      expect(window.location.pathname).toBe('/')
+    })
+
+    it('offers the way back to the house this browser was in, while it exists', async () => {
+      setLastHouse('123456')
+      render(<StartScreen api={fakeApi()} houseApi={fakeHouseApi()} />)
+      const card = await screen.findByRole('region', { name: 'Je was in een huis' })
+      expect(within(card).getByRole('link', { name: 'Terug naar huis 123456' })).toHaveAttribute(
+        'href',
+        '/huis/123456',
+      )
+    })
+
+    it('forgets a house that is gone', async () => {
+      setLastHouse('123456')
+      const houseApi = fakeHouseApi({ houseExists: vi.fn(() => Promise.resolve(false)) })
+      render(<StartScreen api={fakeApi()} houseApi={houseApi} />)
+      await vi.waitFor(() => {
+        expect(getLastHouse()).toBeNull()
+      })
+      expect(screen.queryByRole('region', { name: 'Je was in een huis' })).not.toBeInTheDocument()
+    })
+
+    it('says so when the address of a house was no code', () => {
+      render(<StartScreen notice="bad-house-code" api={fakeApi()} houseApi={fakeHouseApi()} />)
+      expect(
+        within(screen.getByRole('region', { name: 'Meedoen met een code' })).getByRole('alert'),
+      ).toHaveTextContent('Dat is geen geldige code voor een huis')
+    })
+  })
+
   describe('joining with a code', () => {
     it('makes capitals of what is typed and leaves out what is no letter of a code', async () => {
       const user = userEvent.setup()
       render(<StartScreen api={fakeApi()} />)
-      const field = screen.getByLabelText('Code van de kamer')
-      await user.type(field, 'bc1a d')
+      const field = screen.getByLabelText('Code van de kamer of het huis')
+      await user.type(field, 'bc-a d')
       expect(field).toHaveValue('BCD')
       await user.type(field, 'fghj')
       expect(field).toHaveValue('BCDF')
     })
 
-    it('asks for four letters when the code is too short, without asking the server', async () => {
+    it('says what a code looks like when it is too short, without asking the server', async () => {
       const api = fakeApi()
+      const houseApi = fakeHouseApi()
       const user = userEvent.setup()
-      render(<StartScreen api={api} />)
-      await user.type(screen.getByLabelText('Code van de kamer'), 'bcd')
-      await user.click(screen.getByRole('button', { name: 'Meedoen' }))
-
-      expect(screen.getByRole('alert')).toHaveTextContent('Een code heeft 4 letters')
+      render(<StartScreen api={api} houseApi={houseApi} />)
+      const field = screen.getByLabelText('Code van de kamer of het huis')
+      for (const code of ['bcd', '12345']) {
+        await user.clear(field)
+        await user.type(field, code)
+        await user.click(screen.getByRole('button', { name: 'Meedoen' }))
+        expect(screen.getByRole('alert')).toHaveTextContent(
+          'Een kamer heeft een code van vier letters zonder klinkers, een huis een code van zes cijfers.',
+        )
+      }
       expect(api.roomExists).not.toHaveBeenCalled()
+      expect(houseApi.houseExists).not.toHaveBeenCalled()
+    })
+
+    it('keeps only digits, six at most, once a digit is typed: the code of a house', async () => {
+      const user = userEvent.setup()
+      render(<StartScreen api={fakeApi()} houseApi={fakeHouseApi()} />)
+      const field = screen.getByLabelText('Code van de kamer of het huis')
+      await user.type(field, '12 34-5678')
+      expect(field).toHaveValue('123456')
+    })
+
+    it('goes to the house when the code is a house that exists', async () => {
+      const houseApi = fakeHouseApi()
+      const user = userEvent.setup()
+      render(<StartScreen api={fakeApi()} houseApi={houseApi} />)
+      await user.type(screen.getByLabelText('Code van de kamer of het huis'), '012345{Enter}')
+      await vi.waitFor(() => {
+        expect(window.location.pathname).toBe('/huis/012345')
+      })
+      expect(houseApi.houseExists).toHaveBeenCalledWith('012345')
+    })
+
+    it('says so when there is no such house', async () => {
+      const houseApi = fakeHouseApi({ houseExists: vi.fn(() => Promise.resolve(false)) })
+      const user = userEvent.setup()
+      render(<StartScreen api={fakeApi()} houseApi={houseApi} />)
+      await user.type(screen.getByLabelText('Code van de kamer of het huis'), '123456{Enter}')
+      expect(await screen.findByRole('alert')).toHaveTextContent('Dat huis bestaat niet')
+      expect(window.location.pathname).toBe('/')
     })
 
     it('says so when there is no such room', async () => {
       const api = fakeApi({ roomExists: vi.fn(() => Promise.resolve(false)) })
       const user = userEvent.setup()
       render(<StartScreen api={api} />)
-      await user.type(screen.getByLabelText('Code van de kamer'), 'bcdf')
+      await user.type(screen.getByLabelText('Code van de kamer of het huis'), 'bcdf')
       await user.click(screen.getByRole('button', { name: 'Meedoen' }))
 
       expect(await screen.findByRole('alert')).toHaveTextContent('Die kamer bestaat niet')
@@ -303,7 +406,7 @@ describe('StartScreen', () => {
       const api = fakeApi()
       const user = userEvent.setup()
       render(<StartScreen api={api} />)
-      await user.type(screen.getByLabelText('Code van de kamer'), 'bcdf{Enter}')
+      await user.type(screen.getByLabelText('Code van de kamer of het huis'), 'bcdf{Enter}')
 
       await vi.waitFor(() => {
         expect(window.location.pathname).toBe('/kamer/BCDF')
@@ -315,7 +418,7 @@ describe('StartScreen', () => {
       const api = fakeApi({ roomExists: vi.fn(() => Promise.reject(new Error('down'))) })
       const user = userEvent.setup()
       render(<StartScreen api={api} />)
-      await user.type(screen.getByLabelText('Code van de kamer'), 'bcdf')
+      await user.type(screen.getByLabelText('Code van de kamer of het huis'), 'bcdf')
       await user.click(screen.getByRole('button', { name: 'Meedoen' }))
       expect(await screen.findByRole('alert')).toHaveTextContent(
         'Het zoeken naar de kamer lukt nu niet',
@@ -333,6 +436,8 @@ describe.each([
     local: 'Together on one screen',
     code: 'That is not a valid code. Ask the person who made the room for the code again.',
     resume: 'Back to room BCDF',
+    house: 'Make a house',
+    kinds: 'A room has a code of four letters without vowels, a house a code of six digits.',
   },
   {
     language: 'fy',
@@ -342,10 +447,13 @@ describe.each([
     local: 'Tegearre op ien skerm',
     code: 'Dat is gjin jildige koade. Freegje de koade opnij oan wa’t de keamer makke hat.',
     resume: 'Werom nei keamer BCDF',
+    house: 'Meitsje in hûs',
+    kinds:
+      'In keamer hat in koade fan fjouwer letters sûnder klinkers, in hûs in koade fan seis sifers.',
   },
 ] as const)(
   'the start screen in $language',
-  ({ language, heading, create, join, local, code, resume }) => {
+  ({ language, heading, create, join, local, code, resume, house, kinds }) => {
     it('says everything in the language, also what went wrong and the way back to a room', async () => {
       setLanguage(language)
       setLastRoom('BCDF')
@@ -353,6 +461,7 @@ describe.each([
       expect(await screen.findByRole('link', { name: resume })).toBeVisible()
       expect(screen.getByRole('heading', { name: heading })).toBeVisible()
       expect(screen.getByRole('button', { name: create })).toBeVisible()
+      expect(screen.getByRole('button', { name: house })).toBeVisible()
       expect(screen.getByRole('button', { name: join })).toBeVisible()
       expect(screen.getByRole('link', { name: local })).toBeVisible()
       expect(screen.getByRole('alert')).toHaveTextContent(code)
@@ -363,11 +472,7 @@ describe.each([
       setLanguage(language)
       render(<StartScreen api={fakeApi()} />)
       await userEvent.setup().click(screen.getByRole('button', { name: join }))
-      expect(screen.getByRole('alert')).toHaveTextContent(
-        language === 'en'
-          ? 'A code has 4 letters, without vowels.'
-          : 'In koade hat 4 letters, sûnder klinkers.',
-      )
+      expect(screen.getByRole('alert')).toHaveTextContent(kinds)
       expect(dutchLeaks(language)).toEqual([])
     })
   },
