@@ -48,6 +48,8 @@ export interface RoomState {
   gameId?: string
   /** The archive has confirmed it has the game: only then are the players told the id. */
   archived?: boolean
+  /** The code of the house this room was made from, if it was: the room tells it about its rounds. */
+  house?: string
 }
 
 export type Change = { ok: true; room: RoomState } | { ok: false; error: ErrorCode }
@@ -66,6 +68,39 @@ export function newRoom(
   seatCount: number = DEFAULT_PLAYERS,
 ): RoomState {
   return { field, seatCount, round: 0, seats: [], moves: [] }
+}
+
+/** Who a house seats in the room it makes: a person of the house, with the shape they have there. */
+export interface HouseSeat {
+  token: string
+  name: string
+  shape: ShapeId
+}
+
+/**
+ * A room made by a house for the people who said yes to an invitation (the one who invited first):
+ * every seat is taken and has its shape, so the game is on from the start and nobody else can sit down.
+ */
+export function newHouseRoom(
+  field: FieldSettings,
+  seats: readonly HouseSeat[],
+  house: string,
+): RoomState {
+  return {
+    ...newRoom(field, seats.length),
+    seats: seats.map(({ token, name, shape }, index) => ({
+      token,
+      id: seatId(index),
+      name,
+      shape,
+    })),
+    house,
+  }
+}
+
+/** The tokens of the people who play the round the room is in. */
+export function playingTokens(room: RoomState): string[] {
+  return playingSeats(room).map((seat) => seat.token)
 }
 
 /** How many seats the room has. */
@@ -237,6 +272,7 @@ export function rematch(room: RoomState, token: string): Change {
     round: room.round + 1,
     seats: room.seats,
     moves: [],
+    ...(room.house === undefined ? {} : { house: room.house }),
   })
 }
 
@@ -325,6 +361,7 @@ export function stateFor(
     moves: current.kind === 'game' ? [...current.game.moves] : [],
     // Telling the id before the archive has the game would send people to a link that isn't there yet.
     ...(room.gameId === undefined || room.archived !== true ? {} : { gameId: room.gameId }),
+    ...(room.house === undefined ? {} : { house: room.house }),
   }
 }
 

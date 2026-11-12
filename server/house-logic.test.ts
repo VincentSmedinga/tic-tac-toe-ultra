@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { HOUSE_LIMIT } from '../shared/house.ts'
 import { SHAPE_IDS } from '../shared/shapes.ts'
 import type { ShapeId } from '../shared/shapes.ts'
-import { choose, join, stateFor } from './house-logic.ts'
-import type { Member, Present } from './house-logic.ts'
+import { EMPTY_HOUSE, choose, invite, join, settle, stateFor } from './house-logic.ts'
+import type { HouseData, Member, Present } from './house-logic.ts'
+import { INVITATION_MS } from '../shared/house.ts'
 
 function person(id: string, name: string, shape?: ShapeId, since = 0): Present {
   return { id, member: { token: `token-${id}`, name, ...(shape ? { shape } : {}), since } }
@@ -89,5 +90,37 @@ describe('the house as somebody sees it', () => {
     const state = stateFor([first, second], 'z', '123456')
     expect(state.members.map(({ id }) => id)).toEqual(['a'])
     expect(state.you).toBe('a')
+  })
+})
+
+describe('an invitation in a house', () => {
+  const anna = person('a', 'Anna', 'heart', 1)
+  const bas = person('b', 'Bas', 'star', 2)
+  const classic = { width: 3, height: 3, winLength: 3 }
+
+  function invited(): HouseData {
+    const result = invite([anna, bas], EMPTY_HOUSE, anna, ['b'], classic, 100)
+    if (!result.ok) throw new Error(result.error)
+    return result.data
+  }
+
+  it('lapses after a minute, and starts the game with those who said yes', () => {
+    const data = invited()
+    expect(settle(data, 100 + INVITATION_MS - 1).off).toEqual([])
+    const { start, off } = settle(data, 100 + INVITATION_MS)
+    // Bas didn't answer: Anna alone can't play.
+    expect(start).toEqual([])
+    expect(off).toHaveLength(1)
+  })
+
+  it('keeps the shapes of the people in it, also when they have the house closed', () => {
+    const data = invited()
+    expect(joined(join([], 'token-c', 'Cor', 'heart', 5, data)).shape).toBeUndefined()
+    // Bas comes back and gets his shape again.
+    expect(joined(join([anna], 'token-b', 'Bas', undefined, 5, data)).shape).toBe('star')
+    expect(stateFor([anna], 'a', '123456', data, 200).members).toEqual([
+      { id: 'a', name: 'Anna', shape: 'heart', status: 'inviting' },
+      { id: 'b', name: 'Bas', shape: 'star', status: 'invited' },
+    ])
   })
 })

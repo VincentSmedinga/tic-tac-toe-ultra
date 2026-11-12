@@ -220,6 +220,25 @@ export const fy: Dictionary = {
   'house.person.free': 'frij',
   'house.person.playing': 'spilet',
   'house.person.watching': 'sjocht mei',
+  'house.person.inviting': 'noeget út',
+  'house.person.invited': 'útnoege',
+  'house.answer.open': 'ek útnoege',
+  'house.answer.yes': 'útnoeging oannommen',
+  'house.answer.no': 'útnoeging ôfslein',
+  'house.invite.title': 'In spul begjinne',
+  'house.invite.who': 'Wa docht mei?',
+  'house.invite.nobodyFree': 'Der is no net ien frij om út te noegjen.',
+  'house.invite.needShape': 'Kies earst dyn foarm, dan kinsto oaren útnoegje.',
+  'house.invite.button': 'Noegje út',
+  'house.invite.pickSomeone': 'Kies wa’t meidocht.',
+  'house.invited.title': '{name} noeget dy út',
+  'house.invited.body': 'Foar in spul op {field}. Do hast in minút om te antwurdzjen.',
+  'house.invited.yes': 'Doch mei',
+  'house.invited.no': 'Nee, tankewol',
+  'house.waiting':
+    'Wachtsje oant elkenien antwurde hat. Nei in minút begjint it spul mei wa’t ja sei.',
+  'house.playing.title': 'Do spilest in spul',
+  'house.playing.link': 'Nei dyn spul',
 
   'problem.unknownRoom':
     'Dizze keamer bestiet net (mear). Kontrolearje de koade, of meitsje in nije keamer.',
@@ -240,6 +259,10 @@ export const fy: Dictionary = {
   'problem.houseShapeTaken': 'Dy foarm hat in oar yn it hûs al. Kies in oare.',
   'problem.houseUnreachable':
     'It hûs is no net te berikken. Kontrolearje dyn ferbining en besykje it opnij.',
+  'problem.houseNotFree': 'Immen is krekt útnoege of oan it spyljen. Kies opnij.',
+  'problem.noInvitation': 'Dizze útnoeging is al foarby.',
+  'problem.invitationOff': 'Der docht net ien mei: de útnoeging is ferfallen.',
+  'problem.noRoom': 'It meitsjen fan de keamer slagge net. Noegje se nochris út.',
   'problem.generic': 'Der gie wat mis. Besykje it opnij.',
   'problem.left': 'Do hast dit spultsje ferlitten, dus do kinst der net mear yn werom.',
 

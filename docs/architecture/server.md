@@ -23,6 +23,8 @@ The decisions and their reasons are in [docs/plan.md](../plan.md), Decisions (ro
 - `GET /api/rooms/:code`: whether the room exists.
 - `GET /api/rooms/:code/ws`: the WebSocket.
 - `POST /api/houses`, `GET /api/houses/:code` and `GET /api/houses/:code/ws`: the same for a house, see [house.md](house.md).
+- A house makes a room itself, through the room's `createForHouse` (no route): every seat taken, with its name and shape, so the game is on at once and `join` from anybody else answers `room-full`.
+- A room made by a house keeps its code (`house` in `RoomState`, sent in the state) and tells it about its rounds (`RoomReport`: `over` with the winner, `started` with the players of a rematch) through `Host.report`; a room without a house tells nothing (`room-session.test.ts`).
 - `GET /api/games/:id`: a `StoredGame` for anyone who has the id.
 - `GET /api/games`: the games of one browser, as `GameSummary`s, newest first, a page at a time.
 - `GET /api/stats` and `GET /api/stats/mine`: see [stats.md](stats.md).
