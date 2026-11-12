@@ -141,7 +141,8 @@ export const en: Dictionary = {
   'field.inARow.other': '{row} in a row',
 
   'start.badCode': 'That is not a valid code. Ask the person who made the room for the code again.',
-  'start.codeLength': 'A code has {length} letters, without vowels.',
+  'start.codeKinds':
+    'A room has a code of four letters without vowels, a house a code of six digits.',
   'start.noSuchRoom': 'That room does not exist. Check the code.',
   'start.searchFailed': 'Looking for the room did not work just now. Please try again in a moment.',
   'start.resume.title': 'You are still playing',
@@ -160,8 +161,21 @@ export const en: Dictionary = {
   'start.create.adjust': 'Change',
   'start.create.button': 'New room',
   'start.join.title': 'Join with a code',
-  'start.join.code': 'Code of the room',
+  'start.join.code': 'Code of the room or the house',
   'start.join.button': 'Join',
+  'start.badHouseCode':
+    'That is not a valid code for a house. Ask somebody in the house for the code again.',
+  'start.noSuchHouse': 'That house does not exist. Check the code.',
+  'start.searchHouseFailed':
+    'Looking for the house did not work just now. Please try again in a moment.',
+  'start.resumeHouse.title': 'You were in a house',
+  'start.resumeHouse.body': 'House {code} is still there. Go back and see who is in.',
+  'start.resumeHouse.link': 'Back to house {code}',
+  'start.house.title': 'A house for the family',
+  'start.house.body':
+    'In a house you see who is there. You get a code of six digits to give to the others.',
+  'start.house.button': 'Make a house',
+  'start.house.failed': 'Making a house did not work just now. Please try again in a moment.',
   'start.local.title': 'Together on one screen',
 
   'room.title': 'Room',
@@ -190,6 +204,23 @@ export const en: Dictionary = {
   'room.lost.connecting': 'Reconnecting…',
   'room.lost.broken': 'The connection was lost. It is being tried again.',
   'room.lost.retry': 'Reconnect now',
+  'house.title': 'House',
+  'house.code': 'Code {digits}',
+  'house.share': 'Give this code or this link to whoever you want to join you:',
+  'house.connecting': 'Connecting to the house…',
+  'house.enter.title': 'Who are you?',
+  'house.enter.body': 'You are going to house {code}. The others see your name.',
+  'house.enter.name': 'Your name',
+  'house.enter.nameNeeded': 'Fill in your name, so that the others see who you are.',
+  'house.enter.button': 'Come in',
+  'house.people': 'Who is here',
+  'house.alone': 'You are on your own so far. Give the code to the others.',
+  'house.pickShape': 'Choose your shape',
+  'house.person.number': '{name} ({number})',
+  'house.person.free': 'free',
+  'house.person.playing': 'playing',
+  'house.person.watching': 'watching',
+
   'problem.unknownRoom': 'This room does not exist (any more). Check the code, or make a new room.',
   'problem.roomFull': 'This room is full: all the seats are taken.',
   'problem.gameStarted': 'The game in this room has already begun, so you can no longer join.',
@@ -202,6 +233,12 @@ export const en: Dictionary = {
   'problem.shapeNeeded': 'Choose a shape first.',
   'problem.shapeTaken': 'The other player already has that shape. Choose another.',
   'problem.shapeLocked': 'The game has already begun: you can no longer change your shape.',
+  'problem.unknownHouse':
+    'This house does not exist (any more). Check the code, or make a new house.',
+  'problem.houseFull': 'This house is full: every shape is already somebody’s.',
+  'problem.houseShapeTaken': 'Somebody else in the house already has that shape. Choose another.',
+  'problem.houseUnreachable':
+    'The house cannot be reached just now. Check your connection and try again.',
   'problem.generic': 'Something went wrong. Please try again.',
   'problem.left': 'You have left this game, so you cannot go back in.',
 

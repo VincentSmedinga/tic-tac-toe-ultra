@@ -4,6 +4,7 @@
  * site data), so everything falls back to memory, and the game works without it.
  */
 
+import { houseCodeSchema } from '../../shared/house-protocol.ts'
 import { MAX_NAME_LENGTH, roomCodeSchema, shapeSchema, tokenSchema } from '../../shared/protocol.ts'
 import { isValidField, isValidPlayerCount } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
@@ -12,12 +13,14 @@ import type { ShapeId } from '../../shared/shapes.ts'
 const TOKEN_KEY = 'tic-tac-toe-ultra.token'
 const NAME_KEY = 'tic-tac-toe-ultra.name'
 const ROOM_KEY = 'tic-tac-toe-ultra.room'
+const HOUSE_KEY = 'tic-tac-toe-ultra.house'
 const SHAPE_KEY = 'tic-tac-toe-ultra.shape'
 const CHOICE_KEY = 'tic-tac-toe-ultra.new-room'
 
 let memoryToken: string | null = null
 let memoryName = ''
 let memoryRoom: string | null = null
+let memoryHouse: string | null = null
 let memoryShape: ShapeId | null = null
 let memoryChoice: string | null = null
 
@@ -113,6 +116,39 @@ export function clearLastRoom(): void {
   memoryRoom = null
   try {
     storage()?.removeItem(ROOM_KEY)
+  } catch {
+    // Nothing to clear.
+  }
+}
+
+/** The house this browser was last in, so that the start screen can offer to go back to it. */
+export function getLastHouse(): string | null {
+  const store = storage()
+  let code = memoryHouse
+  if (store) {
+    try {
+      code = store.getItem(HOUSE_KEY)
+    } catch {
+      // Fall back to what was remembered this visit.
+    }
+  }
+  return code !== null && houseCodeSchema.safeParse(code).success ? code : null
+}
+
+export function setLastHouse(code: string): void {
+  memoryHouse = code
+  try {
+    storage()?.setItem(HOUSE_KEY, code)
+  } catch {
+    // Not remembered, but it still counts for this visit.
+  }
+}
+
+/** The house is gone: it is no use to offer it again. */
+export function clearLastHouse(): void {
+  memoryHouse = null
+  try {
+    storage()?.removeItem(HOUSE_KEY)
   } catch {
     // Nothing to clear.
   }

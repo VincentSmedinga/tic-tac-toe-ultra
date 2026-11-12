@@ -39,7 +39,7 @@ test('one player plays in the full screen mode, the other does not see it, and b
   const code = (await anna.locator('.room-code').textContent()) ?? ''
   await anna.getByRole('button', { name: 'kruis', exact: true }).click()
   const bo = await newPlayer(browser, 'Bo')
-  await bo.getByLabel('Code van de kamer').fill(code)
+  await bo.getByLabel('Code van de kamer of het huis').fill(code)
   await bo.getByRole('button', { name: 'Meedoen' }).click()
   await bo.getByRole('button', { name: 'cirkel', exact: true }).click()
   await expect(anna.getByRole('group', { name: 'Speelveld' })).toBeVisible()
@@ -110,7 +110,7 @@ test('a field that is too big keeps its cells and scrolls in its frame, while th
   await anna.getByRole('button', { name: 'kruis', exact: true }).click()
   const code = (await anna.locator('.room-code').textContent()) ?? ''
   const bo = await newPlayer(browser, 'Bo')
-  await bo.getByLabel('Code van de kamer').fill(code)
+  await bo.getByLabel('Code van de kamer of het huis').fill(code)
   await bo.getByRole('button', { name: 'Meedoen' }).click()
   await bo.getByRole('button', { name: 'cirkel', exact: true }).click()
   await expect(anna.getByRole('group', { name: 'Speelveld' })).toBeVisible()
@@ -153,7 +153,7 @@ test('a player in the full screen mode can leave after the game: the mode closes
   const code = (await anna.locator('.room-code').textContent()) ?? ''
   await anna.getByRole('button', { name: 'kruis', exact: true }).click()
   const bo = await newPlayer(browser, 'Bo')
-  await bo.getByLabel('Code van de kamer').fill(code)
+  await bo.getByLabel('Code van de kamer of het huis').fill(code)
   await bo.getByRole('button', { name: 'Meedoen' }).click()
   await bo.getByRole('button', { name: 'cirkel', exact: true }).click()
   await expect(anna.getByRole('group', { name: 'Speelveld' })).toBeVisible()
