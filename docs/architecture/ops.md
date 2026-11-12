@@ -24,6 +24,8 @@ Read this before changing a workflow, a deploy or how a pull request shows scree
 - `main` is production, `tic-tac-toe-ultra`, at https://tttu.nl and its workers.dev address.
 - Only the deploy of `main` adds the domain, from the repository variable `PRODUCTION_DOMAIN`, as a custom domain in `routes` of the built `wrangler.json`; `wrangler.jsonc` has no `routes`, so a preview never claims it.
 - With the variable empty, production is only on workers.dev.
+- `wrangler.jsonc` says `workers_dev: true`, because wrangler turns the workers.dev address off for a Worker that has `routes`.
+- The deploy takes the workers.dev address from wrangler's targets by its `https://`: the domain is a target too, written as `tttu.nl (custom domain)`.
 - The token needs Zone · Workers Routes · Edit and Zone · DNS · Edit for tttu.nl for the domain, next to Account · Workers Scripts · Edit.
 - The DNS of tttu.nl is on Cloudflare; the registration is at mijn.host, and so are the name servers it points to and DNSSEC.
 - After a deploy it checks that the page and `/api/health` answer on the workers.dev address, and for production on the domain too, for up to five minutes, because a new certificate takes a while.
