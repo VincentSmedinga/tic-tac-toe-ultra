@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { replayGame } from '../shared/game/index.ts'
 import type { ServerMessage, StateMessage } from '../shared/protocol.ts'
-import { newRoom } from './room-logic.ts'
+import { newHouseRoom, newRoom } from './room-logic.ts'
 import type { Finished, RoomState } from './room-logic.ts'
 import {
   CLOSE_LEFT,
@@ -10,7 +10,7 @@ import {
   CLOSE_UNKNOWN_ROOM,
   RoomSession,
 } from './room-session.ts'
-import type { Host } from './room-session.ts'
+import type { Host, RoomReport } from './room-session.ts'
 
 const TOKEN_X = 'x'.repeat(20)
 const TOKEN_O = 'o'.repeat(20)
@@ -26,6 +26,7 @@ class FakeHost implements Host {
   /** The clock of the room: a test sets it, and moves it on. */
   time = 1_000
   readonly archived: { id: string; game: Finished }[] = []
+  readonly reports: RoomReport[] = []
   private ids = 0
   readonly sockets_ = new Map<string, { token: string | null; open: boolean }>()
   readonly sent: { id: string; message: ServerMessage }[] = []
@@ -66,6 +67,9 @@ class FakeHost implements Host {
   }
   archive(id: string, game: Finished) {
     this.archived.push({ id, game })
+  }
+  report(report: RoomReport) {
+    this.reports.push(report)
   }
 
   /** The socket is gone, as when a phone loses its connection. */
@@ -749,5 +753,67 @@ describe('leaving the evening', () => {
     expect(host.received('b')).toEqual([{ type: 'error', error: 'game-not-over' }])
     expect(host.closes).toEqual([])
     expect(host.removed).toBe(0)
+  })
+})
+
+describe('a room made by a house', () => {
+  const WIN = [
+    ['a', 0, 0],
+    ['b', 0, 1],
+    ['a', 1, 0],
+    ['b', 1, 1],
+    ['a', 2, 0],
+  ] as const
+
+  function house() {
+    const host = new FakeHost()
+    host.room = newHouseRoom(
+      { width: 3, height: 3, winLength: 3 },
+      [
+        { token: TOKEN_X, name: 'Anna', shape: 'cross' },
+        { token: TOKEN_O, name: 'Bas', shape: 'circle' },
+      ],
+      '123456',
+    )
+    const session = new RoomSession(host)
+    host.connect('a')
+    host.connect('b')
+    say(session, 'a', { type: 'join', token: TOKEN_X, name: 'Anna' })
+    say(session, 'b', { type: 'join', token: TOKEN_O, name: 'Bas' })
+    return { host, session }
+  }
+
+  it('has every seat taken, with its shape, and nobody else can sit down', () => {
+    const { host, session } = house()
+    const state = host.lastState('a')
+    expect(state.house).toBe('123456')
+    expect(state.config?.players).toEqual(['cross', 'circle'])
+    expect(state.players.map(({ name, shape }) => [name, shape])).toEqual([
+      ['Anna', 'cross'],
+      ['Bas', 'circle'],
+    ])
+    host.connect('z')
+    say(session, 'z', { type: 'join', token: TOKEN_Z })
+    expect(host.received('z')).toEqual([{ type: 'error', error: 'room-full' }])
+  })
+
+  it('tells the house when a round is over, and when the next one starts', () => {
+    const { host, session } = house()
+    for (const [id, x, y] of WIN) say(session, id, { type: 'move', x, y })
+    expect(host.reports).toEqual([{ kind: 'over', round: 0, winner: 'cross' }])
+    say(session, 'b', { type: 'rematch' })
+    expect(host.reports.at(-1)).toEqual({
+      kind: 'started',
+      round: 1,
+      playing: [TOKEN_X, TOKEN_O],
+    })
+    expect(host.lastState('a').house).toBe('123456')
+  })
+
+  it('tells nothing for a room without a house', () => {
+    const { host, session } = started()
+    for (const [id, x, y] of WIN) say(session, id, { type: 'move', x, y })
+    say(session, 'a', { type: 'rematch' })
+    expect(host.reports).toEqual([])
   })
 })

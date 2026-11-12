@@ -6,6 +6,7 @@ import {
   ROOM_CODE_LENGTH,
   isValidField,
 } from './room.ts'
+import { HOUSE_CODE_PATTERN } from './house.ts'
 import { SHAPE_IDS } from './shapes.ts'
 
 /** What goes over the WebSocket between a player and a room: JSON, validated on both sides. */
@@ -293,6 +294,8 @@ export const stateMessageSchema = z.object({
   moves: z.array(moveSchema),
   /** The id of the stored game once this round is over, so that it can be watched again. */
   gameId: gameIdSchema.optional(),
+  /** The house this room was made from: "Stoppen" goes back to it. */
+  house: z.string().regex(HOUSE_CODE_PATTERN).optional(),
 })
 export type StateMessage = z.infer<typeof stateMessageSchema>
 

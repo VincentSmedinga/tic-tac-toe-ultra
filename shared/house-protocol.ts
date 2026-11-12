@@ -1,6 +1,14 @@
 import { z } from 'zod'
-import { HOUSE_CODE_PATTERN, MEMBER_STATUSES } from './house.ts'
-import { MAX_MESSAGE_LENGTH, MAX_NAME_LENGTH, shapeSchema, tokenSchema } from './protocol.ts'
+import { ANSWERS, HOUSE_CODE_PATTERN, MEMBER_STATUSES } from './house.ts'
+import {
+  MAX_MESSAGE_LENGTH,
+  MAX_NAME_LENGTH,
+  fieldSchema,
+  roomCodeSchema,
+  shapeSchema,
+  tokenSchema,
+} from './protocol.ts'
+import { PLAYER_LIMITS } from './room.ts'
 
 /** What goes over the WebSocket between a person and a house: JSON, validated on both sides. */
 
@@ -27,6 +35,21 @@ export const houseClientMessageSchema = z.discriminatedUnion('type', [
   }),
   /** Chooses a shape, or another one; refused when somebody else in the house has it. */
   z.object({ type: z.literal('choose'), shape: shapeSchema }),
+  /**
+   * Invites these people (their ids in the state) to a game on this field. The one who invites
+   * plays too, so a room holds at most one fewer than its limit of others.
+   */
+  z.object({
+    type: z.literal('invite'),
+    people: z
+      .array(z.string().min(1).max(64))
+      .min(1)
+      .max(PLAYER_LIMITS.max - 1)
+      .refine((ids) => new Set(ids).size === ids.length, { message: 'everybody once' }),
+    field: fieldSchema,
+  }),
+  /** Answers the invitation this person has: yes ("Speel mee") or no ("Nee, dank je"). */
+  z.object({ type: z.literal('answer'), yes: z.boolean() }),
 ])
 export type HouseClientMessage = z.infer<typeof houseClientMessageSchema>
 
@@ -35,6 +58,16 @@ export const houseErrorCodeSchema = z.enum([
   'not-joined',
   'house-full',
   'shape-taken',
+  /** Somebody to invite, or the one who invites, is invited, inviting or playing already. */
+  'not-free',
+  /** Somebody to invite, or the one who invites, has no shape yet. */
+  'shape-needed',
+  /** An answer from somebody who has no invitation (any more). */
+  'no-invitation',
+  /** Too few said yes: the invitation is off. Told to the one who invited and those who said yes. */
+  'invitation-off',
+  /** The room for the game could not be made. */
+  'no-room',
 ])
 export type HouseErrorCode = z.infer<typeof houseErrorCodeSchema>
 
@@ -55,6 +88,19 @@ export const houseStateSchema = z.object({
       status: z.enum(MEMBER_STATUSES),
     }),
   ),
+  /**
+   * The invitation the one who receives this is part of: as the one who invites, or invited and
+   * not (yet) said no. `people` are the invited, with how each has answered.
+   */
+  invitation: z
+    .object({
+      from: z.string(),
+      field: fieldSchema,
+      people: z.array(z.object({ id: z.string(), answer: z.enum(ANSWERS) })),
+    })
+    .optional(),
+  /** The room of the round the one who receives this is playing, made by the house. */
+  room: roomCodeSchema.optional(),
 })
 export type HouseState = z.infer<typeof houseStateSchema>
 export type HouseMember = HouseState['members'][number]

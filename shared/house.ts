@@ -15,9 +15,20 @@ export const HOUSE_CODE_PATTERN = new RegExp(`^\\d{${HOUSE_CODE_LENGTH.toString(
  */
 export const HOUSE_LIMIT = SHAPE_IDS.length
 
-/** What a person in the house is doing; playing and watching come with inviting and guests. */
-export const MEMBER_STATUSES = ['free', 'playing', 'watching'] as const
+/**
+ * What a person in the house is doing: free to be invited, inviting others, invited (until they
+ * answer no or the invitation is over), playing a round in a room of the house, or watching one
+ * (guests, #97).
+ */
+export const MEMBER_STATUSES = ['free', 'inviting', 'invited', 'playing', 'watching'] as const
 export type MemberStatus = (typeof MEMBER_STATUSES)[number]
+
+/** How long an invitation runs: after a minute the room starts with those who said yes. */
+export const INVITATION_MS = 60 * 1000
+
+/** How an invited person answered: not yet, yes ("Speel mee") or no ("Nee, dank je"). */
+export const ANSWERS = ['open', 'yes', 'no'] as const
+export type Answer = (typeof ANSWERS)[number]
 
 /**
  * The number that tells people with the same name apart, for each name in the order the people
