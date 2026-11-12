@@ -285,7 +285,12 @@ jobs:
             mv "$config.tmp" "$config"
           fi
           pnpm exec wrangler deploy --config "$config" --name "$WORKER"
-          url=$(jq -r 'select(.type == "deploy") | .targets[0]' "$WRANGLER_OUTPUT_FILE_PATH" | tail -n 1)
+          # The targets are the workers.dev address and, for production, "tttu.nl (custom domain)".
+          url=$(jq -r 'select(.type == "deploy") | .targets[] | select(startswith("https://"))' "$WRANGLER_OUTPUT_FILE_PATH" | tail -n 1)
+          if [ -z "$url" ]; then
+            echo "::error title=No workers.dev address::wrangler deployed $WORKER without one"
+            exit 1
+          fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed $WORKER to $url" >> "$GITHUB_STEP_SUMMARY"
       # Cloudflare needs a moment to serve a new deployment, hence the tries. The deploy of main is

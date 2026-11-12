@@ -3,6 +3,9 @@
   "name": "tic-tac-toe-ultra",
   "main": "server/index.ts",
   "compatibility_date": "2026-10-01",
+  // Said out loud, because wrangler turns the workers.dev address off for a Worker with `routes`,
+  // and the deploy of production adds the domain as one: installed apps live on that address.
+  "workers_dev": true,
   // The app is the static files of `pnpm build`; the Worker answers /api/* and the pages of the
   // app, the rest goes to the files, with the page itself for any address the app handles in the
   // browser.
