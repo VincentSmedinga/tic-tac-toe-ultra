@@ -100,7 +100,7 @@ export const nl = {
 
   'status.won': '{name} heeft gewonnen!',
   'status.youWon': 'Je hebt gewonnen!',
-  'status.draw': 'Gelijkspel! Niemand kan nog winnen.',
+  'status.draw': 'Gelijkspel! Niemand kan meer winnen.',
   'status.starts': '{name} begint',
   'status.turn': '{name} is aan de beurt',
   'status.youStart': 'Jij begint',

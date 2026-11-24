@@ -138,7 +138,7 @@ describe('Replay', () => {
     render(<Replay config={CLASSIC} moves={early} />)
     await user.click(screen.getByRole('button', { name: 'Naar het einde' }))
     expect(screen.getByText('Zet 7 van 7')).toBeInTheDocument()
-    expect(status()).toHaveTextContent('Gelijkspel! Niemand kan nog winnen.')
+    expect(status()).toHaveTextContent('Gelijkspel! Niemand kan meer winnen.')
   })
 
   it('says it is a draw at the end of a game stored before dead positions ended a game', async () => {
@@ -156,7 +156,7 @@ describe('Replay', () => {
     const user = userEvent.setup()
     render(<Replay config={CLASSIC} moves={draw} />)
     await user.click(screen.getByRole('button', { name: 'Naar het einde' }))
-    expect(status()).toHaveTextContent('Gelijkspel! Niemand kan nog winnen.')
+    expect(status()).toHaveTextContent('Gelijkspel! Niemand kan meer winnen.')
   })
 
   it('calls players by the name they typed', async () => {

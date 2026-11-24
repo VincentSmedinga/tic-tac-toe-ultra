@@ -81,11 +81,11 @@ test('a game ends in a draw as soon as nobody can win, with cells left', async (
   await cell(bo, 2, 1).click()
   await cell(anna, 2, 3).click()
   await cell(bo, 3, 3).click()
-  await expect(anna.getByText('Gelijkspel! Niemand kan nog winnen.')).toHaveCount(0)
+  await expect(anna.getByText('Gelijkspel! Niemand kan meer winnen.')).toHaveCount(0)
   await cell(anna, 3, 2).click()
 
   for (const page of [anna, bo]) {
-    await expect(page.getByText('Gelijkspel! Niemand kan nog winnen.')).toBeVisible()
+    await expect(page.getByText('Gelijkspel! Niemand kan meer winnen.')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
     await expect(cell(page, 2, 2)).toHaveAttribute('aria-disabled', 'true')
   }
