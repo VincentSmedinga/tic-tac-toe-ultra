@@ -11,8 +11,13 @@ The product decisions are in [docs/plan.md](../plan.md), Decisions and Architect
 - `canStillWin` is optimistic on purpose: it is late sometimes but never early (`dead.test.ts` checks every reachable position of small games against a brute force), and a full field never happens, since the last cell either wins or the position was dead already.
 - The cells that are still empty when a game is drawn stay empty: the status is `draw` and `applyMove` answers `game-over`, as after a win.
 - A game stored before this was played on to a full field after its dead position: `replayGame` reads those moves back (`applyMoveAfterDraw`) and keeps the game drawn. Never use it for a game being played.
+- `completesLine(state, cell, player)` says whether a player would complete a line on an empty cell, whoever's turn it is: a look at the position, used by the analysis.
 - A game is its `config` plus its `moves`, kept in the `GameState`. That is what gets stored.
-- `replayGame(config, moves)` and `stateAfter(state, count)` (`replay.ts`) read a stored game back and step through it.
+- `replayGame(config, moves)` and `stateAfter(state, count)` (`replay.ts`) read a stored game back and step through it; `replayStates` gives every state along a game in one pass.
+- `analyseGame(config, moves)` (`analysis.ts`) ranks every move of a game (`brilliant`, `good`, `dubious`, `mistake`, `blunder`, or none) and `summariseGame` (`summary.ts`) sums it up per player. Both are derived from the stored game and never stored, see [replay-and-games.md](replay-and-games.md).
+- A rank is `exact` or `tactical`. Exact: two players, a field of at most 36 cells and at most 12 empty cells, solved by `Solver` (negamax with a table, turned and mirrored positions the same, a budget of positions for a game, solved from the last move back). Tactical: a missed win in one, an unblocked win in one, a double threat, and with two players a double threat handed to the opponent.
+- A move after the point where a game was drawn (a game stored before dead positions ended it) gets no rank.
+- `analysis.test.ts` has the table test of the 3 × 3 solution: for every reachable position the value of every move against an independent minimax, and the rules that follow (a move that keeps the value is never a mistake, a move that gives it up always is, a move that loses a win is never good, no first move is a mistake).
 - The engine works for any field size, winning length and number of players (two to twelve).
 - The player of a game is the shape: the player id, the `player` of a move and the players of a stored game are shape ids (`cross`, `heart`, …).
 - `shared/shapes.ts` has the shape ids (thirty-six; new ones go at the end); `src/shapes/shapes.ts` has the drawings and what each comes from, the dictionaries the names.
