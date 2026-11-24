@@ -7,12 +7,21 @@ import {
   join,
   leave,
   play,
+  playingTokens,
   presentCount,
   rematch,
   startGame,
   stateFor,
 } from './room-logic.ts'
 import type { Change, Finished, RoomState } from './room-logic.ts'
+
+/**
+ * What a room made by a house tells that house about its rounds: a round started (a rematch) with
+ * these people, or the round is over, won by a player (a shape) or drawn (`winner` null).
+ */
+export type RoomReport =
+  | { kind: 'started'; round: number; playing: string[] }
+  | { kind: 'over'; round: number; winner: string | null }
 
 /** What a room needs from Cloudflare, so that the session below can be tested without it. */
 export interface Host {
@@ -43,6 +52,8 @@ export interface Host {
    * for its alarm at once; nothing is deleted from the session itself.
    */
   remove(): void
+  /** Tells the house this room was made from about a round; nothing when it has none. Must not throw. */
+  report(report: RoomReport): void
 }
 
 /** WebSocket close codes in the range for applications. */
@@ -137,9 +148,16 @@ export class RoomSession {
       const gameId = this.host.newGameId()
       this.host.archive(gameId, finished)
       this.commit({ ...played, gameId })
+      if (played.house !== undefined) {
+        const winner = finished.result.kind === 'won' ? finished.result.winner : null
+        this.host.report({ kind: 'over', round: played.round, winner })
+      }
       return
     }
     this.commit(played)
+    if (message.type === 'rematch' && played.house !== undefined) {
+      this.host.report({ kind: 'started', round: played.round, playing: playingTokens(played) })
+    }
   }
 
   /**

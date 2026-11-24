@@ -223,6 +223,25 @@ export const nl = {
   'house.person.free': 'vrij',
   'house.person.playing': 'speelt',
   'house.person.watching': 'kijkt mee',
+  'house.person.inviting': 'nodigt uit',
+  'house.person.invited': 'uitgenodigd',
+  'house.answer.open': 'ook uitgenodigd',
+  'house.answer.yes': 'uitnodiging geaccepteerd',
+  'house.answer.no': 'uitnodiging afgeslagen',
+  'house.invite.title': 'Een spel beginnen',
+  'house.invite.who': 'Wie speelt er mee?',
+  'house.invite.nobodyFree': 'Er is nu niemand vrij om uit te nodigen.',
+  'house.invite.needShape': 'Kies eerst je vorm, dan kun je anderen uitnodigen.',
+  'house.invite.button': 'Nodig uit',
+  'house.invite.pickSomeone': 'Kies wie er meespeelt.',
+  'house.invited.title': '{name} nodigt je uit',
+  'house.invited.body': 'Voor een spel op {field}. Je hebt een minuut om te antwoorden.',
+  'house.invited.yes': 'Speel mee',
+  'house.invited.no': 'Nee, dank je',
+  'house.waiting':
+    'Wachten tot iedereen heeft geantwoord. Na een minuut begint het spel met wie ja zei.',
+  'house.playing.title': 'Je speelt een spel',
+  'house.playing.link': 'Naar je spel',
 
   // What the server's error codes (shared/protocol.ts) are called; the server itself has no words.
   'problem.unknownRoom':
@@ -244,6 +263,10 @@ export const nl = {
   'problem.houseShapeTaken': 'Die vorm heeft iemand anders in het huis al. Kies een andere.',
   'problem.houseUnreachable':
     'Het huis is nu niet te bereiken. Controleer je verbinding en probeer het opnieuw.',
+  'problem.houseNotFree': 'Iemand is net uitgenodigd of aan het spelen. Kies opnieuw.',
+  'problem.noInvitation': 'Deze uitnodiging is al voorbij.',
+  'problem.invitationOff': 'Er speelt niemand mee: de uitnodiging is vervallen.',
+  'problem.noRoom': 'Het maken van de kamer lukte niet. Nodig ze nog eens uit.',
   'problem.generic': 'Er ging iets mis. Probeer het opnieuw.',
   'problem.left': 'Je hebt dit spel verlaten, dus je kunt er niet meer in terug.',
 

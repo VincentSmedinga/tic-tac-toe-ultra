@@ -47,6 +47,26 @@ describe('a message from a person in a house', () => {
     expect(parse({ type: 'choose', shape: 'banana' })).toBeNull()
   })
 
+  it('invites people by their ids to a game on a field that a room accepts', () => {
+    const field = { width: 7, height: 7, winLength: 5 }
+    expect(parse({ type: 'invite', people: ['b', 'c'], field })).toEqual({
+      type: 'invite',
+      people: ['b', 'c'],
+      field,
+    })
+    expect(parse({ type: 'invite', people: [], field })).toBeNull()
+    expect(parse({ type: 'invite', people: ['b', 'b'], field })).toBeNull()
+    expect(parse({ type: 'invite', people: ['b'], field: { ...field, width: 4 } })).toBeNull()
+    const twelve = Array.from({ length: 12 }, (_, index) => `p${index.toString()}`)
+    expect(parse({ type: 'invite', people: twelve, field })).toBeNull()
+    expect(parse({ type: 'invite', people: twelve.slice(1), field })).not.toBeNull()
+  })
+
+  it('answers yes or no', () => {
+    expect(parse({ type: 'answer', yes: true })).toEqual({ type: 'answer', yes: true })
+    expect(parse({ type: 'answer', yes: 'maybe' })).toBeNull()
+  })
+
   it('is refused when it is no JSON, too long or something else', () => {
     expect(parseHouseClientMessage('{')).toBeNull()
     expect(parseHouseClientMessage(42)).toBeNull()
@@ -67,6 +87,17 @@ describe('a message from the house', () => {
       ],
     }
     expect(parseHouseServerMessage(JSON.stringify(state))).toEqual(state)
+    const playing = {
+      ...state,
+      members: [{ id: 'a', name: 'Anna', shape: 'heart', status: 'inviting' }],
+      invitation: {
+        from: 'a',
+        field: { width: 3, height: 3, winLength: 3 },
+        people: [{ id: 'b', answer: 'yes' }],
+      },
+      room: 'BCDF',
+    }
+    expect(parseHouseServerMessage(JSON.stringify(playing))).toEqual(playing)
     expect(
       parseHouseServerMessage(JSON.stringify({ type: 'error', error: 'shape-taken' })),
     ).toEqual({ type: 'error', error: 'shape-taken' })

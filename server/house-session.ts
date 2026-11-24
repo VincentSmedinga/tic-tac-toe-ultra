@@ -1,8 +1,20 @@
 import { parseHouseClientMessage } from '../shared/house-protocol.ts'
 import type { HouseErrorCode, HouseServerMessage } from '../shared/house-protocol.ts'
-import { choose, join, stateFor } from './house-logic.ts'
-import type { Member, Present } from './house-logic.ts'
+import {
+  answer,
+  choose,
+  gameMade,
+  invite,
+  join,
+  playersOf,
+  reported,
+  settle,
+  stateFor,
+} from './house-logic.ts'
+import type { HouseData, Invitation, Member, Person, Present } from './house-logic.ts'
+import type { HouseSeat } from './room-logic.ts'
 import { CLOSE_REPLACED, CLOSE_ROOM_FULL } from './room-session.ts'
+import type { RoomReport } from './room-session.ts'
 
 /** What a house needs from Cloudflare, so that the session below can be tested without it. */
 export interface HouseHost {
@@ -18,6 +30,15 @@ export interface HouseHost {
   touch(): void
   /** The time now, in milliseconds since 1970. */
   now(): number
+  /** The invitations and games the house keeps. */
+  load(): HouseData
+  /** Keeps them; the host also sets its alarm for the first invitation that lapses. */
+  save(data: HouseData): void
+  /**
+   * Makes a room of this house on the field, with these seats (the first one is its owner), and
+   * answers its code; null when no room could be made. Must not throw.
+   */
+  makeRoom(field: Invitation['field'], seats: HouseSeat[]): Promise<string | null>
 }
 
 /** The house is full: every shape is somebody's. The same code as a full room. */
@@ -35,7 +56,7 @@ export class HouseSession {
     this.host = host
   }
 
-  message(socketId: string, raw: unknown): void {
+  async message(socketId: string, raw: unknown): Promise<void> {
     const message = parseHouseClientMessage(raw)
     if (!message) {
       this.error(socketId, 'invalid-message')
@@ -50,6 +71,7 @@ export class HouseSession {
         message.name,
         message.shape,
         this.host.now(),
+        this.host.load(),
       )
       if (!joined.ok) {
         this.error(socketId, joined.error)
@@ -68,17 +90,69 @@ export class HouseSession {
       return
     }
 
-    const member = present.find(({ id }) => id === socketId)?.member
-    if (!member) {
+    const self = present.find(({ id }) => id === socketId)
+    if (!self) {
       this.error(socketId, 'not-joined')
       return
     }
-    const chosen = choose(present, member, message.shape)
-    if (!chosen.ok) {
-      this.error(socketId, chosen.error)
+    const now = this.host.now()
+    const data = this.host.load()
+
+    if (message.type === 'choose') {
+      const chosen = choose(present, self.member, message.shape, data, now)
+      if (!chosen.ok) {
+        this.error(socketId, chosen.error)
+        return
+      }
+      this.host.attach(socketId, chosen.member)
+      this.broadcast()
       return
     }
-    this.host.attach(socketId, chosen.member)
+
+    const changed =
+      message.type === 'invite'
+        ? invite(present, data, self, message.people, message.field, now)
+        : answer(data, self.member.token, message.yes)
+    if (!changed.ok) {
+      this.error(socketId, changed.error)
+      return
+    }
+    this.host.save(changed.data)
+    this.broadcast()
+    // The last answer ends an invitation at once; otherwise the alarm does, after a minute.
+    if (message.type === 'answer') await this.settle()
+  }
+
+  /**
+   * Ends the invitations that are over: a room is made for those that have two players or more and
+   * its players are sent there (the state says which room is theirs); for the others the one who
+   * invited, and whoever said yes, hear that it is off.
+   */
+  async settle(): Promise<void> {
+    const { data, start, off } = settle(this.host.load(), this.host.now())
+    if (start.length === 0 && off.length === 0) return
+    // Kept before the rooms are made, so that a message in between doesn't settle them again.
+    this.host.save(data)
+    for (const invitation of off) this.tell(playersOf(invitation), 'invitation-off')
+    this.broadcast()
+    for (const invitation of start) {
+      const players = playersOf(invitation)
+      const room = await this.host.makeRoom(
+        invitation.field,
+        players.map(({ token, name, shape }) => ({ token, name, shape })),
+      )
+      if (room === null) {
+        this.tell(players, 'no-room')
+        continue
+      }
+      this.host.save(gameMade(this.host.load(), invitation, room, this.host.now()))
+      this.broadcast()
+    }
+  }
+
+  /** A room of this house says how its round is going: the list shows who is playing. */
+  report(room: string, report: RoomReport): void {
+    this.host.save(reported(this.host.load(), room, report, this.host.now()))
     this.broadcast()
   }
 
@@ -97,7 +171,18 @@ export class HouseSession {
 
   private broadcast(): void {
     const present = this.present()
-    for (const { id } of present) this.host.send(id, stateFor(present, id, this.host.code))
+    const data = this.host.load()
+    const now = this.host.now()
+    for (const { id } of present) {
+      this.host.send(id, stateFor(present, id, this.host.code, data, now))
+    }
+  }
+
+  /** Tells these people, on every socket they have open, about something that went wrong. */
+  private tell(people: readonly Person[], error: HouseErrorCode): void {
+    for (const { id, member } of this.present()) {
+      if (people.some((person) => person.token === member.token)) this.error(id, error)
+    }
   }
 
   private error(socketId: string, error: HouseErrorCode): void {

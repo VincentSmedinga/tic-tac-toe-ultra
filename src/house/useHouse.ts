@@ -14,6 +14,25 @@ const CLOSE_HOUSE_FULL = 4409
 /** What went wrong with the house itself: the codes of the server, plus three only the app knows. */
 export type HouseProblem = HouseErrorCode | 'unknown-house' | 'replaced' | 'unreachable'
 
+/**
+ * Problems that are only news: the house goes on. They are about something this person tried, or
+ * about an invitation, and are gone with the next thing they do.
+ */
+export const NOTICES = [
+  'shape-taken',
+  'not-joined',
+  'not-free',
+  'shape-needed',
+  'no-invitation',
+  'invitation-off',
+  'no-room',
+] as const satisfies readonly HouseProblem[]
+export type HouseNotice = (typeof NOTICES)[number]
+
+export function isNotice(problem: HouseProblem | null): problem is HouseNotice {
+  return NOTICES.some((notice) => notice === problem)
+}
+
 /** Problems that trying again won't solve. */
 const FINAL: readonly HouseProblem[] = [
   'unknown-house',
@@ -64,6 +83,7 @@ type HookAction =
   | { type: 'closed'; problem?: HouseProblem }
   | { type: 'state'; state: HouseState }
   | { type: 'problem'; problem: HouseProblem | null }
+  | { type: 'sent' }
 
 const START: HookState = { connection: 'connecting', state: null, problem: null }
 
@@ -84,6 +104,9 @@ function reduce(previous: HookState, action: HookAction): HookState {
       }
     case 'problem':
       return { ...previous, problem: action.problem }
+    case 'sent':
+      // Doing something new puts away the news about what happened before.
+      return isNotice(previous.problem) ? { ...previous, problem: null } : previous
   }
 }
 
@@ -201,7 +224,9 @@ export function useHouse(
 
   const send = useCallback((message: HouseClientMessage) => {
     const socket = socketRef.current
-    if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message))
+    if (socket?.readyState !== WebSocket.OPEN) return
+    dispatch({ type: 'sent' })
+    socket.send(JSON.stringify(message))
   }, [])
 
   return { ...view, retry, send }

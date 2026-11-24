@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode, SyntheticEvent } from 'react'
 import type { HouseClientMessage, HouseMember, HouseState } from '../../shared/house-protocol.ts'
 import { MAX_NAME_LENGTH } from '../../shared/protocol.ts'
 import type { ShapeId } from '../../shared/shapes.ts'
 import { useText } from '../i18n/store.ts'
-import type { PlainKey, Text } from '../i18n/types.ts'
+import type { PlainKey } from '../i18n/types.ts'
 import { CopyLink } from '../online/CopyLink.tsx'
 import {
   clearLastHouse,
@@ -17,13 +17,15 @@ import {
   setShape,
 } from '../online/identity.ts'
 import { Link } from '../online/Link.tsx'
-import { housePath } from '../online/route.ts'
+import { housePath, navigate, roomPath } from '../online/route.ts'
 import { Lost } from '../online/RoomPage.tsx'
 import { useScrollToTop } from '../online/scroll.ts'
 import { ShapePicker } from '../play/ShapePicker.tsx'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
-import { browserHouseDeps, useHouse } from './useHouse.ts'
-import type { HouseDeps, HouseIdentity, HouseProblem } from './useHouse.ts'
+import { InvitationCard, InviteForm, PlayingCard } from './Invite.tsx'
+import { nameOf } from './names.ts'
+import { browserHouseDeps, isNotice, useHouse } from './useHouse.ts'
+import type { HouseDeps, HouseIdentity, HouseNotice, HouseProblem } from './useHouse.ts'
 import '../online/Online.css'
 import './House.css'
 
@@ -41,6 +43,11 @@ const PROBLEMS: Record<HouseProblem, PlainKey> = {
   unreachable: 'problem.houseUnreachable',
   'invalid-message': 'problem.generic',
   'not-joined': 'problem.generic',
+  'not-free': 'problem.houseNotFree',
+  'shape-needed': 'problem.shapeNeeded',
+  'no-invitation': 'problem.noInvitation',
+  'invitation-off': 'problem.invitationOff',
+  'no-room': 'problem.noRoom',
 }
 
 /**
@@ -65,6 +72,25 @@ export function HousePage({ code, deps = browserHouseDeps }: HousePageProps) {
     if (mine) setShape(mine)
   }, [mine])
 
+  // The room of an invitation this person said yes to (or made) is made: everybody goes there.
+  const expectingRoom = useRef(false)
+  useEffect(() => {
+    if (!state) return
+    if (state.room !== undefined && expectingRoom.current) {
+      expectingRoom.current = false
+      navigate(roomPath(state.room))
+      return
+    }
+    const invitation = state.invitation
+    if (invitation) {
+      const mine = invitation.people.find((person) => person.id === state.you)
+      expectingRoom.current = invitation.from === state.you || mine?.answer === 'yes'
+    }
+  }, [state])
+  useEffect(() => {
+    if (problem === 'invitation-off' || problem === 'no-room') expectingRoom.current = false
+  }, [problem])
+
   if (identity === null) {
     return (
       <HouseEnter
@@ -77,7 +103,7 @@ export function HousePage({ code, deps = browserHouseDeps }: HousePageProps) {
     )
   }
 
-  const stops = problem !== null && problem !== 'shape-taken' && problem !== 'not-joined'
+  const stops = problem !== null && !isNotice(problem)
   if (stops && (state === null || problem !== 'unreachable')) {
     const canRetry =
       problem === 'replaced' || problem === 'unreachable' || problem === 'invalid-message'
@@ -113,7 +139,7 @@ export function HousePage({ code, deps = browserHouseDeps }: HousePageProps) {
     <HouseView
       state={state}
       send={send}
-      problem={problem === 'shape-taken' ? problem : null}
+      problem={isNotice(problem) ? problem : null}
       banner={
         connection === 'open' ? null : (
           <Lost onRetry={retry} connecting={connection === 'connecting'} />
@@ -181,13 +207,16 @@ export function HouseEnter({ code, onEnter }: HouseEnterProps) {
 interface HouseViewProps {
   state: HouseState
   send: (message: HouseClientMessage) => void
-  /** A choice the house refused. */
-  problem?: 'shape-taken' | null
+  /** Something the house refused, or news about an invitation. */
+  problem?: HouseNotice | null
   /** The connection is gone for a moment: said above everything. */
   banner?: ReactNode
 }
 
-/** The house from the inside: its code to pass on, who is there, and your shape. */
+/**
+ * The house from the inside: its code to pass on, an invitation, who is there, starting a game, and
+ * your shape.
+ */
 export function HouseView({ state, send, problem = null, banner = null }: HouseViewProps) {
   const t = useText()
   useScrollToTop('house')
@@ -213,53 +242,64 @@ export function HouseView({ state, send, problem = null, banner = null }: HouseV
         link={`${window.location.origin}${housePath(state.code)}`}
         lead={t('house.share')}
       />
-      <section className="house-people" aria-labelledby="house-people-title">
-        <h3 id="house-people-title">{t('house.people')}</h3>
-        <ul className="players">
-          {state.members.map((member) => (
-            <Member key={member.id} member={member} you={member.id === state.you} />
-          ))}
-        </ul>
-        {state.members.length < 2 && <p>{t('house.alone')}</p>}
-      </section>
-      <ShapePicker
-        label={t('house.pickShape')}
-        value={mine?.shape ?? null}
-        taken={taken}
-        onChange={(shape) => {
-          send({ type: 'choose', shape })
-        }}
-      />
       {problem && (
         <p className="message" role="alert">
           {t(PROBLEMS[problem])}
         </p>
       )}
+      {state.room !== undefined && <PlayingCard room={state.room} />}
+      <InvitationCard state={state} send={send} />
+      <section className="house-people" aria-labelledby="house-people-title">
+        <h3 id="house-people-title">{t('house.people')}</h3>
+        <ul className="players">
+          {state.members.map((member) => (
+            <Member key={member.id} member={member} state={state} />
+          ))}
+        </ul>
+        {state.members.length < 2 && <p>{t('house.alone')}</p>}
+      </section>
+      {mine?.status === 'free' &&
+        state.members.length >= 2 &&
+        (mine.shape === undefined ? (
+          <p>{t('house.invite.needShape')}</p>
+        ) : (
+          <InviteForm state={state} send={send} />
+        ))}
+      {mine?.status === 'free' && (
+        <ShapePicker
+          label={t('house.pickShape')}
+          value={mine.shape ?? null}
+          taken={taken}
+          onChange={(shape) => {
+            send({ type: 'choose', shape })
+          }}
+        />
+      )}
     </div>
   )
 }
 
-/** A name as the house shows it: with a number when somebody before had the same one. */
-function nameOf(t: Text, member: HouseMember): string {
-  return member.number === undefined
-    ? member.name
-    : t('house.person.number', { name: member.name, number: member.number })
-}
-
 const STATUS: Record<HouseMember['status'], PlainKey> = {
   free: 'house.person.free',
+  inviting: 'house.person.inviting',
+  invited: 'house.person.invited',
   playing: 'house.person.playing',
   watching: 'house.person.watching',
 }
 
-/** One person in the house: their shape, their name, and what they are doing. */
-function Member({ member, you }: { member: HouseMember; you: boolean }) {
+/**
+ * One person in the house: their shape, their name, and what they are doing. Somebody invited
+ * together with you shows how they answered instead.
+ */
+function Member({ member, state }: { member: HouseMember; state: HouseState }) {
   const t = useText()
+  const you = member.id === state.you
+  const answer = you ? undefined : answerNote(member, state)
   // What else there is to say, in a row: the dash is punctuation, every word comes from the dictionary.
   const notes = [
     you && t('player.you'),
     member.shape === undefined && t('player.choosing'),
-    t(STATUS[member.status]),
+    answer === undefined ? t(STATUS[member.status]) : t(answer),
   ].filter(Boolean)
   return (
     <li className="player" {...(you ? { 'data-you': '' } : {})}>
@@ -271,4 +311,17 @@ function Member({ member, you }: { member: HouseMember; you: boolean }) {
       <span>{[nameOf(t, member), ...notes].join(' – ')}</span>
     </li>
   )
+}
+
+/**
+ * How somebody answered the invitation you are part of: "ook uitgenodigd" while they haven't (to
+ * the one who invited they are simply "uitgenodigd"), or that they said yes or no.
+ */
+function answerNote(member: HouseMember, state: HouseState): PlainKey | undefined {
+  const invitation = state.invitation
+  const answer = invitation?.people.find((person) => person.id === member.id)?.answer
+  if (answer === undefined) return undefined
+  if (answer === 'yes') return 'house.answer.yes'
+  if (answer === 'no') return 'house.answer.no'
+  return invitation?.from === state.you ? undefined : 'house.answer.open'
 }

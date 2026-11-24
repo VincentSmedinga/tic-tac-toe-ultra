@@ -6,8 +6,8 @@ import type { FieldSettings } from '../shared/room.ts'
 import type { Env } from './env.ts'
 import { newGameId } from './game-id.ts'
 import { EXPIRES_AFTER_MS, mayGo } from './room-expiry.ts'
-import { newRoom, upgradeRoom } from './room-logic.ts'
-import type { RoomState } from './room-logic.ts'
+import { newHouseRoom, newRoom, seatCountOf, upgradeRoom } from './room-logic.ts'
+import type { HouseSeat, RoomState } from './room-logic.ts'
 import { RoomSession } from './room-session.ts'
 import type { Host } from './room-session.ts'
 
@@ -57,14 +57,31 @@ export class Room extends DurableObject<Env> {
    * count the rooms and the rounds of each.
    */
   async create(code: string, field: FieldSettings, seats: number): Promise<boolean> {
+    return this.make(code, newRoom(field, seats))
+  }
+
+  /**
+   * Makes the room with this code for a house (`house` is its code), with every seat taken by the
+   * people who said yes to an invitation; false when it already exists. Called by the house.
+   */
+  async createForHouse(
+    code: string,
+    field: FieldSettings,
+    seats: HouseSeat[],
+    house: string,
+  ): Promise<boolean> {
+    return this.make(code, newHouseRoom(field, seats, house))
+  }
+
+  private async make(code: string, room: RoomState): Promise<boolean> {
     if (this.exists()) return false
     const roomId = newGameId()
     this.ctx.storage.kv.put(CODE_KEY, code)
     this.ctx.storage.kv.put(ROOM_ID_KEY, roomId)
-    this.ctx.storage.kv.put(ROOM_KEY, newRoom(field, seats))
+    this.ctx.storage.kv.put(ROOM_KEY, room)
     this.touch()
     try {
-      await this.env.ARCHIVE.getByName(ARCHIVE_NAME).roomMade(roomId, Date.now(), seats)
+      await this.env.ARCHIVE.getByName(ARCHIVE_NAME).roomMade(roomId, Date.now(), seatCountOf(room))
     } catch (error) {
       // Only a count is lost: the room works without it.
       console.error('could not note the new room in the archive', error)
@@ -183,6 +200,18 @@ export class Room extends DurableObject<Env> {
         // players hear the id once the archive has it (see `archived` in room-session.ts).
         this.queue.add(id, game, Date.now())
         this.ctx.waitUntil(this.keepGames())
+      },
+      report: (report) => {
+        const house = this.ctx.storage.kv.get<RoomState>(ROOM_KEY)?.house
+        if (house === undefined) return
+        const code = String(this.ctx.storage.kv.get(CODE_KEY) ?? '')
+        // Only what the house shows is lost when it can't be told: the game goes on.
+        const tell = this.env.HOUSE.getByName(house)
+          .roomReport(code, report)
+          .catch((error: unknown) => {
+            console.error('could not tell the house about the round', error)
+          })
+        this.ctx.waitUntil(tell)
       },
     }
     return new RoomSession(host)

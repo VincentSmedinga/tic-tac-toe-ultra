@@ -1,12 +1,20 @@
 import { DurableObject } from 'cloudflare:workers'
+import type { FieldSettings } from '../shared/room.ts'
 import type { Env } from './env.ts'
-import type { Member } from './house-logic.ts'
+import { EMPTY_HOUSE } from './house-logic.ts'
+import type { HouseData, Member } from './house-logic.ts'
 import { HouseSession } from './house-session.ts'
 import type { HouseHost } from './house-session.ts'
+import { newRoomCode } from './room-code.ts'
 import { EXPIRES_AFTER_MS, mayGo } from './room-expiry.ts'
+import type { HouseSeat } from './room-logic.ts'
+import type { RoomReport } from './room-session.ts'
 
 const CODE_KEY = 'code'
 const TOUCHED_KEY = 'touched'
+const DATA_KEY = 'data'
+/** How often a new room code is tried before giving up, as the Worker does. */
+const CREATE_ATTEMPTS = 10
 
 /** What a socket remembers about itself while the house sleeps: who is on it, once they joined. */
 interface Attachment {
@@ -15,10 +23,10 @@ interface Attachment {
 }
 
 /**
- * One house: its code in storage (SQLite) and the sockets of the people who have it open, on the
- * WebSocket Hibernation API. Who is in the house lives on the sockets only, so a house keeps nobody
- * who isn't there. The rules are in house-logic.ts and what happens on a message in
- * house-session.ts; this class only connects them to Cloudflare.
+ * One house: its code, its invitations and its games in storage (SQLite), and the sockets of the
+ * people who have it open, on the WebSocket Hibernation API. Who has the house open lives on the
+ * sockets only. The rules are in house-logic.ts and what happens on a message in house-session.ts;
+ * this class only connects them to Cloudflare.
  */
 export class House extends DurableObject<Env> {
   /** Makes the house with this code; false when it already exists. Called by the Worker. */
@@ -33,6 +41,11 @@ export class House extends DurableObject<Env> {
     return this.ctx.storage.kv.get(CODE_KEY) !== undefined
   }
 
+  /** A room this house made says how its round is going. Called by the room. */
+  roomReport(room: string, report: RoomReport): void {
+    if (this.exists()) this.session().report(room, report)
+  }
+
   override fetch(request: Request): Response {
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('Expected a WebSocket', { status: 426 })
@@ -45,8 +58,8 @@ export class House extends DurableObject<Env> {
     return new Response(null, { status: 101, webSocket: client })
   }
 
-  override webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): void {
-    this.session().message(attachmentOf(ws).id, message)
+  override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    await this.session().message(attachmentOf(ws).id, message)
   }
 
   override webSocketClose(ws: WebSocket, code: number, reason: string): void {
@@ -59,19 +72,50 @@ export class House extends DurableObject<Env> {
     this.session().closed()
   }
 
-  /** A house that nobody has had open for a day is deleted; while somebody has, its day starts again. */
+  /**
+   * Runs for two reasons: an invitation's minute is up, and a house that nobody has had open for a
+   * day is deleted (while somebody has, its day starts again).
+   */
   override async alarm(): Promise<void> {
+    await this.session().settle()
     const connected = this.ctx.getWebSockets().some((ws) => ws.readyState === WebSocket.OPEN)
     const touched = this.ctx.storage.kv.get<number>(TOUCHED_KEY) ?? 0
     const idleMs = Date.now() - touched
     if (mayGo({ queued: 0, connected, asked: false, idleMs })) await this.ctx.storage.deleteAll()
-    else if (connected) this.touch()
-    else void this.ctx.storage.setAlarm(touched + EXPIRES_AFTER_MS)
+    else if (connected && idleMs >= EXPIRES_AFTER_MS) this.touch()
+    else this.schedule()
   }
 
   private touch(): void {
     this.ctx.storage.kv.put(TOUCHED_KEY, Date.now())
-    void this.ctx.storage.setAlarm(Date.now() + EXPIRES_AFTER_MS)
+    this.schedule()
+  }
+
+  private data(): HouseData {
+    return this.ctx.storage.kv.get<HouseData>(DATA_KEY) ?? EMPTY_HOUSE
+  }
+
+  /** The next alarm: when the first invitation lapses, or else when the house expires. */
+  private schedule(): void {
+    const touched = this.ctx.storage.kv.get<number>(TOUCHED_KEY) ?? Date.now()
+    const lapses = this.data().invitations.map((invitation) => invitation.lapses)
+    void this.ctx.storage.setAlarm(Math.min(touched + EXPIRES_AFTER_MS, ...lapses))
+  }
+
+  /** Makes a room for the people of an invitation, with a code that is free. */
+  private async makeRoom(field: FieldSettings, seats: HouseSeat[]): Promise<string | null> {
+    const house = String(this.ctx.storage.kv.get(CODE_KEY) ?? '')
+    try {
+      for (let attempt = 0; attempt < CREATE_ATTEMPTS; attempt++) {
+        const code = newRoomCode()
+        if (await this.env.ROOM.getByName(code).createForHouse(code, field, seats, house)) {
+          return code
+        }
+      }
+    } catch (error) {
+      console.error('could not make a room for the house', error)
+    }
+    return null
   }
 
   private session(): HouseSession {
@@ -97,6 +141,12 @@ export class House extends DurableObject<Env> {
         this.touch()
       },
       now: () => Date.now(),
+      load: () => this.data(),
+      save: (data) => {
+        this.ctx.storage.kv.put(DATA_KEY, data)
+        this.schedule()
+      },
+      makeRoom: (field, seats) => this.makeRoom(field, seats),
     }
     return new HouseSession(host)
   }
