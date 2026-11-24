@@ -4,6 +4,7 @@
  * the server run exactly the same rules. Classic tic-tac-toe is `{ width: 3, height: 3,
  * winLength: 3, players: ['X', 'O'] }`.
  */
+import { canStillWin } from './dead.ts'
 
 /** Who plays: the engine only knows this id; which shape a player gets is up to the app. */
 export type PlayerId = string
@@ -38,6 +39,10 @@ export type GameStatus =
       readonly winner: PlayerId
       readonly lines: readonly (readonly Cell[])[]
     }
+  /**
+   * Nobody can win any more: the field is full, or no line of `winLength` can be completed by
+   * anyone, whatever the rest of the moves are (`canStillWin`), so the game stops with empty cells.
+   */
   | { readonly kind: 'draw' }
 
 export interface GameState {
@@ -120,11 +125,42 @@ export function applyMove(state: GameState, move: Move): MoveResult {
   if (moveCount === config.width * config.height)
     return succeed({ ...next, status: { kind: 'draw' } })
 
-  const index = config.players.indexOf(move.player)
-  const following = config.players[(index + 1) % config.players.length]
+  const following = playerAfter(config, move.player)
+  if (!canStillWin(config, cells, following)) return succeed({ ...next, status: { kind: 'draw' } })
+  return succeed({ ...next, status: { kind: 'playing', next: following } })
+}
+
+function playerAfter(config: GameConfig, player: PlayerId): PlayerId {
+  const following = config.players[(config.players.indexOf(player) + 1) % config.players.length]
   if (following === undefined)
     throw new Error('unreachable: the player of a move is one of the players')
-  return succeed({ ...next, status: { kind: 'playing', next: following } })
+  return following
+}
+
+/**
+ * Puts a mark on a game that was already drawn early, and leaves it drawn. Only for reading back a
+ * game stored before the engine ended a dead position: it was played on until the field was full,
+ * so its moves keep coming after the draw. The same rules apply (turn order, on the field, a free
+ * cell); only the status stays what it is. Never for a game being played.
+ */
+export function applyMoveAfterDraw(state: GameState, move: Move): MoveResult {
+  const { config, status, moves } = state
+  const last = moves[moves.length - 1]
+  if (
+    status.kind !== 'draw' ||
+    last === undefined ||
+    state.moveCount >= config.width * config.height
+  )
+    return fail('game-over')
+  if (move.player !== playerAfter(config, last.player)) return fail('not-your-turn')
+  if (!isOnField(config, move.x, move.y)) return fail('out-of-bounds')
+  if (getCell(state, move) !== null) return fail('cell-taken')
+  return succeed({
+    ...state,
+    cells: state.cells.with(move.y * config.width + move.x, move.player),
+    moves: [...moves, { player: move.player, x: move.x, y: move.y }],
+    moveCount: state.moveCount + 1,
+  })
 }
 
 function fail(error: MoveError): MoveResult {

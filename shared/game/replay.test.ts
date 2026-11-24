@@ -187,6 +187,6 @@ describe('every game of classic tic-tac-toe', () => {
     explore(createGame(classic), null)
 
     expect(problems.slice(0, 3)).toEqual([])
-    expect(games).toBe(255_168)
+    expect(games).toBe(249_984)
   }, 60_000)
 })

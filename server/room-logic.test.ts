@@ -62,17 +62,15 @@ const xWins = [
   [2, 0],
 ] as const
 
-// A drawn game.
+// A drawn game: after seven moves no line is open to anybody, with two cells still empty.
 const draw = [
   [0, 0],
   [1, 0],
   [2, 0],
-  [1, 1],
   [0, 1],
   [2, 1],
-  [1, 2],
-  [0, 2],
   [2, 2],
+  [1, 2],
 ] as const
 
 describe('joining', () => {

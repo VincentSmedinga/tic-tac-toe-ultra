@@ -71,6 +71,31 @@ test('two players play a whole game, and a rematch, each in their own browser', 
   await expect(cell(anna, 1, 1)).toHaveAccessibleName('Rij 1, kolom 1: leeg')
 })
 
+test('a game ends in a draw as soon as nobody can win, with cells left', async ({ browser }) => {
+  const { anna, bo } = await startGame(browser)
+
+  // Seven moves leave no line open to anybody: the middle cell and the bottom left stay empty.
+  await cell(anna, 1, 1).click()
+  await cell(bo, 1, 2).click()
+  await cell(anna, 1, 3).click()
+  await cell(bo, 2, 1).click()
+  await cell(anna, 2, 3).click()
+  await cell(bo, 3, 3).click()
+  await expect(anna.getByText('Gelijkspel! Niemand kan meer winnen.')).toHaveCount(0)
+  await cell(anna, 3, 2).click()
+
+  for (const page of [anna, bo]) {
+    await expect(page.getByText('Gelijkspel! Niemand kan meer winnen.')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
+    await expect(cell(page, 2, 2)).toHaveAttribute('aria-disabled', 'true')
+  }
+  await expect(cell(bo, 2, 2)).toHaveAccessibleName('Rij 2, kolom 2: leeg')
+
+  await bo.getByRole('button', { name: 'Nog een keer' }).click()
+  await expect(bo.getByText('Jij begint')).toBeVisible()
+  await expect(cell(anna, 3, 2)).toHaveAccessibleName('Rij 3, kolom 2: leeg')
+})
+
 test('a player who is not on turn cannot move', async ({ browser }) => {
   const { anna, bo } = await startGame(browser)
   await expect(cell(bo, 2, 2)).toHaveAttribute('aria-disabled', 'true')

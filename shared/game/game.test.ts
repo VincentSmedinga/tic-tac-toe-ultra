@@ -217,22 +217,23 @@ describe('winning on 3×3', () => {
 })
 
 describe('a draw', () => {
+  // After these seven moves no line is open to anybody any more: (1, 1) and (0, 2) stay empty.
   const drawn = [
     [0, 0],
     [1, 0],
     [2, 0],
-    [1, 1],
     [0, 1],
     [2, 1],
-    [1, 2],
-    [0, 2],
     [2, 2],
+    [1, 2],
   ] as const
 
-  it('is declared when the field is full and nobody has won', () => {
-    const almost = play(createGame(classic), drawn.slice(0, 8))
+  it('is declared as soon as nobody can win any more, with cells left', () => {
+    const almost = play(createGame(classic), drawn.slice(0, 6))
     expect(almost.status).toEqual({ kind: 'playing', next: 'X' })
-    expect(play(almost, drawn.slice(8)).status).toEqual({ kind: 'draw' })
+    const game = play(almost, drawn.slice(6))
+    expect(game.status).toEqual({ kind: 'draw' })
+    expect(game.cells.filter((cell) => cell === null)).toHaveLength(2)
   })
 
   it('does not stop a win with the very last move', () => {
@@ -253,13 +254,14 @@ describe('a draw', () => {
 
   it('refuses a move once the game is a draw', () => {
     const game = play(createGame(classic), drawn)
-    expect(refusal(game, { player: 'O', x: 0, y: 0 })).toBe('game-over')
+    expect(refusal(game, { player: 'O', x: 0, y: 2 })).toBe('game-over')
   })
 })
 
 describe('every game of classic tic-tac-toe', () => {
   it('ends the way the known counts say', () => {
-    // 255,168 games are possible: 131,184 won by X, 77,904 by O and 46,080 drawn.
+    // 249,984 games are possible: 131,184 won by X, 77,904 by O and 40,896 drawn. A draw ends when
+    // nobody can win any more, not only on a full field, so there are fewer than the 255,168 before.
     const counts = { games: 0, X: 0, O: 0, draws: 0 }
     const explore = (state: GameState): void => {
       if (state.status.kind === 'won') {
@@ -280,7 +282,7 @@ describe('every game of classic tic-tac-toe', () => {
       }
     }
     explore(createGame(classic))
-    expect(counts).toEqual({ games: 255_168, X: 131_184, O: 77_904, draws: 46_080 })
+    expect(counts).toEqual({ games: 249_984, X: 131_184, O: 77_904, draws: 40_896 })
   })
 })
 
