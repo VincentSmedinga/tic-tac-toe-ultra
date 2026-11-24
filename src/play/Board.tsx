@@ -18,6 +18,8 @@ interface BoardProps {
   interactive?: boolean
   /** The cell played last, marked so it can be found at a glance (the replay). */
   lastMove?: Cell
+  /** Cells that would have been better than the move just played, marked (the replay's "Beter was"). */
+  better?: readonly Cell[]
   /** False leaves the cells out of the tab order, for a board that is only looked at (a long replay). */
   focusable?: boolean
   /** Fixes how the shapes are written (a test, a replay); without it every board has a seed of its own. */
@@ -39,6 +41,7 @@ export function Board({
   onPlay,
   interactive = true,
   lastMove,
+  better = [],
   focusable = true,
   seed,
 }: BoardProps) {
@@ -166,6 +169,7 @@ export function Board({
               tabIndex={focusable && index === active ? 0 : -1}
               data-winning={winning.has(`${x.toString()},${y.toString()}`) || undefined}
               data-last={(lastMove?.x === x && lastMove.y === y) || undefined}
+              data-better={better.some((cell) => cell.x === x && cell.y === y) || undefined}
               data-win-late={
                 (winDelay !== undefined && winning.has(`${x.toString()},${y.toString()}`)) ||
                 undefined

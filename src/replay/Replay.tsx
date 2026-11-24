@@ -1,10 +1,14 @@
-import { useEffect, useState } from 'react'
-import { replayGame, stateAfter } from '../../shared/game/index.ts'
-import type { GameConfig, Move } from '../../shared/game/index.ts'
+import { useEffect, useRef, useState } from 'react'
+import { RANK_SYMBOLS, replayGame, stateAfter, summariseGame } from '../../shared/game/index.ts'
+import type { GameConfig, Move, Rank } from '../../shared/game/index.ts'
 import { useText } from '../i18n/store.ts'
 import { Board } from '../play/Board.tsx'
 import { usePlayerNames, shapeOf } from '../play/players.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
+import { analyseOffThread } from './analyse.ts'
+import type { Analyser } from './analyse.ts'
+import { RankBadge, Summary } from './Summary.tsx'
+import { useAnalysis } from './useAnalysis.ts'
 import './Replay.css'
 
 interface ReplayProps {
@@ -14,6 +18,10 @@ interface ReplayProps {
   players?: readonly { id: string; name?: string | undefined }[]
   /** Shows a button that leaves the replay. */
   onClose?: () => void
+  /** Opens at the end of the game, on the summary: "Bekijk samenvatting" at the end of a game. */
+  startAtSummary?: boolean
+  /** Ranks the moves; the real one works in a Web Worker. A test or a story passes its own. */
+  analyse?: Analyser
 }
 
 /**
@@ -24,11 +32,27 @@ interface ReplayProps {
 export const STEP_MS = 1200
 
 /** Looks at a game again, move by move: with buttons, a slider, the arrow keys, or on its own. */
-export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
+export function Replay({
+  config,
+  moves,
+  players = [],
+  onClose,
+  startAtSummary = false,
+  analyse = analyseOffThread,
+}: ReplayProps) {
   const t = useText()
   const { labelOf } = usePlayerNames()
-  const [requested, setStep] = useState(0)
+  const [requested, setStep] = useState(startAtSummary ? moves.length : 0)
   const [autoplay, setAutoplay] = useState(false)
+  const analysis = useAnalysis(config, moves, analyse)
+  const slider = useRef<HTMLInputElement>(null)
+  const summaryHeading = useRef<HTMLHeadingElement>(null)
+  const ready = analysis.status === 'ready'
+
+  // Coming from "Bekijk samenvatting": take the summary into view as soon as there is one.
+  useEffect(() => {
+    if (startAtSummary && ready) summaryHeading.current?.focus()
+  }, [startAtSummary, ready])
 
   const replayed = replayGame(config, moves)
   const total = moves.length
@@ -81,6 +105,11 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
     setAutoplay(false)
     setStep(to)
   }
+  // A jump from the summary or the list of ranks: the slider is where the replay is, so it gets the focus.
+  const jumpTo = (to: number) => {
+    goTo(to)
+    slider.current?.focus()
+  }
   const togglePlay = () => {
     if (playing) {
       setAutoplay(false)
@@ -105,6 +134,12 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
     text = icon === null ? t('replay.beginsPlain') : t('replay.begins', { name: who(icon) })
   }
   const position = t('replay.position', { step, total })
+  const judged = analysis.status === 'ready' ? analysis.analysis.moves[step - 1] : undefined
+  const rank = judged?.rank ?? null
+  const better =
+    rank === 'mistake' || rank === 'blunder' ? (judged?.better.slice(0, MOST_BETTER) ?? []) : []
+  const rankOf = (index: number) =>
+    analysis.status === 'ready' ? (analysis.analysis.moves[index]?.rank ?? null) : null
 
   return (
     <section className="game replay" aria-label={t('replay.label')}>
@@ -113,12 +148,20 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
         <span>{text}</span>
       </p>
 
-      <Board game={game} onPlay={noop} interactive={false} focusable={false} lastMove={last} />
+      <Board
+        game={game}
+        onPlay={noop}
+        interactive={false}
+        focusable={false}
+        lastMove={last}
+        better={better}
+      />
 
       <div className="replay-position">
         <label htmlFor="replay-slider">{position}</label>
         <input
           id="replay-slider"
+          ref={slider}
           type="range"
           min={0}
           max={total}
@@ -128,6 +171,38 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
             goTo(Number(event.target.value))
           }}
         />
+        <p className="replay-rank" aria-live="polite">
+          {analysis.status === 'working' && (
+            <span className="replay-rank-note">{t('replay.working')}</span>
+          )}
+          {analysis.status === 'failed' && (
+            <span className="replay-rank-note">{t('replay.workingFailed')}</span>
+          )}
+          {rank !== null && last && (
+            <>
+              <RankBadge rank={rank} />
+              <span>
+                {t('replay.rank', {
+                  name: who(last.player),
+                  symbol: RANK_SYMBOLS[rank],
+                  rank: t(`rank.${rank}`),
+                })}
+              </span>
+              {judged?.certainty === 'tactical' && (
+                <span className="replay-rank-note">({t('replay.unsure')})</span>
+              )}
+            </>
+          )}
+        </p>
+        {better.length > 0 && (
+          <p className="replay-rank">
+            {t('replay.better', {
+              cells: better
+                .map(({ x, y }) => t('replay.betterCell', { row: y + 1, column: x + 1 }))
+                .join(' · '),
+            })}
+          </p>
+        )}
       </div>
 
       <div className="replay-controls" role="group" aria-label={t('replay.controls')}>
@@ -182,12 +257,77 @@ export function Replay({ config, moves, players = [], onClose }: ReplayProps) {
         </button>
       </div>
 
+      {analysis.status === 'ready' && (
+        <RankList moves={moves} who={who} step={step} rankOf={rankOf} onJump={jumpTo} />
+      )}
+
+      {analysis.status === 'ready' && (
+        <Summary
+          ref={summaryHeading}
+          summary={summariseGame(config, moves, analysis.analysis)}
+          who={who}
+          onJump={jumpTo}
+          rankOf={rankOf}
+        />
+      )}
+
       {onClose && (
         <button type="button" className="rematch" onClick={onClose}>
           {t('replay.close')}
         </button>
       )}
     </section>
+  )
+}
+
+/** How many better moves are named at once: more than a few say little, and the board shows them. */
+const MOST_BETTER = 3
+
+/** The moves that were judged, along the slider: one tap goes to the move. */
+function RankList({
+  moves,
+  who,
+  step,
+  rankOf,
+  onJump,
+}: {
+  moves: readonly Move[]
+  who: (player: string) => string
+  step: number
+  rankOf: (index: number) => Rank | null
+  onJump: (step: number) => void
+}) {
+  const t = useText()
+  const ranked = moves.flatMap((move, index) => {
+    const rank = rankOf(index)
+    return rank === null ? [] : [{ move, index, rank }]
+  })
+  if (ranked.length === 0) return null
+  return (
+    <nav aria-label={t('replay.ranks')}>
+      <ol className="replay-ranks">
+        {ranked.map(({ move, index, rank }) => (
+          <li key={index}>
+            <button
+              type="button"
+              aria-current={step === index + 1 ? 'step' : undefined}
+              aria-label={t('replay.rankJump', {
+                step: index + 1,
+                name: who(move.player),
+                rank: t(`rank.${rank}`),
+              })}
+              onClick={() => {
+                onJump(index + 1)
+              }}
+            >
+              <span>{index + 1}</span>
+              <ShapeIcon shape={shapeOf(move.player)} size={18} decorative />
+              <RankBadge rank={rank} />
+            </button>
+          </li>
+        ))}
+      </ol>
+    </nav>
   )
 }
 

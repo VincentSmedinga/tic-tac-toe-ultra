@@ -68,8 +68,10 @@ export function OnlineGame({ state, send, banner, connected = true }: OnlineGame
   } = usePlayMode()
   const { list } = useFormat()
   const names = usePlayerNames()
-  // The round whose replay is open, so a rematch can't leave it open for the next round.
-  const [replayRound, setReplayRound] = useState<number | null>(null)
+  // The round whose replay is open (so a rematch can't leave it open for the next round), and
+  // whether it opens on its summary.
+  const [replay, setReplay] = useState<{ round: number; summary: boolean } | null>(null)
+  const replayRound = replay?.round
   // The round in which "Stoppen" asked its question, so that the next round starts without it.
   const [leavingRound, setLeavingRound] = useState<number | null>(null)
   // The answer that keeps you here has the focus: leaving is for good.
@@ -102,8 +104,9 @@ export function OnlineGame({ state, send, banner, connected = true }: OnlineGame
           players={state.players.flatMap(({ shape, name }) =>
             shape === undefined ? [] : [{ id: shape, name }],
           )}
+          startAtSummary={replay?.summary === true}
           onClose={() => {
-            setReplayRound(null)
+            setReplay(null)
           }}
         />
       </>
@@ -212,10 +215,20 @@ export function OnlineGame({ state, send, banner, connected = true }: OnlineGame
             onClick={() => {
               // The replay is a screen of its own, not part of the mode.
               closeMode()
-              setReplayRound(state.round)
+              setReplay({ round: state.round, summary: false })
             }}
           >
             {t('play.replay')}
+          </button>
+          <button
+            type="button"
+            className="rematch rematch-quiet"
+            onClick={() => {
+              closeMode()
+              setReplay({ round: state.round, summary: true })
+            }}
+          >
+            {t('summary.show')}
           </button>
           <button
             type="button"

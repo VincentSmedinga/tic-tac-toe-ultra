@@ -73,6 +73,8 @@ export const EXACT_EMPTY_LIMIT = 12
 export const EXACT_FIELD_LIMIT = 36
 /** The most positions the solver may try for one game before it gives up and leaves it to the tactics. */
 export const EXACT_NODE_LIMIT = 250_000
+/** How many solved positions a kept solver holds on to between games. */
+const MEMO_LIMIT = 300_000
 /** How far from a mark the tactical search looks for a move on a big field. */
 const NEAR = 2
 /** Alternatives looked at when checking that a move could have been better. */
@@ -181,6 +183,8 @@ export class Solver {
   begin(limit: number): void {
     this.limit = limit
     this.nodes = 0
+    // A kept solver may not grow without end: a field that is almost too big to solve fills it.
+    if (this.memo.size > MEMO_LIMIT) this.memo.clear()
   }
 
   /** The score of each empty cell, for the player to move; null when the budget ran out. */

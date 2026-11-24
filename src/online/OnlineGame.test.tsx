@@ -339,6 +339,17 @@ describe('OnlineGame', () => {
       expect(screen.queryByRole('button', { name: 'Kijk terug' })).not.toBeInTheDocument()
     })
 
+    it('offers the summary after the game, with the names of the players, and never during it', async () => {
+      const { unmount } = render(<OnlineGame state={stateOf([x(0, 0)], 'O')} send={vi.fn()} />)
+      expect(screen.queryByRole('button', { name: 'Bekijk samenvatting' })).not.toBeInTheDocument()
+      unmount()
+
+      render(<OnlineGame state={stateOf(xWins, 'O')} send={vi.fn()} />)
+      await userEvent.setup().click(screen.getByRole('button', { name: 'Bekijk samenvatting' }))
+      expect(await screen.findByRole('heading', { name: 'Samenvatting' })).toHaveFocus()
+      expect(screen.getByRole('article', { name: 'Anna (kruis)' })).toBeVisible()
+    })
+
     it('ends when a rematch starts', async () => {
       const user = userEvent.setup()
       const { rerender } = render(<OnlineGame state={stateOf(xWins, 'O')} send={vi.fn()} />)
