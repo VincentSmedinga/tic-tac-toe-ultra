@@ -130,6 +130,17 @@ export function applyMove(state: GameState, move: Move): MoveResult {
   return succeed({ ...next, status: { kind: 'playing', next: following } })
 }
 
+/**
+ * Whether `player` would complete a line by putting a mark on the empty cell `at`, whoever's turn
+ * it is. A look at the position, never a move: the state is not changed and nothing is checked
+ * about the turn, so a position can be asked what each player threatens. A cell that is taken or
+ * off the field completes nothing.
+ */
+export function completesLine(state: GameState, at: Cell, player: PlayerId): boolean {
+  if (getCell(state, at) !== null) return false
+  return findLines(state, { ...at, player }).length > 0
+}
+
 function playerAfter(config: GameConfig, player: PlayerId): PlayerId {
   const following = config.players[(config.players.indexOf(player) + 1) % config.players.length]
   if (following === undefined)

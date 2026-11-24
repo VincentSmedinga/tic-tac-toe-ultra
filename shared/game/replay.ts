@@ -12,7 +12,25 @@ export type ReplayResult =
  * read back, also one that was played on after the point where nobody could win any more. Throws a `RangeError` when the config can't make a game, like `createGame`.
  */
 export function replayGame(config: GameConfig, moves: readonly Move[]): ReplayResult {
+  const along = replayStates(config, moves)
+  if (!along.ok) return along
+  const state = along.states.at(-1)
+  if (state === undefined) throw new Error('unreachable: a game has at least its empty field')
+  return { ok: true, state }
+}
+
+export type StatesResult =
+  | { readonly ok: true; readonly states: readonly GameState[] }
+  | { readonly ok: false; readonly index: number; readonly error: MoveError }
+
+/**
+ * Every state along a game: `states[i]` is the game after the first `i` moves, so `states[0]` is the
+ * empty field and the last one is the game as it is. The same as `stateAfter` for every `i`, in one
+ * pass instead of one replay each, for what looks at every position of a game (the analysis).
+ */
+export function replayStates(config: GameConfig, moves: readonly Move[]): StatesResult {
   let state = createGame(config)
+  const states = [state]
   for (const [index, move] of moves.entries()) {
     // A game stored before a dead position ended the game was played on to a full field: its moves
     // after the draw are read back as they were, and the game stays drawn.
@@ -20,8 +38,9 @@ export function replayGame(config: GameConfig, moves: readonly Move[]): ReplayRe
       state.status.kind === 'draw' ? applyMoveAfterDraw(state, move) : applyMove(state, move)
     if (!result.ok) return { ok: false, index, error: result.error }
     state = result.state
+    states.push(state)
   }
-  return { ok: true, state }
+  return { ok: true, states }
 }
 
 /**
