@@ -162,9 +162,9 @@ describe('Game', () => {
     })
   })
 
-  it('declares a draw, and offers another round', async () => {
+  it('declares a draw as soon as nobody can win, and offers another round', async () => {
     await startGame()
-    await tap([1, 1], [1, 2], [1, 3], [2, 2], [2, 1], [2, 3], [3, 2], [3, 1], [3, 3])
+    await tap([1, 1], [1, 2], [1, 3], [2, 1], [2, 3], [3, 3], [3, 2])
     expect(screen.getByRole('status')).toHaveTextContent('Gelijkspel!')
     expect(screen.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
     for (const name of screen.getAllByRole('button', { name: /^Rij/ })) {

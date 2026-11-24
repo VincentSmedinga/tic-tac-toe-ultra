@@ -92,19 +92,18 @@ export const WonOnTwoLines: Story = {
   },
 }
 
+/** A draw is called as soon as nobody can win any more: here two cells are still empty. */
 export const Draw: Story = {
   name: 'Gelijkspel',
   args: {
     game: played(classic, [
       [0, 0],
-      [1, 1],
-      [2, 2],
       [1, 0],
-      [1, 2],
-      [0, 2],
       [2, 0],
-      [2, 1],
       [0, 1],
+      [2, 1],
+      [2, 2],
+      [1, 2],
     ]),
   },
 }

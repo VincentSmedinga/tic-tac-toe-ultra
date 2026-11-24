@@ -97,7 +97,7 @@ export const en: Dictionary = {
 
   'status.won': '{name} has won!',
   'status.youWon': 'You have won!',
-  'status.draw': 'A draw! Nobody has won.',
+  'status.draw': 'A draw! Nobody can win any more.',
   'status.starts': '{name} starts',
   'status.turn': "It is {name}'s turn",
   'status.youStart': 'You start',

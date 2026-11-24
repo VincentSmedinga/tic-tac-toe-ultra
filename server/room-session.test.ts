@@ -313,14 +313,12 @@ describe('keeping a finished game', () => {
   /** All nine cells filled and no line for either player. */
   const DRAW = [
     ['a', 0, 0],
-    ['b', 1, 1],
-    ['a', 2, 2],
     ['b', 1, 0],
-    ['a', 1, 2],
-    ['b', 0, 2],
     ['a', 2, 0],
-    ['b', 2, 1],
-    ['a', 0, 1],
+    ['b', 0, 1],
+    ['a', 2, 1],
+    ['b', 2, 2],
+    ['a', 1, 2],
   ] as const
 
   function play(
@@ -381,12 +379,20 @@ describe('keeping a finished game', () => {
     expect(setup.host.sent).toEqual([])
   })
 
-  it('keeps a drawn game', () => {
+  it('keeps a drawn game, also when it ends with cells left', () => {
     const setup = started()
     play(setup, DRAW)
     expect(setup.host.archived).toHaveLength(1)
     expect(setup.host.archived[0]?.game.result).toEqual({ kind: 'draw' })
-    expect(setup.host.archived[0]?.game.moves).toHaveLength(9)
+    expect(setup.host.archived[0]?.game.moves).toHaveLength(7)
+  })
+
+  it('refuses a move on a game that is drawn with cells left, as after a win', () => {
+    const setup = started()
+    play(setup, DRAW)
+    say(setup.session, 'b', { type: 'move', x: 1, y: 1 })
+    expect(setup.host.archived).toHaveLength(1)
+    expect(setup.host.sent.at(-1)?.message).toMatchObject({ type: 'error', error: 'game-over' })
   })
 
   it('keeps it also when the opponent has lost the connection by then', () => {

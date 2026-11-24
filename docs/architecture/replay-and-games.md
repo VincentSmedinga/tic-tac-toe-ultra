@@ -5,6 +5,7 @@ The decisions are in [docs/plan.md](../plan.md), Decisions (games can be watched
 
 - `src/replay/Replay.tsx` looks at a game again, given a config and its moves (and optionally who sat where).
 - It only reads the game with the engine's `replayGame` and `stateAfter`, so it works for any field and any number of players.
+- A game that ended in a draw with cells left shows "Gelijkspel! Niemand kan nog winnen." at its last step; a game stored before that, played on to a full field, shows the same.
 - It has buttons, a slider, the arrow keys, Home and End, and an autoplay.
 - Autoplay has one speed: `STEP_MS`, 1.2 seconds a step. A shape takes at most a second to write, so a step is done, and rests a moment, before the next begins. There is no choice of speed.
 - Step buttons have a triangle and a bar (◀| and |▶), the jumps to the start and end two triangles (|◀◀ and ▶▶|), and play is alone a round, solid, bigger button in the middle (two bars while it plays), so none is taken for another.

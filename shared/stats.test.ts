@@ -58,7 +58,8 @@ const TOP_ROW = game(
   at(18, 10),
   { startedAfter: 60_000 },
 )
-// Nine moves, nobody wins; no start time was kept.
+// Nine moves, nobody wins; no start time was kept. Stored before a game ended once nobody could win,
+// so it was played on to a full field: it must still be read back as the draw it is.
 const DRAW = game(
   'draw',
   ['heart', 'star'],
@@ -104,8 +105,29 @@ const BIG = game(
   { width: 5, height: 5, startedAfter: 40_000 },
 )
 const GAMES = [TOP_ROW, DRAW, DIAGONAL, BIG]
+// A draw that ended after seven moves, with two cells still empty, as a game ends now.
+const EARLY_DRAW = game(
+  'early-draw',
+  ['cross', 'circle'],
+  [
+    [0, 0],
+    [1, 0],
+    [2, 0],
+    [0, 1],
+    [2, 1],
+    [2, 2],
+    [1, 2],
+  ],
+  at(17, 9),
+)
 
 describe('statistics', () => {
+  it('count a draw that ended with cells left like any other', () => {
+    const stats = computeStats([EARLY_DRAW], NOW)
+    expect(stats).toMatchObject({ games: 1, won: 0, drawn: 1 })
+    expect(stats.moves).toMatchObject({ shortest: 7, longest: 7 })
+  })
+
   it('are valid for what the schema allows', () => {
     expect(statsSchema.safeParse(computeStats(GAMES, NOW)).success).toBe(true)
     expect(statsSchema.safeParse(computeStats([], NOW)).success).toBe(true)

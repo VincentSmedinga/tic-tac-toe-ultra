@@ -100,7 +100,7 @@ export const ro: Dictionary = {
 
   'status.won': '{name} a câștigat!',
   'status.youWon': 'Ai câștigat!',
-  'status.draw': 'Egalitate! Nimeni nu a câștigat.',
+  'status.draw': 'Egalitate! Nimeni nu mai poate câștiga.',
   'status.starts': '{name} începe',
   'status.turn': 'Este rândul lui {name}',
   'status.youStart': 'Tu începi',

@@ -186,9 +186,9 @@ describe('OnlineGame', () => {
     })
 
     it('declares a draw', () => {
-      const draw = [x(0, 0), o(1, 0), x(2, 0), o(1, 1), x(0, 1), o(2, 1), x(1, 2), o(0, 2), x(2, 2)]
+      const draw = [x(0, 0), o(1, 0), x(2, 0), o(0, 1), x(2, 1), o(2, 2), x(1, 2)]
       render(<OnlineGame state={stateOf(draw, 'X')} send={vi.fn()} />)
-      expect(screen.getByText('Gelijkspel! Niemand heeft gewonnen.')).toBeVisible()
+      expect(screen.getByText('Gelijkspel! Niemand kan nog winnen.')).toBeVisible()
       expect(screen.getByRole('button', { name: 'Nog een keer' })).toBeVisible()
     })
 

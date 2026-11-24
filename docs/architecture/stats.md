@@ -7,6 +7,7 @@ The decisions are in [docs/plan.md](../plan.md), Decisions, "Statistics (#48)".
 
 - `GET /api/stats` answers the statistics of all finished games together (`Stats` in `shared/protocol.ts`).
 - They are worked out from `ArchiveStore.all()` by `computeStats` (`shared/stats.ts`, pure) every time, never kept as counters.
+- A draw can end after as few as six moves on 3×3 (it ends when nobody can win any more), so the shortest and average game count it like any other.
 - The answer holds only counts and shapes: never a name, a token or the moves of one game.
 - The browser may cache it for 30 seconds.
 - `GET /api/stats/mine` counts the games of one browser (`OwnStats`, from `ArchiveStore.ownGames` and `computeOwnStats`); token and caching as in [server.md](server.md).

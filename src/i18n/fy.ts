@@ -97,7 +97,7 @@ export const fy: Dictionary = {
 
   'status.won': '{name} hat wûn!',
   'status.youWon': 'Do hast wûn!',
-  'status.draw': 'Lykspul! Nimmen hat wûn.',
+  'status.draw': 'Lykspul! Nimmen kin noch winne.',
   'status.starts': '{name} begjint',
   'status.turn': '{name} is oan de beurt',
   'status.youStart': 'Do begjinst',

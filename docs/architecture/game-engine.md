@@ -7,6 +7,10 @@ The product decisions are in [docs/plan.md](../plan.md), Decisions and Architect
 - Import the engine from `shared/game/index.ts`. Never reimplement a rule in the app or the server.
 - `createGame` and `applyMove` are immutable and have no side effects.
 - A won game has `lines`: every line the last move completes, so a corner can win a row and a column at once.
+- A game is a draw when nobody can win any more, not only on a full field: `canStillWin` (`dead.ts`) looks at every window of `winLength` cells and says whether some player can still fill one with the turns they have left.
+- `canStillWin` is optimistic on purpose: it is late sometimes but never early (`dead.test.ts` checks every reachable position of small games against a brute force), and a full field never happens, since the last cell either wins or the position was dead already.
+- The cells that are still empty when a game is drawn stay empty: the status is `draw` and `applyMove` answers `game-over`, as after a win.
+- A game stored before this was played on to a full field after its dead position: `replayGame` reads those moves back (`applyMoveAfterDraw`) and keeps the game drawn. Never use it for a game being played.
 - A game is its `config` plus its `moves`, kept in the `GameState`. That is what gets stored.
 - `replayGame(config, moves)` and `stateAfter(state, count)` (`replay.ts`) read a stored game back and step through it.
 - The engine works for any field size, winning length and number of players (two to twelve).

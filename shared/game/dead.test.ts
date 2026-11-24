@@ -4,7 +4,7 @@ import type { GameConfig, GameState, PlayerId } from './index.ts'
 
 /** Builds a field from rows of text: `.` is empty, any other letter is that player. */
 function field(...rows: string[]): (PlayerId | null)[] {
-  return rows.flatMap((row) => [...row].map((letter) => (letter === '.' ? null : letter)))
+  return rows.flatMap((row) => row.split('').map((letter) => (letter === '.' ? null : letter)))
 }
 
 describe('canStillWin', () => {

@@ -124,7 +124,24 @@ describe('Replay', () => {
     expect(screen.getByText('Zet 0 van 5')).toBeInTheDocument()
   })
 
-  it('says it is a draw at the end of a drawn game', async () => {
+  it('says it is a draw at the end of a game that ended with cells left', async () => {
+    const early: Move[] = [
+      { player: 'X', x: 0, y: 0 },
+      { player: 'O', x: 1, y: 0 },
+      { player: 'X', x: 2, y: 0 },
+      { player: 'O', x: 0, y: 1 },
+      { player: 'X', x: 2, y: 1 },
+      { player: 'O', x: 2, y: 2 },
+      { player: 'X', x: 1, y: 2 },
+    ]
+    const user = userEvent.setup()
+    render(<Replay config={CLASSIC} moves={early} />)
+    await user.click(screen.getByRole('button', { name: 'Naar het einde' }))
+    expect(screen.getByText('Zet 7 van 7')).toBeInTheDocument()
+    expect(status()).toHaveTextContent('Gelijkspel! Niemand kan nog winnen.')
+  })
+
+  it('says it is a draw at the end of a game stored before dead positions ended a game', async () => {
     const draw: Move[] = [
       { player: 'X', x: 0, y: 0 },
       { player: 'O', x: 1, y: 1 },
@@ -139,7 +156,7 @@ describe('Replay', () => {
     const user = userEvent.setup()
     render(<Replay config={CLASSIC} moves={draw} />)
     await user.click(screen.getByRole('button', { name: 'Naar het einde' }))
-    expect(status()).toHaveTextContent('Gelijkspel! Niemand heeft gewonnen.')
+    expect(status()).toHaveTextContent('Gelijkspel! Niemand kan nog winnen.')
   })
 
   it('calls players by the name they typed', async () => {
