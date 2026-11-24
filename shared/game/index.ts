@@ -9,5 +9,6 @@ export type {
   MoveResult,
   PlayerId,
 } from './game.ts'
+export { canStillWin } from './dead.ts'
 export { replayGame, stateAfter } from './replay.ts'
 export type { ReplayResult } from './replay.ts'
