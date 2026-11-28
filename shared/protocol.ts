@@ -38,7 +38,7 @@ const fieldShape = z.object({
   winLength: z.number().int().min(FIELD_LIMITS.minWin).max(FIELD_LIMITS.maxWin),
 })
 
-/** The field of a room, as asked for when it is made and as told to the players. */
+/** A field somebody asks for: for a new room, or with an invitation in a house. */
 export const fieldSchema = fieldShape.refine(isValidField, {
   message: 'odd numbers, and the row must fit on the field',
 })
@@ -101,6 +101,13 @@ export const configSchema = z.object({
   players: z.array(z.string()).min(2),
 })
 export const moveSchema = z.object({ player: z.string(), x: z.number().int(), y: z.number().int() })
+
+/**
+ * A field as the server tells it. The app takes any field a game could be played on and leaves the
+ * limits to the server (`fieldSchema`), so an app that was left open while the limits changed can
+ * still read the room it is in.
+ */
+export const toldFieldSchema = configSchema.omit({ players: true })
 
 /** The address of a stored game: random and unguessable, so knowing it is the right to see it. */
 export const GAME_ID_LENGTH = 16
@@ -268,7 +275,7 @@ export const stateMessageSchema = z.object({
   /** The seat of the one who receives this. */
   you: z.string(),
   /** The field of this room, from the moment it is made: how big, and how many in a row win. */
-  field: fieldSchema,
+  field: toldFieldSchema,
   /** How many seats the room has, taken or not: the first one is the one who may start the game. */
   seats: z.number().int().min(PLAYER_LIMITS.min).max(PLAYER_LIMITS.max),
   /** Which round of the evening this is; the starting player alternates with it. */

@@ -112,7 +112,15 @@ describe('a message from the server', () => {
     })
   })
 
+  it('is read with a field outside the limits of what a room can be asked for', () => {
+    // Only the server holds the limits, so that an app left open can read a room made after them.
+    const told = { ...state, field: { width: 24, height: 2, winLength: 12 } }
+    expect(parseServerMessage(JSON.stringify(told))).toEqual(told)
+  })
+
   it('is refused when it is not one of those', () => {
+    const noField = { ...state, field: { width: 3, height: 3, winLength: 1.5 } }
+    expect(parseServerMessage(JSON.stringify(noField))).toBeNull()
     expect(parseServerMessage(JSON.stringify({ type: 'error', error: 'whatever' }))).toBeNull()
     expect(parseServerMessage(JSON.stringify({ ...state, code: 'abcd' }))).toBeNull()
     expect(parseServerMessage('nope')).toBeNull()
