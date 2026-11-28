@@ -2,7 +2,10 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
+import { OUTLINE_FIELDS } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
+import { setLanguage } from '../i18n/store.ts'
+import { dutchLeaks } from '../i18n/testing.ts'
 import { FieldPicker } from './FieldPicker.tsx'
 
 const CLASSIC: FieldSettings = { width: 3, height: 3, winLength: 3 }
@@ -135,5 +138,58 @@ describe('FieldPicker', () => {
       'aria-pressed',
       'true',
     )
+  })
+})
+
+describe('the fields with an outline in the picker', () => {
+  const pressed = (name: RegExp) => screen.getByRole('button', { name })
+
+  it('are ready-made choices with their name and row', async () => {
+    const seen = vi.fn()
+    render(<Holder seen={seen} />)
+    const user = userEvent.setup()
+    await user.click(pressed(/^Piramide/))
+    expect(seen).toHaveBeenLastCalledWith({
+      width: 13,
+      height: 7,
+      winLength: 5,
+      outline: 'pyramid',
+    })
+    expect(pressed(/^Piramide/)).toHaveAttribute('aria-pressed', 'true')
+    expect(pressed(/^Piramide/)).toHaveTextContent('vijf op een rij')
+    expect(summary()).toHaveTextContent('Piramide, vijf op een rij')
+
+    await user.click(pressed(/^Plus/))
+    expect(seen).toHaveBeenLastCalledWith({ width: 9, height: 9, winLength: 5, outline: 'plus' })
+    expect(pressed(/^Piramide/)).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('open as the choice in use, not as a field of your own', () => {
+    render(<Holder start={OUTLINE_FIELDS.plus} />)
+    expect(pressed(/^Plus/)).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByLabelText('Breedte')).not.toBeInTheDocument()
+  })
+
+  it('become a rectangle of the same size as a field of your own, which can then change', async () => {
+    const seen = vi.fn()
+    render(<Holder start={OUTLINE_FIELDS.pyramid} seen={seen} />)
+    const user = userEvent.setup()
+    await user.click(pressed(/Eigen veld/))
+    expect(seen).toHaveBeenLastCalledWith({ width: 13, height: 7, winLength: 5 })
+    await user.selectOptions(screen.getByLabelText('Breedte'), '9')
+    expect(seen).toHaveBeenLastCalledWith({ width: 9, height: 7, winLength: 5 })
+  })
+
+  it.each([
+    ['en', 'Pyramid', 'Plus, five in a row'],
+    ['fy', 'Piramide', 'Plus, fiif op in rige'],
+  ] as const)('are in the language (%s)', async (language, pyramid, label) => {
+    setLanguage(language)
+    render(<Holder />)
+    const user = userEvent.setup()
+    expect(screen.getByRole('button', { name: new RegExp(`^${pyramid}`) })).toBeVisible()
+    await user.click(pressed(/^Plus/))
+    expect(summary()).toHaveTextContent(label)
+    expect(dutchLeaks(language)).toEqual([])
   })
 })

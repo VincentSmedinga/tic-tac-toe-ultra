@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import { useText } from '../i18n/store.ts'
-import { FIELD_LIMITS, FIELD_PRESETS, oddNumbers } from '../../shared/room.ts'
-import type { FieldSettings } from '../../shared/room.ts'
-import { fieldLabel, longestRow, presetOf, rowChoices, suggestedRow } from './field.ts'
+import { FIELD_LIMITS, oddNumbers } from '../../shared/room.ts'
+import type { FIELD_PRESETS, FieldSettings } from '../../shared/room.ts'
+import {
+  fieldLabel,
+  longestRow,
+  outlineName,
+  presetOf,
+  READY_FIELDS,
+  rowChoices,
+  rowLabel,
+  suggestedRow,
+} from './field.ts'
 import './FieldPicker.css'
 
 interface FieldPickerProps {
@@ -12,10 +21,16 @@ interface FieldPickerProps {
 
 const SIDES = oddNumbers(FIELD_LIMITS.minSide, FIELD_LIMITS.maxSide)
 
+/** The box of a field as a field of its own: the same size and row, without an outline. */
+function rectangle({ width, height, winLength }: FieldSettings): FieldSettings {
+  return { width, height, winLength }
+}
+
 /**
- * The field of a game: a few ready-made choices, or the width, the height and the number in a row
- * of your own. The sides are odd, the row is any number that fits: it can't be longer than the
- * longest side, so it comes down by itself when the field gets smaller.
+ * The field of a game: a few ready-made choices, among them the fields that are not a rectangle, or
+ * the width, the height and the number in a row of your own. The sides are odd, the row is any
+ * number that fits: it can't be longer than the longest side, so it comes down by itself when the
+ * field gets smaller. A field of your own is always a rectangle.
  */
 export function FieldPicker({ value, onChange }: FieldPickerProps) {
   const t = useText()
@@ -29,7 +44,7 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
   // The row follows the suggestion for as long as it is the suggestion: a row that someone chose
   // for themselves stays (or comes down when the field can't hold it any more).
   const change = (next: Partial<FieldSettings>) => {
-    const field = { ...value, ...next }
+    const field = { ...rectangle(value), ...next }
     // Only a change of the size follows the suggestion: asking for a row is asking for that row.
     const following = next.winLength === undefined && value.winLength === suggestion
     const winLength = following ? suggestedRow(field) : Math.min(field.winLength, longestRow(field))
@@ -40,18 +55,24 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
     <fieldset className="field-picker">
       <legend>{t('field.legend')}</legend>
       <div className="field-presets">
-        {FIELD_PRESETS.map((option) => (
+        {READY_FIELDS.map(({ id, ...field }) => (
           <button
-            key={option.id}
+            key={id}
             type="button"
-            aria-pressed={preset === option.id}
+            aria-pressed={preset === id}
             onClick={() => {
               setCustom(false)
-              onChange({ width: option.width, height: option.height, winLength: option.winLength })
+              onChange(field)
             }}
           >
-            <span className="field-preset-name">{t(`field.preset.${option.id}`)}</span>
-            <span className="field-preset-size">{fieldLabel(t, option)}</span>
+            <span className="field-preset-name">
+              {field.outline === undefined
+                ? t(`field.preset.${id as (typeof FIELD_PRESETS)[number]['id']}`)
+                : outlineName(t, field.outline)}
+            </span>
+            <span className="field-preset-size">
+              {field.outline === undefined ? fieldLabel(t, field) : rowLabel(t, field.winLength)}
+            </span>
           </button>
         ))}
         <button
@@ -59,6 +80,7 @@ export function FieldPicker({ value, onChange }: FieldPickerProps) {
           aria-pressed={custom}
           onClick={() => {
             setCustom(true)
+            if (value.outline !== undefined) onChange(rectangle(value))
           }}
         >
           <span className="field-preset-name">{t('field.custom')}</span>
