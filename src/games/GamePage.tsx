@@ -96,8 +96,13 @@ export function GamePage({ id, api = gamesApi, rooms = roomApi }: GamePageProps)
             className="button button-primary"
             disabled={again === 'busy'}
             onClick={() => {
-              const { width, height, winLength } = loaded.game.config
-              void playAgain({ width, height, winLength })
+              const { width, height, winLength, outline } = loaded.game.config
+              void playAgain({
+                width,
+                height,
+                winLength,
+                ...(outline === undefined ? {} : { outline }),
+              })
             }}
           >
             {t('gamePage.again')}

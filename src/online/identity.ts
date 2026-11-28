@@ -198,8 +198,8 @@ export function getRoomChoice(): RoomChoice | null {
   if (raw === null) return null
   try {
     const { players, field } = JSON.parse(raw) as { players: number; field: FieldSettings }
-    const { width, height, winLength } = field
-    const checked = { width, height, winLength }
+    const { width, height, winLength, outline } = field
+    const checked = { width, height, winLength, ...(outline === undefined ? {} : { outline }) }
     return isValidPlayerCount(players) && isValidField(checked) ? { players, field: checked } : null
   } catch {
     return null

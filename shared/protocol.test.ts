@@ -9,6 +9,7 @@ import {
   roomCodeSchema,
   storedGameSchema,
 } from './protocol.ts'
+import { OUTLINE_FIELDS } from './room.ts'
 
 const token = 'abcdefghijklmnop'
 const parse = (message: unknown) => parseClientMessage(JSON.stringify(message))
@@ -118,6 +119,13 @@ describe('a message from the server', () => {
     expect(parseServerMessage(JSON.stringify(told))).toEqual(told)
   })
 
+  it('keeps the outline of its field, and is refused with one nobody knows', () => {
+    const told = { ...state, field: OUTLINE_FIELDS.plus }
+    expect(parseServerMessage(JSON.stringify(told))).toEqual(told)
+    const unknown = { ...state, field: { ...OUTLINE_FIELDS.plus, outline: 'ring' } }
+    expect(parseServerMessage(JSON.stringify(unknown))).toBeNull()
+  })
+
   it('is refused when it is not one of those', () => {
     const noField = { ...state, field: { width: 3, height: 3, winLength: 1.5 } }
     expect(parseServerMessage(JSON.stringify(noField))).toBeNull()
@@ -162,6 +170,16 @@ describe('a stored game', () => {
     expect(storedGameSchema.safeParse({ ...stored, startedAt: 1.5 }).success).toBe(false)
   })
 
+  it('keeps its outline, and is no game with one nobody knows', () => {
+    const withOutline = (outline: string) => ({
+      ...stored,
+      config: { ...stored.config, outline },
+    })
+    expect(storedGameSchema.parse(withOutline('plus')).config.outline).toBe('plus')
+    // Never read as the rectangle around it.
+    expect(storedGameSchema.safeParse(withOutline('ring')).success).toBe(false)
+  })
+
   it('is refused with an id that is no id, or a result nobody knows', () => {
     expect(storedGameSchema.safeParse({ ...stored, id: 'short' }).success).toBe(false)
     expect(storedGameSchema.safeParse({ ...stored, id: 'abcdefghijklmno!' }).success).toBe(false)
@@ -197,6 +215,27 @@ describe('the field of a room', () => {
     expect(fieldSchema.safeParse({ width: 5, height: 5, winLength: 6 }).success).toBe(false)
     expect(fieldSchema.safeParse({ width: 3, height: 3, winLength: 4 }).success).toBe(false)
     expect(fieldSchema.safeParse({ width: 3, height: 3, winLength: 2 }).success).toBe(false)
+  })
+
+  it('may be an outline, exactly as it comes', () => {
+    for (const field of Object.values(OUTLINE_FIELDS)) {
+      expect(fieldSchema.parse(field)).toEqual(field)
+      expect(roomSettingsSchema.parse({ ...field, players: 3 })).toEqual({ ...field, players: 3 })
+    }
+  })
+
+  it('is refused as an outline with a size or a row of its own, or a name nobody knows', () => {
+    const { pyramid } = OUTLINE_FIELDS
+    for (const field of [
+      { ...pyramid, width: 11 },
+      { ...pyramid, height: 9 },
+      { ...pyramid, winLength: 3 },
+      { ...pyramid, outline: 'plus' },
+      { ...pyramid, outline: 'ring' },
+    ]) {
+      expect(fieldSchema.safeParse(field).success, JSON.stringify(field)).toBe(false)
+      expect(roomSettingsSchema.safeParse(field).success, JSON.stringify(field)).toBe(false)
+    }
   })
 
   it('is refused when it is not whole numbers', () => {

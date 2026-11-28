@@ -1,4 +1,5 @@
-import type { GameConfig, PlayerId } from './game/index.ts'
+import { OUTLINES } from './game/index.ts'
+import type { GameConfig, OutlineId, PlayerId } from './game/index.ts'
 
 /**
  * How many people a room can have: from two to one for every shape. Whoever makes the room says
@@ -25,6 +26,8 @@ export interface FieldSettings {
   readonly width: number
   readonly height: number
   readonly winLength: number
+  /** Which cells exist, for a field that is not a rectangle: then one of `OUTLINE_FIELDS`. */
+  readonly outline?: OutlineId
 }
 
 /**
@@ -43,13 +46,35 @@ export const FIELD_PRESETS: readonly (FieldSettings & { id: 'classic' | 'bigger'
   { id: 'big', width: 15, height: 15, winLength: 5 },
 ]
 
+/**
+ * The fields that are not a rectangle. Each has one size and one row: a room takes it exactly as it
+ * is here, there is no size to choose.
+ */
+export const OUTLINE_FIELDS: Readonly<Record<OutlineId, FieldSettings>> = {
+  pyramid: outlineField('pyramid', 5),
+  plus: outlineField('plus', 5),
+}
+
+function outlineField(outline: OutlineId, winLength: number): FieldSettings {
+  const { width, height } = OUTLINES[outline]
+  return { width, height, winLength, outline }
+}
+
 /** The odd numbers from `from` to `to`, which is what a side can be. */
 export function oddNumbers(from: number, to: number): number[] {
   return Array.from({ length: Math.floor((to - from) / 2) + 1 }, (_, index) => from + index * 2)
 }
 
-/** Whether a field is one a room accepts: odd sides and a row within the limits that fits. */
-export function isValidField({ width, height, winLength }: FieldSettings): boolean {
+/**
+ * Whether a field is one a room accepts: a rectangle with odd sides and a row within the limits
+ * that fits, or one of the outlines as it is.
+ */
+export function isValidField({ width, height, winLength, outline }: FieldSettings): boolean {
+  if (outline !== undefined) {
+    if (!Object.hasOwn(OUTLINE_FIELDS, outline)) return false
+    const field = OUTLINE_FIELDS[outline]
+    return field.width === width && field.height === height && field.winLength === winLength
+  }
   const { minSide, maxSide, minWin, maxWin } = FIELD_LIMITS
   const within = (n: number, min: number, max: number) =>
     Number.isInteger(n) && n >= min && n <= max
@@ -79,6 +104,7 @@ export function roomConfig(
     height: field.height,
     winLength: field.winLength,
     players: [...shapes.slice(shift), ...shapes.slice(0, shift)],
+    ...(field.outline === undefined ? {} : { outline: field.outline }),
   }
 }
 

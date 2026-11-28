@@ -20,6 +20,7 @@ The decisions and their reasons are in [docs/plan.md](../plan.md), Decisions (ro
 ## Routes (`server/index.ts`)
 
 - `POST /api/rooms`: make a room; the body may carry the field and the number of seats.
+- A field that is not a rectangle carries its `outline` and is accepted only as `OUTLINE_FIELDS` has it, see [game-engine.md](game-engine.md).
 - `GET /api/rooms/:code`: whether the room exists.
 - `GET /api/rooms/:code/ws`: the WebSocket.
 - `POST /api/houses`, `GET /api/houses/:code` and `GET /api/houses/:code/ws`: the same for a house, see [house.md](house.md).

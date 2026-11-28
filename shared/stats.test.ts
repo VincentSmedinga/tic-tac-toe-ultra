@@ -17,13 +17,20 @@ function game(
   players: readonly string[],
   cells: Cells,
   finishedAt: number,
-  extra: { startedAfter?: number; width?: number; height?: number; winLength?: number } = {},
+  extra: {
+    startedAfter?: number
+    width?: number
+    height?: number
+    winLength?: number
+    outline?: 'pyramid'
+  } = {},
 ): StoredGame {
   const config = {
     width: extra.width ?? 3,
     height: extra.height ?? 3,
     winLength: extra.winLength ?? 3,
     players: [...players],
+    ...(extra.outline === undefined ? {} : { outline: extra.outline }),
   }
   const moves = cells.map(([x, y], index) => ({
     player: players[index % players.length] ?? '',
@@ -122,6 +129,33 @@ const EARLY_DRAW = game(
 )
 
 describe('statistics', () => {
+  it('keep an outline apart from the rectangle of the same size', () => {
+    // Five along the bottom row, which both fields have.
+    const bottom = [0, 1, 2, 3].flatMap((x) => [[x, 6] as const, [x + 4, 5] as const])
+    const cells: Cells = [...bottom, [4, 6]]
+    const size = { width: 13, height: 7, winLength: 5 }
+    const onPyramid = game('pyramid', ['cross', 'circle'], cells, at(17, 9), {
+      ...size,
+      outline: 'pyramid',
+    })
+    const onRectangle = game('rectangle', ['cross', 'circle'], cells, at(17, 10), size)
+    const stats = statsSchema.parse(computeStats([onPyramid, onRectangle], NOW))
+    expect(stats.kinds.map(({ outline, games }) => [outline, games])).toEqual([
+      [undefined, 1],
+      ['pyramid', 1],
+    ])
+    for (const kind of stats.kinds) {
+      expect(kind.firstMoves[6 * 13]).toBe(1)
+      expect(kind.winningCells.reduce((sum, count) => sum + count, 0)).toBe(5)
+    }
+    expect(stats.fun.longestGame).toEqual({
+      moves: 9,
+      width: 13,
+      height: 7,
+      outline: 'pyramid',
+    })
+  })
+
   it('count a draw that ended with cells left like any other', () => {
     const stats = computeStats([EARLY_DRAW], NOW)
     expect(stats).toMatchObject({ games: 1, won: 0, drawn: 1 })

@@ -1,4 +1,4 @@
-import { replayGame } from './game/index.ts'
+import { hasCell, replayGame } from './game/index.ts'
 import type { OwnStats, Stats, StoredGame } from './protocol.ts'
 import { shapeOfPlayer } from './shapes.ts'
 import type { ShapeId } from './shapes.ts'
@@ -186,7 +186,12 @@ export function computeStats(
       if (shape && quicker) fastestWin = { shape, milliseconds: lasted, moves: moves.length }
     }
     if (longestGame === null || moves.length > longestGame.moves) {
-      longestGame = { moves: moves.length, width: config.width, height: config.height }
+      longestGame = {
+        moves: moves.length,
+        width: config.width,
+        height: config.height,
+        ...(config.outline === undefined ? {} : { outline: config.outline }),
+      }
     }
 
     addToKind(kinds, game, first)
@@ -230,13 +235,15 @@ type Kind = Stats['kinds'][number]
 type KindTally = Omit<Kind, 'averageMoves'> & { key: string; moves: number }
 
 function addToKind(kinds: Map<string, KindTally>, game: StoredGame, first: string | undefined) {
-  const { width, height, winLength, players } = game.config
-  const key = `${width.toString()}x${height.toString()}x${winLength.toString()}x${players.length.toString()}`
+  const { width, height, winLength, players, outline } = game.config
+  // A pyramid and a rectangle of the same size are not the same game.
+  const key = `${width.toString()}x${height.toString()}x${winLength.toString()}x${players.length.toString()}${outline ?? ''}`
   const kind = kinds.get(key) ?? {
     key,
     width,
     height,
     winLength,
+    ...(outline === undefined ? {} : { outline }),
     players: players.length,
     games: 0,
     won: 0,
@@ -258,7 +265,7 @@ function addToKind(kinds: Map<string, KindTally>, game: StoredGame, first: strin
   }
 
   const opening = game.moves[0]
-  if (opening && opening.x >= 0 && opening.x < width && opening.y >= 0 && opening.y < height) {
+  if (opening && hasCell(game.config, opening.x, opening.y)) {
     const index = opening.y * width + opening.x
     kind.firstMoves[index] = (kind.firstMoves[index] ?? 0) + 1
   }

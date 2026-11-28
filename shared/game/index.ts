@@ -10,6 +10,8 @@ export type {
   PlayerId,
 } from './game.ts'
 export { canStillWin } from './dead.ts'
+export { cellCount, hasCell, OUTLINE_IDS, OUTLINES } from './outline.ts'
+export type { Outline, OutlineId } from './outline.ts'
 export { replayGame, replayStates, stateAfter } from './replay.ts'
 export type { ReplayResult, StatesResult } from './replay.ts'
 export { analyseGame, RANK_SYMBOLS, RANKS, Solver } from './analysis.ts'

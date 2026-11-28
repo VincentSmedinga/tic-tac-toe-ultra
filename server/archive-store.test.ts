@@ -55,6 +55,13 @@ describe('the archive store', () => {
     })
   })
 
+  it('keeps the outline of a game, also in the list of a browser', () => {
+    const config = { ...WON.config, width: 9, height: 9, winLength: 5, outline: 'plus' as const }
+    store.save({ ...WON, config }, 1)
+    expect(store.get(WON.id)?.config).toEqual(config)
+    expect(store.list('hash-x', 1).games[0]).toMatchObject({ width: 9, outline: 'plus' })
+  })
+
   it('keeps when the game started, so that its duration is known', () => {
     store.save({ ...WON, id: 'started-started-', startedAt: 1_699_999_990_000 }, 1_700_000_000_000)
     const game = store.get('started-started-')

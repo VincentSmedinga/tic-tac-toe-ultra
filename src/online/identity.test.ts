@@ -4,11 +4,13 @@ import {
   clearLastRoom,
   getLastRoom,
   getName,
+  getRoomChoice,
   getShape,
   getToken,
   sanitizeName,
   setLastRoom,
   setName,
+  setRoomChoice,
   setShape,
 } from './identity.ts'
 
@@ -163,5 +165,16 @@ describe('the shape of a browser', () => {
     })
     setShape('star')
     expect(getShape()).toBe('star')
+  })
+})
+
+describe('what a new room was last made with', () => {
+  it('keeps an outline, which would otherwise come back as the rectangle around it', () => {
+    const choice = {
+      players: 3,
+      field: { width: 13, height: 7, winLength: 5, outline: 'pyramid' as const },
+    }
+    setRoomChoice(choice)
+    expect(getRoomChoice()).toEqual(choice)
   })
 })

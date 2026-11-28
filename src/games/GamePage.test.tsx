@@ -115,6 +115,19 @@ describe('GamePage', () => {
       expect(rooms.createRoom).toHaveBeenCalledWith({ width: 7, height: 5, winLength: 5 })
     })
 
+    it('makes it on the same outline too', async () => {
+      const field = { width: 9, height: 9, winLength: 5, outline: 'plus' as const }
+      const onPlus: StoredGame = {
+        ...GAME,
+        config: { ...field, players: ['cross', 'circle'] },
+        moves: [],
+      }
+      const { games, rooms } = apis(onPlus)
+      render(<GamePage id={GAME.id} api={games} rooms={rooms} />)
+      await userEvent.setup().click(await screen.findByRole('button', { name: 'Speel opnieuw' }))
+      expect(rooms.createRoom).toHaveBeenCalledWith(field)
+    })
+
     it('says so when no room can be made, and stays', async () => {
       const { games, rooms } = apis()
       vi.mocked(rooms.createRoom).mockRejectedValueOnce(new Error('offline'))

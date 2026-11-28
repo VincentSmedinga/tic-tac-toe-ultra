@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { symmetriesOf } from './analysis.ts'
 import {
   analyseGame,
   applyMove,
+  cellCount,
   createGame,
+  hasCell,
+  OUTLINES,
   RANK_SYMBOLS,
   RANKS,
   Solver,
@@ -404,5 +408,86 @@ describe('summariseGame', () => {
   it('reads the stored games of the old players X and O like any other', () => {
     const result = summary(classic, [4, 0, 8])
     expect(result.players.map(({ player }) => player)).toEqual(['X', 'O'])
+  })
+})
+
+describe('an outline', () => {
+  const config: GameConfig = {
+    width: OUTLINES.pyramid.width,
+    height: OUTLINES.pyramid.height,
+    winLength: 5,
+    players: ['A', 'B'],
+    outline: 'pyramid',
+  }
+  const { width, height } = config
+  const rectangle: GameConfig = { width, height, winLength: 5, players: ['A', 'B'] }
+  const plus: GameConfig = {
+    width: 9,
+    height: 9,
+    winLength: 5,
+    players: ['A', 'B'],
+    outline: 'plus',
+  }
+
+  it.each([
+    ['the pyramid, only left and right', config, 2],
+    ['a rectangle of the same size', rectangle, 4],
+    ['the plus, every turn and mirror', plus, 8],
+  ])('is turned and mirrored as it allows: %s', (_name, field, count) => {
+    const orders = symmetriesOf(field)
+    expect(orders).toHaveLength(count)
+    for (const order of orders) {
+      for (const [to, from] of order.entries()) {
+        const exists = (index: number) => {
+          const { x, y } = cell(index, field.width)
+          return hasCell(field, x, y)
+        }
+        expect(exists(from)).toBe(exists(to))
+      }
+    }
+  })
+
+  it('does not share a solver with the rectangle around it', () => {
+    expect(new Solver(config, 0).fits(config)).toBe(true)
+    expect(new Solver(config, 0).fits(rectangle)).toBe(false)
+    expect(new Solver(rectangle, 0).fits(config)).toBe(false)
+  })
+
+  it('solves only the cells of the field', () => {
+    const open = [6, 6 * width, 6 * width + 12]
+    // Pairs that move on every row, so that nobody has five alike.
+    const cells = Array.from({ length: width * height }, (_, index) => {
+      const { x, y } = cell(index, width)
+      if (!hasCell(config, x, y) || open.includes(index)) return null
+      return (x + 2 * y) % 4 < 2 ? 'A' : 'B'
+    })
+    const state: GameState = {
+      ...createGame(config),
+      cells,
+      moveCount: cellCount(config) - open.length,
+    }
+    const scores = new Solver(config, 1000).scores(state)
+    expect([...(scores?.keys() ?? [])]).toEqual(open)
+  })
+
+  it('ranks the moves, and never says a cell beside the field was better', () => {
+    const at = (x: number, y: number) => y * width + x
+    // A has four on the bottom row and then plays somewhere else.
+    const analysis = analyse(config, [
+      at(0, 6),
+      at(6, 0),
+      at(1, 6),
+      at(6, 1),
+      at(2, 6),
+      at(6, 2),
+      at(3, 6),
+      at(7, 2),
+      at(5, 3),
+    ])
+    expect(analysis.certainty).toBe('tactical')
+    expect(analysis.moves.at(-1)).toMatchObject({ rank: 'mistake', better: [{ x: 4, y: 6 }] })
+    for (const { x, y } of analysis.moves.flatMap(({ better }) => better)) {
+      expect(hasCell(config, x, y)).toBe(true)
+    }
   })
 })

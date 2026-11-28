@@ -6,6 +6,7 @@ import {
   ROOM_CODE_LENGTH,
   isValidField,
 } from './room.ts'
+import { OUTLINE_IDS } from './game/index.ts'
 import { HOUSE_CODE_PATTERN } from './house.ts'
 import { SHAPE_IDS } from './shapes.ts'
 
@@ -32,13 +33,21 @@ const nameSchema = z
 
 export const shapeSchema = z.enum(SHAPE_IDS)
 
+/**
+ * The name of a field that is not a rectangle. A name this version doesn't know makes the whole
+ * message or game unreadable, which is better than reading it as a rectangle.
+ */
+export const outlineSchema = z.enum(OUTLINE_IDS)
+
 const fieldShape = z.object({
   width: z.number().int().min(FIELD_LIMITS.minSide).max(FIELD_LIMITS.maxSide),
   height: z.number().int().min(FIELD_LIMITS.minSide).max(FIELD_LIMITS.maxSide),
   winLength: z.number().int().min(FIELD_LIMITS.minWin).max(FIELD_LIMITS.maxWin),
+  outline: outlineSchema.optional(),
 })
 
-const FIELD_MESSAGE = 'odd sides, and a row of 3 to 9 that fits on the field'
+const FIELD_MESSAGE =
+  'odd sides, and a row of 3 to 9 that fits on the field, or an outline as it is'
 
 /** A field somebody asks for: for a new room, or with an invitation in a house. */
 export const fieldSchema = fieldShape.refine(isValidField, { message: FIELD_MESSAGE })
@@ -99,6 +108,7 @@ export const configSchema = z.object({
   height: z.number().int().positive(),
   winLength: z.number().int().min(2),
   players: z.array(z.string()).min(2),
+  outline: outlineSchema.optional(),
 })
 export const moveSchema = z.object({ player: z.string(), x: z.number().int(), y: z.number().int() })
 
@@ -145,6 +155,7 @@ export const gameSummarySchema = storedGameSchema
   .extend({
     width: z.number().int().positive(),
     height: z.number().int().positive(),
+    outline: outlineSchema.optional(),
     moves: z.number().int().min(0),
   })
 export type GameSummary = z.infer<typeof gameSummarySchema>
@@ -195,19 +206,26 @@ export const statsSchema = z.object({
   shapes: z.array(outcomesSchema.extend({ shape: shapeSchema, games: countSchema })),
   /** The player who made the first move, over all games: did starting win? */
   starter: starterSchema,
-  /** The kinds of game that were played (field, row and number of players), the most played first. */
+  /**
+   * The kinds of game that were played (field with its outline, row and number of players), the most
+   * played first.
+   */
   kinds: z.array(
     z.object({
       width: z.number().int().positive(),
       height: z.number().int().positive(),
       winLength: z.number().int().min(2),
+      outline: outlineSchema.optional(),
       players: z.number().int().min(2),
       games: countSchema,
       won: countSchema,
       drawn: countSchema,
       starter: starterSchema,
       averageMoves: z.number().min(0),
-      /** How often each cell was played first, row by row (`width` × `height` numbers). */
+      /**
+       * How often each cell was played first, row by row (`width` × `height` numbers, also for an
+       * outline, where the cells it leaves out stay 0).
+       */
       firstMoves: z.array(countSchema),
       /** In how many won games each cell was part of a winning line, row by row. */
       winningCells: z.array(countSchema),
@@ -236,7 +254,12 @@ export const statsSchema = z.object({
       .nullable(),
     /** The game with the most moves. */
     longestGame: z
-      .object({ moves: countSchema, width: countSchema, height: countSchema })
+      .object({
+        moves: countSchema,
+        width: countSchema,
+        height: countSchema,
+        outline: outlineSchema.optional(),
+      })
       .nullable(),
     /** The most games won in a row by one shape, counting only the games that shape played. */
     longestRun: z.object({ shape: shapeSchema, wins: countSchema }).nullable(),
