@@ -2,9 +2,12 @@
  * The game engine: noughts and crosses on a `width` × `height` field, for any number of players,
  * where `winLength` marks in a row win. Pure and immutable, no browser or Node APIs, so the app and
  * the server run exactly the same rules. Classic tic-tac-toe is `{ width: 3, height: 3,
- * winLength: 3, players: ['X', 'O'] }`.
+ * winLength: 3, players: ['X', 'O'] }`. With an `outline` (outline.ts) only some cells of the
+ * `width` × `height` box exist.
  */
 import { canStillWin } from './dead.ts'
+import { cellCount, hasCell, OUTLINES } from './outline.ts'
+import type { OutlineId } from './outline.ts'
 
 /** Who plays: the engine only knows this id; which shape a player gets is up to the app. */
 export type PlayerId = string
@@ -16,6 +19,11 @@ export interface GameConfig {
   readonly winLength: number
   /** The players, in turn order: the first one starts. */
   readonly players: readonly PlayerId[]
+  /**
+   * Which cells of the box exist; without it all of them do, and a rectangle is stored without it.
+   * `width` and `height` are then the size of that outline.
+   */
+  readonly outline?: OutlineId
 }
 
 /** A cell of the field: `x` counts columns and `y` rows, both from 0 at the top left. */
@@ -47,7 +55,10 @@ export type GameStatus =
 
 export interface GameState {
   readonly config: GameConfig
-  /** Row by row: the cell at (x, y) is `cells[y * width + x]`; null while empty. */
+  /**
+   * Row by row through the box: the cell at (x, y) is `cells[y * width + x]`; null while empty.
+   * A cell the outline leaves out is null for ever: ask `hasCell` whether a cell exists.
+   */
   readonly cells: readonly (PlayerId | null)[]
   /** Every move played, in order: with `config` this is the whole game, and enough to replay it. */
   readonly moves: readonly Move[]
@@ -71,7 +82,7 @@ const DIRECTIONS = [
 
 /** Starts a game on an empty field. Throws a `RangeError` when the config can't make a game. */
 export function createGame(config: GameConfig): GameState {
-  const { width, height, winLength, players } = config
+  const { width, height, winLength, players, outline } = config
   if (!Number.isInteger(width) || width < 1)
     throw new RangeError('width must be a whole number of at least 1')
   if (!Number.isInteger(height) || height < 1)
@@ -80,13 +91,25 @@ export function createGame(config: GameConfig): GameState {
     throw new RangeError('winLength must be a whole number of at least 2')
   if (winLength > Math.max(width, height))
     throw new RangeError('winLength does not fit on the field, so nobody could win')
+  if (outline !== undefined) {
+    // A config can come from storage or from a message, so the name is looked up, not trusted.
+    if (!Object.hasOwn(OUTLINES, outline)) throw new RangeError('unknown outline')
+    if (width !== OUTLINES[outline].width || height !== OUTLINES[outline].height)
+      throw new RangeError('width and height must be those of the outline')
+  }
   if (players.length < 2) throw new RangeError('a game needs at least two players')
   if (new Set(players).size !== players.length) throw new RangeError('players must be different')
 
   const [first] = players
   if (first === undefined) throw new RangeError('a game needs at least two players')
   return {
-    config: { width, height, winLength, players: [...players] },
+    config: {
+      width,
+      height,
+      winLength,
+      players: [...players],
+      ...(outline === undefined ? {} : { outline }),
+    },
     cells: new Array<PlayerId | null>(width * height).fill(null),
     moves: [],
     moveCount: 0,
@@ -96,7 +119,7 @@ export function createGame(config: GameConfig): GameState {
 
 /** The player on a cell, null when it is empty, undefined when the cell is off the field. */
 export function getCell(state: GameState, { x, y }: Cell): PlayerId | null | undefined {
-  if (!isOnField(state.config, x, y)) return undefined
+  if (!hasCell(state.config, x, y)) return undefined
   return state.cells[y * state.config.width + x]
 }
 
@@ -108,7 +131,7 @@ export function applyMove(state: GameState, move: Move): MoveResult {
   const { config, status } = state
   if (status.kind !== 'playing') return fail('game-over')
   if (move.player !== status.next) return fail('not-your-turn')
-  if (!isOnField(config, move.x, move.y)) return fail('out-of-bounds')
+  if (!hasCell(config, move.x, move.y)) return fail('out-of-bounds')
   if (getCell(state, move) !== null) return fail('cell-taken')
 
   const cells = state.cells.with(move.y * config.width + move.x, move.player)
@@ -122,8 +145,7 @@ export function applyMove(state: GameState, move: Move): MoveResult {
   if (lines.length > 0) {
     return succeed({ ...next, status: { kind: 'won', winner: move.player, lines } })
   }
-  if (moveCount === config.width * config.height)
-    return succeed({ ...next, status: { kind: 'draw' } })
+  if (moveCount === cellCount(config)) return succeed({ ...next, status: { kind: 'draw' } })
 
   const following = playerAfter(config, move.player)
   if (!canStillWin(config, cells, following)) return succeed({ ...next, status: { kind: 'draw' } })
@@ -157,14 +179,10 @@ function playerAfter(config: GameConfig, player: PlayerId): PlayerId {
 export function applyMoveAfterDraw(state: GameState, move: Move): MoveResult {
   const { config, status, moves } = state
   const last = moves[moves.length - 1]
-  if (
-    status.kind !== 'draw' ||
-    last === undefined ||
-    state.moveCount >= config.width * config.height
-  )
+  if (status.kind !== 'draw' || last === undefined || state.moveCount >= cellCount(config))
     return fail('game-over')
   if (move.player !== playerAfter(config, last.player)) return fail('not-your-turn')
-  if (!isOnField(config, move.x, move.y)) return fail('out-of-bounds')
+  if (!hasCell(config, move.x, move.y)) return fail('out-of-bounds')
   if (getCell(state, move) !== null) return fail('cell-taken')
   return succeed({
     ...state,
@@ -180,10 +198,6 @@ function fail(error: MoveError): MoveResult {
 
 function succeed(state: GameState): MoveResult {
   return { ok: true, state }
-}
-
-function isOnField({ width, height }: GameConfig, x: number, y: number): boolean {
-  return Number.isInteger(x) && Number.isInteger(y) && x >= 0 && x < width && y >= 0 && y < height
 }
 
 /**

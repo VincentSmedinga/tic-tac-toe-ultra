@@ -5,6 +5,7 @@
  * when it says no: the position is dead, whatever anyone plays.
  */
 import type { GameConfig, PlayerId } from './game.ts'
+import { cellCount, hasCell } from './outline.ts'
 
 /** Right, down, down-right and down-left: the four directions a line of marks can run in. */
 const DIRECTIONS = [
@@ -16,21 +17,23 @@ const DIRECTIONS = [
 
 /**
  * Whether some player can still complete a line of `config.winLength`, given the marks in `cells`
- * and who is to move. A *window* is `winLength` cells in a row; a player can still win through it
- * when no other player's mark is in it and the number of empty cells in it is no more than the turns
- * that player still gets (the order is fixed and nobody can pass, so the turns left come from the
- * number of empty cells in the whole field and who is to move).
+ * and who is to move. A *window* is `winLength` cells in a row, all of them on the field; a player
+ * can still win through it when no other player's mark is in it and the number of empty cells in it
+ * is no more than the turns that player still gets (the order is fixed and nobody can pass, so the
+ * turns left come from the number of empty cells in the whole field and who is to move).
  */
 export function canStillWin(
   config: GameConfig,
   cells: readonly (PlayerId | null)[],
   toMove: PlayerId,
 ): boolean {
-  const { width, height, winLength, players } = config
+  const { width, height, winLength, players, outline } = config
   const start = players.indexOf(toMove)
   if (start < 0) return false
 
-  const empty = cells.reduce((count, cell) => (cell === null ? count + 1 : count), 0)
+  // The cells an outline leaves out are null too, so the marks are counted, not the nulls.
+  const marks = cells.reduce((count, cell) => (cell === null ? count : count + 1), 0)
+  const empty = cellCount(config) - marks
   const turns = new Map<PlayerId, number>()
   for (const [index, player] of players.entries()) {
     const behind = (index - start + players.length) % players.length
@@ -52,6 +55,10 @@ export function canStillWin(
         let open = 0
         let alive = true
         for (let step = 0; step < winLength; step++) {
+          if (outline !== undefined && !hasCell(config, x + dx * step, y + dy * step)) {
+            alive = false
+            break
+          }
           const mark = cells[(y + dy * step) * width + (x + dx * step)]
           if (mark === null || mark === undefined) {
             open++
