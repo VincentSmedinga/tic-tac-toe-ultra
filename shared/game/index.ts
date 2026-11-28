@@ -25,3 +25,7 @@ export type {
 } from './analysis.ts'
 export { slips, summariseGame } from './summary.ts'
 export type { GameSummary, PlayerSummary } from './summary.ts'
+export { BOT_LEVELS, chooseMove } from './bot.ts'
+export type { Bot, BotLevel, BotOptions, Random } from './bot.ts'
+export { BOT_CHARACTERS } from './bot-value.ts'
+export type { BotCharacter } from './bot-value.ts'
