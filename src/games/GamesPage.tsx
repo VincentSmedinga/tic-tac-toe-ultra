@@ -5,6 +5,7 @@ import { useText } from '../i18n/store.ts'
 import { getToken } from '../online/identity.ts'
 import { Link } from '../online/Link.tsx'
 import { gamePath } from '../online/route.ts'
+import { outlineName } from '../play/field.ts'
 import { usePlayerNames, shapeOf } from '../play/players.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { OwnStats } from '../stats/OwnStats.tsx'
@@ -143,9 +144,11 @@ function GameItem({ game }: { game: GameSummary }) {
   return (
     <Link to={gamePath(game.id)} className="game-item">
       <span className="game-when">
-        {game.width !== 3 || game.height !== 3
-          ? t('games.whenField', { date: when, width: game.width, height: game.height })
-          : when}
+        {game.outline !== undefined
+          ? t('games.whenOutline', { date: when, name: outlineName(t, game.outline) })
+          : game.width !== 3 || game.height !== 3
+            ? t('games.whenField', { date: when, width: game.width, height: game.height })
+            : when}
       </span>
       <span className="game-players">
         {game.players.map((player) => (

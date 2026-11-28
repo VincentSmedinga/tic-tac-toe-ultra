@@ -8,6 +8,7 @@ The decisions are in [docs/plan.md](../plan.md), Decisions, "Statistics (#48)".
 - `GET /api/stats` answers the statistics of all finished games together (`Stats` in `shared/protocol.ts`).
 - They are worked out from `ArchiveStore.all()` by `computeStats` (`shared/stats.ts`, pure) every time, never kept as counters.
 - A kind of game is a field with its outline, a row and a number of players; the heat maps stay `width` × `height` numbers, with 0 for a cell that doesn't exist.
+- A heat map draws only the cells that exist, and an outline is named, not measured (`StatsPage.test.tsx`).
 - A draw can end after as few as six moves on 3×3 (it ends when nobody can win any more), so the shortest and average game count it like any other.
 - The answer holds only counts and shapes: never a name, a token or the moves of one game.
 - The browser may cache it for 30 seconds.

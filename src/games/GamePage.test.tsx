@@ -198,3 +198,26 @@ describe.each([
     expect(dutchLeaks(language)).toEqual([])
   })
 })
+
+describe('the page of a game on a field with an outline', () => {
+  const onPlus: StoredGame = {
+    ...GAME,
+    config: { width: 9, height: 9, winLength: 5, outline: 'plus', players: ['cross', 'circle'] },
+    moves: [{ player: 'cross', x: 4, y: 4 }],
+    players: [{ id: 'cross' }, { id: 'circle' }],
+    result: { kind: 'draw' },
+  }
+
+  it.each([
+    ['nl', 'Plus, vijf op een rij', /^Rij /],
+    ['en', 'Plus, five in a row', /^Row /],
+    ['fy', 'Plus, fiif op in rige', /^Rige /],
+  ] as const)('names the field and replays it in its form (%s)', async (language, name, cells) => {
+    setLanguage(language)
+    const { games, rooms } = apis(onPlus)
+    render(<GamePage id={onPlus.id} api={games} rooms={rooms} />)
+    expect(await screen.findByText(name)).toBeVisible()
+    expect(screen.getAllByRole('button', { name: cells })).toHaveLength(45)
+    if (language !== 'nl') expect(dutchLeaks(language)).toEqual([])
+  })
+})

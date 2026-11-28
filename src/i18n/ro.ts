@@ -364,6 +364,7 @@ export const ro: Dictionary = {
   'games.moreFailed':
     'Jocurile următoare nu pot fi aduse chiar acum. Te rugăm să încerci din nou peste puțin timp.',
   'games.whenField': '{date} · tablă de {width} pe {height}',
+  'games.whenOutline': '{date} · tabla {name}',
   'games.won': '{name} a câștigat',
   'games.draw': 'Egalitate',
   'gamePage.loading': 'Se aduce jocul…',
@@ -464,6 +465,7 @@ export const ro: Dictionary = {
   'stats.fun.title': 'Bine de știut',
   'stats.fun.fastest': 'Cea mai rapidă victorie: {shape} a câștigat în {time} ({moves} mutări).',
   'stats.fun.longestGame': 'Cel mai lung joc: {moves} mutări pe o tablă de {width} pe {height}.',
+  'stats.fun.longestGameOutline': 'Cel mai lung joc: {moves} mutări pe tabla {name}.',
   'stats.fun.longestRun': 'Cea mai lungă serie: {shape} a câștigat {wins} jocuri la rând.',
   'stats.fun.pair': 'Cel mai des la aceeași masă: {one} și {two} ({games}).',
   'ownStats.label': 'Statisticile tale',

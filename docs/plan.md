@@ -62,7 +62,6 @@ A game where many players play noughts and crosses together on one big field, ea
   The game on one screen and "Speel opnieuw" from a played game choose and keep the field in the same way.
 - **A field doesn't have to be a rectangle** (issue #103).
   Decided on 2026-11-28, taking the proposals of the readiness check in the issue.
-  The engine, the protocol, the move ranks and the statistics have it; the board, the screens and the texts follow, and until then nothing in the app offers it.
   - **An outline is a name.** `outline` in the config says which cells of the `width` × `height` box exist; a move stays `{ player, x, y }`.
     A name keeps a stored game small, and its cells never change once games are stored with it: a different form is a new name.
     It is called an outline because "shape" already means a player's mark, and plus and triangle are among those.
