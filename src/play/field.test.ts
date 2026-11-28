@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { FIELD_LIMITS, FIELD_PRESETS, isValidField, oddNumbers } from '../../shared/room.ts'
+import {
+  FIELD_LIMITS,
+  FIELD_PRESETS,
+  isValidField,
+  oddNumbers,
+  OUTLINE_FIELDS,
+} from '../../shared/room.ts'
 import { textFor } from '../i18n/store.ts'
-import { fieldLabel, isClassic, longestRow, presetOf, rowChoices, suggestedRow } from './field.ts'
+import {
+  fieldLabel,
+  isClassic,
+  longestRow,
+  presetOf,
+  READY_FIELDS,
+  rowChoices,
+  suggestedRow,
+} from './field.ts'
 
 describe('fieldLabel', () => {
   const nl = textFor('nl')
@@ -98,5 +112,27 @@ describe('the suggested row', () => {
         ).toBe(true)
       }
     }
+  })
+})
+
+describe('a field with an outline', () => {
+  it.each([
+    ['nl', 'Piramide, vijf op een rij', 'Plus, vijf op een rij'],
+    ['en', 'Pyramid, five in a row', 'Plus, five in a row'],
+    ['fy', 'Piramide, fiif op in rige', 'Plus, fiif op in rige'],
+    ['ro', 'Piramidă, cinci la rând', 'Plus, cinci la rând'],
+  ] as const)('is called by its name in %s, not by the size of its box', (language, one, two) => {
+    expect(fieldLabel(textFor(language), OUTLINE_FIELDS.pyramid)).toBe(one)
+    expect(fieldLabel(textFor(language), OUTLINE_FIELDS.plus)).toBe(two)
+  })
+
+  it('is a ready-made field of its own, and not the rectangle of the same size', () => {
+    for (const ready of READY_FIELDS) {
+      expect(isValidField(ready), ready.id).toBe(true)
+      expect(presetOf(ready)).toBe(ready.id)
+    }
+    expect(presetOf(OUTLINE_FIELDS.plus)).toBe('plus')
+    expect(presetOf({ width: 9, height: 9, winLength: 5 })).toBeNull()
+    expect(isClassic({ width: 3, height: 3, winLength: 3, outline: 'plus' })).toBe(false)
   })
 })

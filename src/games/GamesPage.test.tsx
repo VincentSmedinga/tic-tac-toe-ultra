@@ -114,6 +114,18 @@ describe('GamesPage', () => {
     expect(await screen.findByText(/veld van 12 bij 10/)).toBeVisible()
   })
 
+  it.each([
+    ['nl', /veld Piramide/],
+    ['en', /Pyramid field/],
+    ['fy', /fjild Piramide/],
+  ] as const)('names a field with an outline instead of its size (%s)', async (language, name) => {
+    setLanguage(language)
+    const onPyramid = summary(1, { width: 13, height: 7, outline: 'pyramid' })
+    render(<GamesPage api={fakeApi([{ games: [onPyramid] }])} />)
+    expect(await screen.findByText(name)).toBeVisible()
+    expect(screen.queryByText(/13/)).not.toBeInTheDocument()
+  })
+
   it('shows more games when asked, after the ones that are there', async () => {
     const api = fakeApi([{ games: [summary(2)], next: '1' }, { games: [summary(1)] }])
     render(<GamesPage api={api} />)

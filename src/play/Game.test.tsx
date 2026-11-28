@@ -313,6 +313,23 @@ describe('Game', () => {
       return user
     }
 
+    it('plays on a pyramid, with its own cells only, and keeps it in a rematch', async () => {
+      render(<Game />)
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('button', { name: /Piramide/ }))
+      await user.click(screen.getByRole('button', { name: 'Start' }))
+      expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(49)
+      expect(screen.getByText('Piramide, vijf op een rij')).toBeVisible()
+
+      // The cross takes five of the bottom row, the circle four of the row above.
+      for (const x of [1, 2, 3, 4]) await tap([7, x], [6, x + 1])
+      await tap([7, 5])
+      expect(screen.getByRole('status')).toHaveTextContent('Kruis heeft gewonnen!')
+      await user.click(screen.getByRole('button', { name: 'Nog een keer' }))
+      expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(49)
+      expect(screen.getByText('Piramide, vijf op een rij')).toBeVisible()
+    })
+
     it('keeps the field in a rematch', async () => {
       const user = await wonOnTheBiggerField()
       await user.click(screen.getByRole('button', { name: 'Nog een keer' }))

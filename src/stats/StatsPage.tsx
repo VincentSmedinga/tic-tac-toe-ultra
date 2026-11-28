@@ -3,6 +3,7 @@ import type { Stats } from '../../shared/protocol.ts'
 import { useFormat } from '../i18n/format.ts'
 import { formatNumber } from '../i18n/text.ts'
 import { useText } from '../i18n/store.ts'
+import { fieldLabel, outlineName } from '../play/field.ts'
 import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { useShapeNames } from '../shapes/names.ts'
 import type { ShapeId } from '../shapes/shapes.ts'
@@ -311,12 +312,14 @@ function StarterBar({ won, lost, drawn }: { won: number; lost: number; drawn: nu
 
 function Kind({ kind }: { kind: Stats['kinds'][number] }) {
   const t = useText()
-  const { width, height, winLength, players, games: played, won, drawn } = kind
+  const { width, height, winLength, outline, players, games: played, won, drawn } = kind
   const enough = played >= MIN_GAMES
   return (
     <section className="stats-card" aria-labelledby={`stats-kind-${kindId(kind)}`}>
       <h3 id={`stats-kind-${kindId(kind)}`}>
-        {t('stats.kind.title', { width, height, row: winLength })}
+        {outline === undefined
+          ? t('stats.kind.title', { width, height, row: winLength })
+          : fieldLabel(t, kind)}
       </h3>
       <p>
         {t('stats.kind.summary', {
@@ -341,6 +344,7 @@ function Kind({ kind }: { kind: Stats['kinds'][number] }) {
               title={t('stats.heat.first')}
               width={width}
               height={height}
+              outline={outline}
               counts={kind.firstMoves}
               kind="first"
             />
@@ -348,6 +352,7 @@ function Kind({ kind }: { kind: Stats['kinds'][number] }) {
               title={t('stats.heat.winning')}
               width={width}
               height={height}
+              outline={outline}
               counts={kind.winningCells}
               kind="winning"
             />
@@ -428,11 +433,17 @@ function Fun({ stats }: { stats: Stats }) {
   if (longestGame) {
     facts.push({
       shapes: [],
-      text: t('stats.fun.longestGame', {
-        moves: longestGame.moves,
-        width: longestGame.width,
-        height: longestGame.height,
-      }),
+      text:
+        longestGame.outline === undefined
+          ? t('stats.fun.longestGame', {
+              moves: longestGame.moves,
+              width: longestGame.width,
+              height: longestGame.height,
+            })
+          : t('stats.fun.longestGameOutline', {
+              moves: longestGame.moves,
+              name: outlineName(t, longestGame.outline),
+            }),
     })
   }
   if (longestRun && longestRun.wins >= 2) {

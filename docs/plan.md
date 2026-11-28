@@ -62,7 +62,6 @@ A game where many players play noughts and crosses together on one big field, ea
   The game on one screen and "Speel opnieuw" from a played game choose and keep the field in the same way.
 - **A field doesn't have to be a rectangle** (issue #103).
   Decided on 2026-11-28, taking the proposals of the readiness check in the issue.
-  The engine, the protocol, the move ranks and the statistics have it; the board, the screens and the texts follow, and until then nothing in the app offers it.
   - **An outline is a name.** `outline` in the config says which cells of the `width` × `height` box exist; a move stays `{ player, x, y }`.
     A name keeps a stored game small, and its cells never change once games are stored with it: a different form is a new name.
     It is called an outline because "shape" already means a player's mark, and plus and triangle are among those.
@@ -76,7 +75,9 @@ A game where many players play noughts and crosses together on one big field, ea
     A new game needs at least one possible line; with these two outlines every row that fits the box is one (`outline.test.ts`).
   - **Choosing one.** Ready-made choices next to Klassiek, Groter and Groot, on the start screen and in the house.
   - **Not with the growing field** (#44): only a plain field grows.
-  - **Lines on the board** run only between two cells that exist. This needs a drawing first, since the cells at the edge may be hard to see.
+  - **Lines on the board** run along every side of every cell: between two cells that exist, and round the edge of the form.
+    The first idea was lines only between two cells, but in the drawing (28 November 2026) the cells at the edge hardly showed in Rustig; a tint on every cell was the other choice, and the line round the edge was picked.
+    A rectangle stays as it is, without a line round it, and the surface behind a field has the form of the field.
   - **An outline a version doesn't know is not read as a rectangle**: the message or the stored game is refused.
     A version from before outlines ignores the name and sees the box, which is why the server learns them one release before the app offers them.
 - **The app icon is the game's own drawing.** Four shapes, the cross and the circle on the top row, the fort and the square below, in the colours of the dark scheme (the set that has its contrast on a dark page) on the dark of the page (`#1b1b1f`), in the four cells of a grid of marker lines: one line down and one across and none around, as on the board (the first idea, a # with the shapes in its corner cells, cost too much room: a 2 × 2 keeps the shapes big).

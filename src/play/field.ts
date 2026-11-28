@@ -1,4 +1,6 @@
-import { FIELD_LIMITS, FIELD_PRESETS } from '../../shared/room.ts'
+import { OUTLINE_IDS } from '../../shared/game/index.ts'
+import type { OutlineId } from '../../shared/game/index.ts'
+import { FIELD_LIMITS, FIELD_PRESETS, OUTLINE_FIELDS } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
 import type { Text } from '../i18n/types.ts'
 
@@ -27,22 +29,40 @@ export function rowLabel(t: Text, winLength: number): string {
   }
 }
 
-/** "7 × 7, vijf op een rij": how big the field is and how many in a row win. */
-export function fieldLabel(t: Text, { width, height, winLength }: FieldSettings): string {
-  return t('field.label', { width, height, row: rowLabel(t, winLength) })
+/** What a field that is not a rectangle is called: "Piramide". */
+export function outlineName(t: Text, outline: OutlineId): string {
+  return t(`field.outline.${outline}`)
 }
 
-export function isClassic(field: FieldSettings): boolean {
-  return field.width === 3 && field.height === 3 && field.winLength === 3
+/**
+ * "7 × 7, vijf op een rij": how big the field is and how many in a row win. A field with an outline
+ * has its name instead of the size of the box around it: "Piramide, vijf op een rij".
+ */
+export function fieldLabel(t: Text, { width, height, winLength, outline }: FieldSettings): string {
+  const row = rowLabel(t, winLength)
+  return outline === undefined
+    ? t('field.label', { width, height, row })
+    : t('field.outlineLabel', { name: outlineName(t, outline), row })
 }
 
-/** The id of the preset that is exactly this field, or null for a field of your own. */
+export function isClassic({ width, height, winLength, outline }: FieldSettings): boolean {
+  return width === 3 && height === 3 && winLength === 3 && outline === undefined
+}
+
+/** The ready-made fields of the picker: the rectangles, and the fields with an outline. */
+export const READY_FIELDS = [
+  ...FIELD_PRESETS,
+  ...OUTLINE_IDS.map((id) => ({ id, ...OUTLINE_FIELDS[id] })),
+]
+
+/** The id of the ready-made field that is exactly this one, or null for a field of your own. */
 export function presetOf(field: FieldSettings): string | null {
-  const found = FIELD_PRESETS.find(
-    (preset) =>
-      preset.width === field.width &&
-      preset.height === field.height &&
-      preset.winLength === field.winLength,
+  const found = READY_FIELDS.find(
+    (ready) =>
+      ready.width === field.width &&
+      ready.height === field.height &&
+      ready.winLength === field.winLength &&
+      ready.outline === field.outline,
   )
   return found?.id ?? null
 }

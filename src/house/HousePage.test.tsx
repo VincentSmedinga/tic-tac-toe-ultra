@@ -214,6 +214,22 @@ describe('inviting in the house', () => {
     })
   })
 
+  it('invites to a game on a field with an outline, and says which it is', async () => {
+    const { sockets } = setup()
+    const user = await enter()
+    const socket = await connected(sockets)
+    socket.receive(house([free('a', 'Anna', 'heart'), free('b', 'Bas', 'star')]))
+    const form = within(screen.getByRole('form', { name: 'Een spel beginnen' }))
+    await user.click(form.getByRole('checkbox', { name: 'Bas' }))
+    await user.click(form.getByRole('button', { name: /^Plus/ }))
+    await user.click(form.getByRole('button', { name: 'Nodig uit' }))
+    expect(socket.sent.at(-1)).toEqual({
+      type: 'invite',
+      people: ['b'],
+      field: { width: 9, height: 9, winLength: 5, outline: 'plus' },
+    })
+  })
+
   it('asks for a shape before inviting, and says so when nobody is free', async () => {
     const { sockets } = setup()
     await enter()

@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { applyMove, createGame } from '../../shared/game/index.ts'
 import type { GameConfig, GameState } from '../../shared/game/index.ts'
+import { OUTLINE_FIELDS } from '../../shared/room.ts'
 import { Screen } from '../styleguide/Screen.tsx'
 import { Board } from './Board.tsx'
 import './Game.css'
@@ -30,6 +31,8 @@ const classic: GameConfig = {
   winLength: 3,
   players: ['cross', 'circle'],
 }
+
+const players = ['cross', 'circle']
 
 /** Plays the moves, given as [x, y] and alternating between the players in turn order. */
 function played(config: GameConfig, moves: readonly (readonly [number, number])[]): GameState {
@@ -119,6 +122,42 @@ export const BigField: Story = {
       [4, 3],
     ]),
     lastMove: { x: 4, y: 3 },
+  },
+}
+
+/**
+ * A pyramid: only its own cells, with a line round the edge. On a narrow screen it is scrolled inside
+ * its frame.
+ */
+export const Pyramid: Story = {
+  name: 'Piramide',
+  args: {
+    game: played({ ...OUTLINE_FIELDS.pyramid, players }, [
+      [6, 3],
+      [5, 3],
+      [6, 0],
+      [0, 6],
+      [7, 4],
+    ]),
+    lastMove: { x: 7, y: 4 },
+  },
+}
+
+/** A plus, won along its long row. */
+export const Plus: Story = {
+  args: {
+    game: played({ ...OUTLINE_FIELDS.plus, players }, [
+      [2, 4],
+      [3, 0],
+      [3, 4],
+      [4, 0],
+      [4, 4],
+      [3, 8],
+      [5, 4],
+      [4, 8],
+      [6, 4],
+    ]),
+    lastMove: { x: 6, y: 4 },
   },
 }
 

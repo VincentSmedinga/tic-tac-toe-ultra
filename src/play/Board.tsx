@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { hasCell } from '../../shared/game/index.ts'
 import type { Cell, GameState } from '../../shared/game/index.ts'
 import { useText } from '../i18n/store.ts'
 import { arrivalEnd } from '../motion/arrival.ts'
@@ -9,6 +10,7 @@ import { ShapeIcon } from '../shapes/ShapeIcon.tsx'
 import { useShapeNames } from '../shapes/names.ts'
 import { boardLines } from './lines.ts'
 import { shapeOf } from './players.ts'
+import { surfaceShape } from './surface.ts'
 import { useArrival } from './useArrival.ts'
 
 interface BoardProps {
@@ -34,7 +36,8 @@ interface BoardProps {
  * Tab goes in and out, the arrow keys, Home and End move over the cells (a field of 19 × 19 would
  * be 361 stops otherwise). A shape that has just been placed is written on the field as with a
  * marker (`useArrival`): the move has counted already, and the writing of an earlier shape carries on
- * while the next one is placed.
+ * while the next one is placed. A field with an outline shows only the cells it has, in their places
+ * in the box around it, and the keys step over the places without one.
  */
 export function Board({
   game,
@@ -47,11 +50,14 @@ export function Board({
 }: BoardProps) {
   const t = useText()
   const shapes = useShapeNames()
-  const { width, height } = game.config
+  const { width, height, outline } = game.config
   const grid = useRef<HTMLDivElement>(null)
   const frame = useRef<HTMLDivElement>(null)
   // The cell the keyboard is on: the one that is a tab stop, and the one the arrow keys start from.
-  const [active, setActive] = useState(0)
+  const [chosen, setActive] = useState(0)
+  const exists = (index: number) => hasCell(game.config, index % width, Math.floor(index / width))
+  // Until a cell is chosen, and when the field changes under it, the first cell of the field.
+  const active = exists(chosen) ? chosen : game.cells.findIndex((_, index) => exists(index))
   // A cell on two lines (a corner, the middle) is marked once: the set holds each cell once.
   const winning = new Set(
     game.status.kind === 'won'
@@ -59,7 +65,7 @@ export function Board({
       : [],
   )
   const playing = game.status.kind === 'playing' && interactive
-  const lines = boardLines(width, height)
+  const lines = boardLines(width, height, outline)
   const [ownSeed] = useState(newSeed)
   const motion = useMotion()
   const arrivals = useArrival(game, seed ?? ownSeed)
@@ -73,10 +79,15 @@ export function Board({
         : arrivalEnd(lastPlan)
       : undefined
 
-  const moveTo = (x: number, y: number) => {
-    const index = Math.min(height - 1, Math.max(0, y)) * width + Math.min(width - 1, Math.max(0, x))
-    setActive(index)
-    grid.current?.querySelector<HTMLElement>(`[data-index="${index.toString()}"]`)?.focus()
+  // Goes to the first cell from (x, y) in the direction (dx, dy), if there is one.
+  const moveTo = (x: number, y: number, dx: number, dy: number) => {
+    for (; x >= 0 && x < width && y >= 0 && y < height; x += dx, y += dy) {
+      if (!hasCell(game.config, x, y)) continue
+      const index = y * width + x
+      setActive(index)
+      grid.current?.querySelector<HTMLElement>(`[data-index="${index.toString()}"]`)?.focus()
+      return
+    }
   }
 
   // A field that is scrolled inside its frame starts in the middle, where the first marks go.
@@ -96,17 +107,19 @@ export function Board({
       if (event.ctrlKey || event.metaKey || event.altKey) return
       const x = active % width
       const y = Math.floor(active / width)
-      const target = {
-        ArrowLeft: [x - 1, y],
-        ArrowRight: [x + 1, y],
-        ArrowUp: [x, y - 1],
-        ArrowDown: [x, y + 1],
-        Home: [0, y],
-        End: [width - 1, y],
-      }[event.key]
+      // Where each key starts looking, and which way: Home and End come in from the sides.
+      const keys: Partial<Record<string, [number, number, number, number]>> = {
+        ArrowLeft: [x - 1, y, -1, 0],
+        ArrowRight: [x + 1, y, 1, 0],
+        ArrowUp: [x, y - 1, 0, -1],
+        ArrowDown: [x, y + 1, 0, 1],
+        Home: [0, y, 1, 0],
+        End: [width - 1, y, -1, 0],
+      }
+      const target = keys[event.key]
       if (!target) return
       event.preventDefault()
-      moveTo(target[0] ?? x, target[1] ?? y)
+      moveTo(...target)
     }
     element.addEventListener('keydown', onKeyDown)
     return () => {
@@ -123,6 +136,12 @@ export function Board({
       <div
         ref={grid}
         className="board"
+        data-outline={outline}
+        style={
+          outline === undefined
+            ? undefined
+            : ({ '--surface-shape': surfaceShape(game.config) } as React.CSSProperties)
+        }
         role="group"
         aria-label={t('board.label')}
         aria-describedby="board-hint"
@@ -139,9 +158,9 @@ export function Board({
           aria-hidden="true"
           focusable="false"
         >
-          {lines.map(({ axis, after, straight, hand, weight }) => (
+          {lines.map(({ axis, after, from, straight, hand, weight }) => (
             <g
-              key={`${axis}${after.toString()}`}
+              key={`${axis}${after.toString()}-${from.toString()}`}
               className="board-line"
               data-axis={axis}
               data-after={after}
@@ -155,6 +174,10 @@ export function Board({
         {game.cells.map((player, index) => {
           const x = index % width
           const y = Math.floor(index / width)
+          // A place in the box that is no cell of the field: it only keeps the others in theirs.
+          if (!hasCell(game.config, x, y)) {
+            return <span key={index} className="board-hole" aria-hidden="true" />
+          }
           const open = playing && player === null
           const plan = arrivals.get(index)
           const content = player === null ? t('board.empty') : shapes.name(shapeOf(player))

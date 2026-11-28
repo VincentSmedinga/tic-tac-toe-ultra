@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { setLanguage } from '../i18n/store.ts'
 import { dutchLeaks } from '../i18n/testing.ts'
 import type { Stats } from '../../shared/protocol.ts'
+import { OUTLINE_FIELDS } from '../../shared/room.ts'
+import { computeStats } from '../../shared/stats.ts'
 import type { StatsApi } from './api.ts'
 import { StatsPage } from './StatsPage.tsx'
 import { EMPTY, NINE } from './stats-fixture.ts'
@@ -242,5 +244,37 @@ describe.each([
     render(<StatsPage api={{ getStats: vi.fn(() => Promise.reject(new Error('offline'))) }} />)
     expect(await screen.findByRole('alert')).toHaveTextContent(text.failed)
     expect(dutchLeaks(language)).toEqual([])
+  })
+})
+
+describe('the statistics of fields with an outline', () => {
+  const players = ['cross', 'circle']
+  /** Five in a row for the cross along the long row of the plus, three times over. */
+  const games = [1, 2, 3].map((n) => ({
+    id: n.toString().padStart(16, 'p'),
+    finishedAt: Date.UTC(2026, 9, 18, 12, n),
+    config: { ...OUTLINE_FIELDS.plus, players },
+    moves: [0, 1, 2, 3, 4].flatMap((x) => [
+      { player: 'cross', x, y: 4 },
+      ...(x < 4 ? [{ player: 'circle', x: 3, y: x }] : []),
+    ]),
+    players: [{ id: 'cross' }, { id: 'circle' }],
+    result: { kind: 'won' as const, winner: 'cross' },
+  }))
+  const stats = computeStats(games, Date.UTC(2026, 9, 18, 13))
+
+  it.each([
+    ['nl', 'Plus, vijf op een rij', 'Langste spel: 9 zetten op het veld Plus.'],
+    ['en', 'Plus, five in a row', 'Longest game: 9 moves on the Plus field.'],
+    ['fy', 'Plus, fiif op in rige', 'Langste spultsje: 9 setten op it fjild Plus.'],
+  ] as const)('name the field and draw its cells only (%s)', async (language, title, longest) => {
+    setLanguage(language)
+    render(<StatsPage api={apiWith(stats)} />)
+    const kind = within(await screen.findByRole('region', { name: title }))
+    for (const map of kind.getAllByRole('img')) {
+      expect(map.querySelectorAll('rect')).toHaveLength(45)
+    }
+    expect(screen.getByText(longest)).toBeVisible()
+    if (language !== 'nl') expect(dutchLeaks(language)).toEqual([])
   })
 })

@@ -81,6 +81,18 @@
   pointer-events: none;
 }
 
+/* A field with an outline: the surface has the form of the field, as far round its cells as it
+   reaches round a rectangle (see surface.ts). */
+.board[data-outline]::before {
+  --rim: 0.5rem;
+  clip-path: var(--surface-shape);
+}
+
+/* A place in the box of an outline where there is no cell: it takes a cell's room and shows nothing. */
+.board-hole {
+  aspect-ratio: 1;
+}
+
 /* The lines are one picture behind the cells, in units of a cell (see lines.ts): they sit between
    the cells and not around the field, and as it is out of the flow nothing moves when a cell gets
    a shape. A line is drawn twice, straight and by hand; a look shows the one it draws with. */

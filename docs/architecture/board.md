@@ -5,7 +5,10 @@ The decision and its reasons are in [docs/plan.md](../plan.md), Decisions, "The 
 
 - The board is a grid of lines, not of boxes: cells have no border, radius or gap and touch each other.
 - Never put a gap or a border on `.cell`. `Board.test.tsx` and `src/styles/board-lines.test.ts` read the CSS for it.
-- The lines between the cells (none around the field) are one decorative SVG behind the cells. `lines.ts` makes them, in units of a cell.
+- The lines between the cells (none around a rectangle) are one decorative SVG behind the cells. `lines.ts` makes them, in units of a cell.
+- A field with an outline also has a line round its edge, along every side of every cell, or the edge cells hardly show (`Board.test.tsx`).
+- A place in the box without a cell is an empty `.board-hole`, so that every cell keeps its place in the grid; the arrow keys, Home and End step over it.
+- The surface of an outline is cut to its form (`surface.ts`), which takes one piece without holes and no cells that touch by a corner only (`surface.test.ts`).
 - Every line is in the SVG twice, straight and by hand, with a weight and the same wobble every time.
 - A look sets `--board-max`, `--line-width`, `--line-color` and `--cell-radius` and shows `.board-line-straight` or `.board-line-hand`.
 - Getekend draws by hand in ink, Speels thick and round in the edge's colour (the line token in dark), Rustig thin and straight.

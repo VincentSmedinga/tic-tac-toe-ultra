@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react'
+import { hasCell } from '../../shared/game/index.ts'
+import type { OutlineId } from '../../shared/game/index.ts'
 import { useText } from '../i18n/store.ts'
 import { cellName } from './format.ts'
 
@@ -55,6 +57,8 @@ interface HeatMapProps {
   title: string
   width: number
   height: number
+  /** The form of a field that is not a rectangle: the places without a cell are left empty. */
+  outline?: OutlineId | undefined
   /** A count for each cell, row by row. */
   counts: readonly number[]
   /** What is counted, which the note under the picture says in words. */
@@ -74,7 +78,7 @@ function top(counts: readonly number[], width: number, limit: number) {
  * A small picture of a field in which the cells that were counted most are the darkest, with the
  * cells that count most said in words under it, so that the numbers are text and not only shading.
  */
-export function HeatMap({ title, width, height, counts, kind }: HeatMapProps) {
+export function HeatMap({ title, width, height, outline, counts, kind }: HeatMapProps) {
   const t = useText()
   const most = Math.max(1, ...counts)
   const best = top(counts, width, 3)
@@ -94,17 +98,22 @@ export function HeatMap({ title, width, height, counts, kind }: HeatMapProps) {
         viewBox={`0 0 ${(width * 10).toString()} ${(height * 10).toString()}`}
         style={{ '--columns': width } as CSSProperties}
       >
-        {counts.map((count, index) => (
-          <rect
-            key={index}
-            x={(index % width) * 10}
-            y={Math.floor(index / width) * 10}
-            width={10}
-            height={10}
-            className="stats-heat-cell"
-            style={{ fillOpacity: count / most }}
-          />
-        ))}
+        {counts.map((count, index) => {
+          const x = index % width
+          const y = Math.floor(index / width)
+          if (!hasCell({ width, height, ...(outline && { outline }) }, x, y)) return null
+          return (
+            <rect
+              key={index}
+              x={x * 10}
+              y={y * 10}
+              width={10}
+              height={10}
+              className="stats-heat-cell"
+              style={{ fillOpacity: count / most }}
+            />
+          )
+        })}
       </svg>
       <p className="stats-note">
         {said === ''

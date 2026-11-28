@@ -7,6 +7,7 @@ import { CopyLink } from '../online/CopyLink.tsx'
 import { roomApi } from '../online/api.ts'
 import type { RoomApi } from '../online/api.ts'
 import { gamePath, navigate, roomPath } from '../online/route.ts'
+import { fieldLabel } from '../play/field.ts'
 import { Replay } from '../replay/Replay.tsx'
 import { gamesApi } from './api.ts'
 import type { GamesApi } from './api.ts'
@@ -86,6 +87,9 @@ export function GamePage({ id, api = gamesApi, rooms = roomApi }: GamePageProps)
       {loaded.status === 'ready' && (
         <>
           <h2>{t('gamePage.title', { date: dateTime(loaded.game.finishedAt, 'long') })}</h2>
+          {loaded.game.config.outline !== undefined && (
+            <p className="field-label">{fieldLabel(t, loaded.game.config)}</p>
+          )}
           <Replay
             config={loaded.game.config}
             moves={loaded.game.moves}
