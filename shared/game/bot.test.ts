@@ -25,6 +25,9 @@ const first: Random = () => 0
 
 const PLAYERS = 'abcdefghijkl'.split('')
 
+/** The time a test that plays whole games gets: CI is several times slower than a laptop. */
+const WHOLE_GAMES = 30_000
+
 function field(size: number, winLength: number, players = 2): GameConfig {
   return { width: size, height: size, winLength, players: PLAYERS.slice(0, players) }
 }
@@ -94,13 +97,17 @@ describe('the computer player', () => {
     ['19 × 19 with twelve players, nine in a row', field(19, 9, 12), 40],
   ]
 
-  it.each(fields)('only plays moves the engine accepts: %s', (_, config, limit) => {
-    const { width, height, winLength, players, outline } = config
-    const clean = { width, height, winLength, players, ...(outline ? { outline } : {}) }
-    for (const [index, bot] of everyBot.entries()) {
-      expect(() => game(clean, [bot], seeded(index), limit)).not.toThrow()
-    }
-  })
+  it.each(fields)(
+    'only plays moves the engine accepts: %s',
+    (_, config, limit) => {
+      const { width, height, winLength, players, outline } = config
+      const clean = { width, height, winLength, players, ...(outline ? { outline } : {}) }
+      for (const [index, bot] of everyBot.entries()) {
+        expect(() => game(clean, [bot], seeded(index), limit)).not.toThrow()
+      }
+    },
+    WHOLE_GAMES,
+  )
 
   it('has no move when it is not that player’s turn, or the game is over', () => {
     const start = createGame(field(3, 3))
@@ -129,15 +136,19 @@ describe('the computer player', () => {
     expect(state).toEqual(before)
   })
 
-  it.each(BOT_LEVELS)('plays the same game with the same random numbers: %s', (level) => {
-    const bots: Bot[] = [
-      { level, character: 'attacker' },
-      { level, character: 'wild' },
-    ]
-    const once = game(field(11, 5), bots, seeded(42))
-    expect(game(field(11, 5), bots, seeded(42)).moves).toEqual(once.moves)
-    expect(game(field(11, 5), bots, seeded(43)).moves).not.toEqual(once.moves)
-  })
+  it.each(BOT_LEVELS)(
+    'plays the same game with the same random numbers: %s',
+    (level) => {
+      const bots: Bot[] = [
+        { level, character: 'attacker' },
+        { level, character: 'wild' },
+      ]
+      const once = game(field(11, 5), bots, seeded(42))
+      expect(game(field(11, 5), bots, seeded(42)).moves).toEqual(once.moves)
+      expect(game(field(11, 5), bots, seeded(43)).moves).not.toEqual(once.moves)
+    },
+    WHOLE_GAMES,
+  )
 
   describe('a win in one move', () => {
     // `a` has four in a row with one end open, `b` has four too: `a` is to move.
