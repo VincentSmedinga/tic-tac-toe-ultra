@@ -176,7 +176,8 @@ function Play({
   onChooseAgain: () => void
 }) {
   const [{ game }, dispatch] = useReducer(reducer, undefined, () => newGame(0, shapes, field))
-  const [replaying, setReplaying] = useState(false)
+  // The replay, from its start or from its summary ("Bekijk samenvatting").
+  const [replaying, setReplaying] = useState<false | 'replay' | 'summary'>(false)
   // The board and its replay are two views of the screen, each starting at the top.
   useScrollToTop(replaying ? 'replay' : 'board')
   const t = useText()
@@ -195,6 +196,7 @@ function Play({
       <Replay
         config={game.config}
         moves={game.moves}
+        startAtSummary={replaying === 'summary'}
         onClose={() => {
           setReplaying(false)
         }}
@@ -254,10 +256,20 @@ function Play({
             onClick={() => {
               // The replay is a screen of its own, not part of the mode.
               closeMode()
-              setReplaying(true)
+              setReplaying('replay')
             }}
           >
             {t('play.replay')}
+          </button>
+          <button
+            type="button"
+            className="rematch rematch-quiet"
+            onClick={() => {
+              closeMode()
+              setReplaying('summary')
+            }}
+          >
+            {t('summary.show')}
           </button>
           <button
             type="button"

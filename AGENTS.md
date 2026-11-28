@@ -81,7 +81,7 @@ Tests sit next to the code as `*.test.ts(x)`: in `src/` they run in jsdom, in `s
 
 Read the file for the area you work in before changing it:
 
-- [game-engine.md](docs/architecture/game-engine.md): the rules, `shared/`, players as shapes.
+- [game-engine.md](docs/architecture/game-engine.md): the rules, `shared/`, players as shapes, the analysis of a game.
 - [server.md](docs/architecture/server.md): rooms, routes, messages, tokens, the archive.
 - [house.md](docs/architecture/house.md): the house, where the family meets: its server, messages and screen.
 - [stats.md](docs/architecture/stats.md): the statistics API and the page Statistieken.
@@ -90,7 +90,7 @@ Read the file for the area you work in before changing it:
 - [board.md](docs/architecture/board.md): the board's lines, cells and frame.
 - [motion.md](docs/architecture/motion.md): how a shape is written and the rules for any animation.
 - [play-mode.md](docs/architecture/play-mode.md): the full screen mode of a game.
-- [replay-and-games.md](docs/architecture/replay-and-games.md): the replay and the pages of played games.
+- [replay-and-games.md](docs/architecture/replay-and-games.md): the replay, the pages of played games, and the ranks and summary of a game.
 - [i18n.md](docs/architecture/i18n.md): texts, languages and formats.
 - [pwa.md](docs/architecture/pwa.md): the service worker, icons, the link picture and page addresses.
 - [style-guide.md](docs/architecture/style-guide.md): Storybook.
@@ -101,6 +101,7 @@ Read the file for the area you work in before changing it:
 - Import the engine from `shared/game/index.ts`; never reimplement a rule in the app or the server.
 - The server is authoritative and only sends codes; the app has the words.
 - Players' tokens never leave the server and are stored only as hashes.
+- The ranks of a game are derived from its `config` and `moves` and never stored or sent (`src/games/GamePage.test.tsx`); nothing of them shows while a game is played.
 - The service worker never answers `/api/*` (`service-worker/worker.test.ts`).
 - Never put a gap or a border on `.cell` (`Board.test.tsx`, `src/styles/board-lines.test.ts`).
 - A shape's colour change must pass `src/styles/palette.test.ts`; run `pnpm icons` after changing a shape or a colour.

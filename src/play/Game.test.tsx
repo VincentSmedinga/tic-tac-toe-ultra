@@ -178,6 +178,18 @@ describe('Game', () => {
       expect(screen.queryByRole('button', { name: 'Kijk terug' })).not.toBeInTheDocument()
     })
 
+    it('offers the summary only when the game is over, and opens the replay on it', async () => {
+      await startGame()
+      expect(screen.queryByRole('button', { name: 'Bekijk samenvatting' })).not.toBeInTheDocument()
+      expect(screen.queryByText('Zetten beoordelen…')).not.toBeInTheDocument()
+
+      const user = await tap(...crossWins)
+      await user.click(screen.getByRole('button', { name: 'Bekijk samenvatting' }))
+      expect(screen.getByRole('region', { name: 'Spel terugkijken' })).toBeVisible()
+      expect(screen.getByRole('slider')).toHaveValue(String(crossWins.length))
+      expect(await screen.findByRole('heading', { name: 'Samenvatting' })).toHaveFocus()
+    })
+
     it('replays the game just played, and goes back to the end of it', async () => {
       await startGame()
       const user = await tap(...crossWins)
@@ -431,7 +443,7 @@ describe.each([
     empty: 'Row 2, column 2: empty',
     turn: "It is Circle's turn",
     won: 'Cross has won!',
-    actions: ['Play again', 'Other shapes', 'Watch again', 'Leave'],
+    actions: ['Play again', 'Other shapes', 'Watch again', 'See the summary', 'Leave'],
   },
   {
     language: 'fy',
@@ -440,7 +452,7 @@ describe.each([
     empty: 'Rige 2, kolom 2: leech',
     turn: 'Sirkel is oan de beurt',
     won: 'Krús hat wûn!',
-    actions: ['Noch ien kear', 'Oare foarmen', 'Sjoch werom', 'Ophâlde'],
+    actions: ['Noch ien kear', 'Oare foarmen', 'Sjoch werom', 'Besjoch de gearfetting', 'Ophâlde'],
   },
 ] as const satisfies readonly Record<string, unknown>[])(
   'the game on one screen in $language',

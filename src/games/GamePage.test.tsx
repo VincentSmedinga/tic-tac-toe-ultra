@@ -54,6 +54,22 @@ describe('GamePage', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Anna (kruis) heeft gewonnen!')
   })
 
+  it('sums the game up, without sending or storing anything about it', async () => {
+    const fetch = vi.spyOn(globalThis, 'fetch')
+    const { games, rooms } = apis()
+    render(<GamePage id={GAME.id} api={games} rooms={rooms} />)
+
+    // The old players X and O are the cross and the circle, and Anna sat in the cross's seat.
+    expect(await screen.findByRole('heading', { name: 'Samenvatting' })).toBeVisible()
+    expect(screen.getByRole('article', { name: 'Anna (kruis)' })).toBeVisible()
+    expect(screen.getByRole('article', { name: 'Cirkel' })).toBeVisible()
+    // Only the game itself was asked for: the ranks are worked out here, from its moves.
+    expect(games.getGame).toHaveBeenCalledTimes(1)
+    expect(games.listGames).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+    fetch.mockRestore()
+  })
+
   it('says so when there is no such game', async () => {
     const { games, rooms } = apis(null)
     render(<GamePage id="zzzzzzzzzzzzzzzz" api={games} rooms={rooms} />)

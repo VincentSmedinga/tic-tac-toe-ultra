@@ -1,4 +1,4 @@
-export { applyMove, createGame, getCell } from './game.ts'
+export { applyMove, completesLine, createGame, getCell } from './game.ts'
 export type {
   Cell,
   GameConfig,
@@ -10,5 +10,16 @@ export type {
   PlayerId,
 } from './game.ts'
 export { canStillWin } from './dead.ts'
-export { replayGame, stateAfter } from './replay.ts'
-export type { ReplayResult } from './replay.ts'
+export { replayGame, replayStates, stateAfter } from './replay.ts'
+export type { ReplayResult, StatesResult } from './replay.ts'
+export { analyseGame, RANK_SYMBOLS, RANKS, Solver } from './analysis.ts'
+export type {
+  AnalysisLimits,
+  Certainty,
+  GameAnalysis,
+  MoveAnalysis,
+  PositionValue,
+  Rank,
+} from './analysis.ts'
+export { slips, summariseGame } from './summary.ts'
+export type { GameSummary, PlayerSummary } from './summary.ts'
