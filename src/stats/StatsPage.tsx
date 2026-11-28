@@ -95,10 +95,7 @@ function Numbers({ stats }: { stats: Stats }) {
       <Starter stats={stats} />
       <Rooms stats={stats} />
       {stats.kinds.map((kind) => (
-        <Kind
-          key={`${kind.width.toString()}x${kind.height.toString()}x${kind.winLength.toString()}x${kind.players.toString()}`}
-          kind={kind}
-        />
+        <Kind key={kindId(kind)} kind={kind} />
       ))}
       <When stats={stats} />
       <Fun stats={stats} />
@@ -363,8 +360,9 @@ function Kind({ kind }: { kind: Stats['kinds'][number] }) {
   )
 }
 
-function kindId({ width, height, winLength, players }: Stats['kinds'][number]): string {
-  return [width, height, winLength, players].map(String).join('-')
+function kindId({ width, height, winLength, players, outline }: Stats['kinds'][number]): string {
+  const id = [width, height, winLength, players].map(String).join('-')
+  return outline === undefined ? id : `${id}-${outline}`
 }
 
 function When({ stats }: { stats: Stats }) {
