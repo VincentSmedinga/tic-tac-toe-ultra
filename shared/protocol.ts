@@ -38,15 +38,15 @@ const fieldShape = z.object({
   winLength: z.number().int().min(FIELD_LIMITS.minWin).max(FIELD_LIMITS.maxWin),
 })
 
+const FIELD_MESSAGE = 'odd sides, and a row of 3 to 9 that fits on the field'
+
 /** A field somebody asks for: for a new room, or with an invitation in a house. */
-export const fieldSchema = fieldShape.refine(isValidField, {
-  message: 'odd numbers, and the row must fit on the field',
-})
+export const fieldSchema = fieldShape.refine(isValidField, { message: FIELD_MESSAGE })
 
 /** What whoever makes a room asks for: the field, and how many people may play (two by default). */
 export const roomSettingsSchema = fieldShape
   .extend({ players: z.number().int().min(PLAYER_LIMITS.min).max(PLAYER_LIMITS.max).optional() })
-  .refine(isValidField, { message: 'odd numbers, and the row must fit on the field' })
+  .refine(isValidField, { message: FIELD_MESSAGE })
 
 export const clientMessageSchema = z.discriminatedUnion('type', [
   /** `shape` is the one this browser used last: taken when it is free and none is chosen yet. */
