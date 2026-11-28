@@ -98,6 +98,12 @@ describe('a message from the house', () => {
       room: 'BCDF',
     }
     expect(parseHouseServerMessage(JSON.stringify(playing))).toEqual(playing)
+    // A field outside the limits of an invitation is read too: only the server holds those.
+    const told = {
+      ...playing,
+      invitation: { ...playing.invitation, field: { width: 24, height: 2, winLength: 12 } },
+    }
+    expect(parseHouseServerMessage(JSON.stringify(told))).toEqual(told)
     expect(
       parseHouseServerMessage(JSON.stringify({ type: 'error', error: 'shape-taken' })),
     ).toEqual({ type: 'error', error: 'shape-taken' })

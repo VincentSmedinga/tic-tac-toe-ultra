@@ -34,6 +34,7 @@ The decisions and their reasons are in [docs/plan.md](../plan.md), Decisions (ro
 ## Messages (`shared/protocol.ts`)
 
 - Every message is validated with the schemas in `shared/protocol.ts`.
+- The limits of a field are checked on what is asked for (`fieldSchema`, `roomSettingsSchema`), not on what the app reads: a `state` of a room or a house is taken with any field a game could be played on (`toldFieldSchema`, `protocol.test.ts` and `house-protocol.test.ts`), so an app left open can read a room made after the limits changed.
 - A client says `join` (optionally with the shape it had last time), `choose` (a shape, until the game starts), `start` (only the first seat, to begin with fewer people than seats), `move` or `rematch`.
 - A client may also say `leave`, once the round is over, see Leaving below.
 - A server message is a full `state` snapshot or an `error` (only to the sender).

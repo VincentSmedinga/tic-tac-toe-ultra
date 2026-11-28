@@ -29,8 +29,7 @@ export interface FieldSettings {
 
 /**
  * How big a field may be, and how long a winning row: what the room and the start screen allow.
- * Everything is odd (sides 3, 5, … 19 and rows 3, 5, 7, 9): a field with a middle, and a row that
- * has one too.
+ * The sides are odd (3, 5, … 19), so a field has a middle; the row is any whole number from 3 to 9.
  */
 export const FIELD_LIMITS = { minSide: 3, maxSide: 19, minWin: 3, maxWin: 9 } as const
 
@@ -44,19 +43,20 @@ export const FIELD_PRESETS: readonly (FieldSettings & { id: 'classic' | 'bigger'
   { id: 'big', width: 15, height: 15, winLength: 5 },
 ]
 
-/** The odd numbers from `from` to `to`, which is what a side or a row can be. */
+/** The odd numbers from `from` to `to`, which is what a side can be. */
 export function oddNumbers(from: number, to: number): number[] {
   return Array.from({ length: Math.floor((to - from) / 2) + 1 }, (_, index) => from + index * 2)
 }
 
-/** Whether a field is one a room accepts: odd whole numbers within the limits, and a row that fits. */
+/** Whether a field is one a room accepts: odd sides and a row within the limits that fits. */
 export function isValidField({ width, height, winLength }: FieldSettings): boolean {
   const { minSide, maxSide, minWin, maxWin } = FIELD_LIMITS
   const within = (n: number, min: number, max: number) =>
-    Number.isInteger(n) && n >= min && n <= max && n % 2 === 1
+    Number.isInteger(n) && n >= min && n <= max
+  const isSide = (n: number) => within(n, minSide, maxSide) && n % 2 === 1
   return (
-    within(width, minSide, maxSide) &&
-    within(height, minSide, maxSide) &&
+    isSide(width) &&
+    isSide(height) &&
     within(winLength, minWin, maxWin) &&
     // A row longer than both sides could never be made: nobody could win.
     winLength <= Math.max(width, height)

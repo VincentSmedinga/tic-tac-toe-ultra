@@ -138,8 +138,11 @@ export const nl = {
   'field.takeTip': 'Neem de tip over',
   'field.label': '{width} × {height}, {row}',
   'field.inARow.3': 'drie op een rij',
+  'field.inARow.4': 'vier op een rij',
   'field.inARow.5': 'vijf op een rij',
+  'field.inARow.6': 'zes op een rij',
   'field.inARow.7': 'zeven op een rij',
+  'field.inARow.8': 'acht op een rij',
   'field.inARow.9': 'negen op een rij',
   'field.inARow.other': '{row} op een rij',
 

@@ -157,12 +157,19 @@ describe('making a room with a field of its own', () => {
     expect(fields).toEqual([{ width: 7, height: 9, winLength: 5 }])
   })
 
-  it('refuses a field that is too big, even, too long a row or no field at all, and makes no room', async () => {
+  it('makes a room with an even number in a row', async () => {
+    const { env, fields } = fakeEnv()
+    const response = await post(JSON.stringify({ width: 5, height: 5, winLength: 4 }), env)
+    expect(response.status).toBe(201)
+    expect(fields).toEqual([{ width: 5, height: 5, winLength: 4 }])
+  })
+
+  it('refuses a field that is too big, even-sided, too long a row or no field at all, and makes no room', async () => {
     const { env, rooms } = fakeEnv()
     for (const body of [
       { width: 21, height: 3, winLength: 3 },
       { width: 4, height: 3, winLength: 3 },
-      { width: 5, height: 5, winLength: 4 },
+      { width: 5, height: 5, winLength: 6 },
       { width: 3, height: 3, winLength: 5 },
       { width: 3 },
       'nonsense',

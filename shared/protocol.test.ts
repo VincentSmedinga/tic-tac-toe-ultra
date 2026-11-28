@@ -112,7 +112,15 @@ describe('a message from the server', () => {
     })
   })
 
+  it('is read with a field outside the limits of what a room can be asked for', () => {
+    // Only the server holds the limits, so that an app left open can read a room made after them.
+    const told = { ...state, field: { width: 24, height: 2, winLength: 12 } }
+    expect(parseServerMessage(JSON.stringify(told))).toEqual(told)
+  })
+
   it('is refused when it is not one of those', () => {
+    const noField = { ...state, field: { width: 3, height: 3, winLength: 1.5 } }
+    expect(parseServerMessage(JSON.stringify(noField))).toBeNull()
     expect(parseServerMessage(JSON.stringify({ type: 'error', error: 'whatever' }))).toBeNull()
     expect(parseServerMessage(JSON.stringify({ ...state, code: 'abcd' }))).toBeNull()
     expect(parseServerMessage('nope')).toBeNull()
@@ -163,29 +171,32 @@ describe('a stored game', () => {
 })
 
 describe('the field of a room', () => {
-  it('is accepted when its sides and its row are odd and within the limits', () => {
+  it('is accepted with odd sides and a row within the limits', () => {
     for (const field of [
       { width: 3, height: 3, winLength: 3 },
       { width: 7, height: 5, winLength: 5 },
       { width: 19, height: 19, winLength: 9 },
       { width: 3, height: 19, winLength: 9 },
+      { width: 5, height: 5, winLength: 4 },
+      { width: 7, height: 7, winLength: 6 },
+      { width: 3, height: 9, winLength: 8 },
     ]) {
       expect(fieldSchema.safeParse(field).success, JSON.stringify(field)).toBe(true)
     }
   })
 
-  it('is refused with an even side or an even row', () => {
+  it('is refused with an even side', () => {
     expect(fieldSchema.safeParse({ width: 4, height: 3, winLength: 3 }).success).toBe(false)
     expect(fieldSchema.safeParse({ width: 3, height: 6, winLength: 3 }).success).toBe(false)
-    expect(fieldSchema.safeParse({ width: 5, height: 5, winLength: 4 }).success).toBe(false)
   })
 
   it('is refused outside the limits, and when the row is longer than the field', () => {
     expect(fieldSchema.safeParse({ width: 1, height: 3, winLength: 3 }).success).toBe(false)
     expect(fieldSchema.safeParse({ width: 21, height: 3, winLength: 3 }).success).toBe(false)
-    expect(fieldSchema.safeParse({ width: 5, height: 5, winLength: 11 }).success).toBe(false)
-    expect(fieldSchema.safeParse({ width: 3, height: 3, winLength: 5 }).success).toBe(false)
-    expect(fieldSchema.safeParse({ width: 3, height: 3, winLength: 1 }).success).toBe(false)
+    expect(fieldSchema.safeParse({ width: 19, height: 19, winLength: 10 }).success).toBe(false)
+    expect(fieldSchema.safeParse({ width: 5, height: 5, winLength: 6 }).success).toBe(false)
+    expect(fieldSchema.safeParse({ width: 3, height: 3, winLength: 4 }).success).toBe(false)
+    expect(fieldSchema.safeParse({ width: 3, height: 3, winLength: 2 }).success).toBe(false)
   })
 
   it('is refused when it is not whole numbers', () => {

@@ -138,8 +138,11 @@ export const ro: Dictionary = {
   'field.takeTip': 'Ia sfatul',
   'field.label': '{width} × {height}, {row}',
   'field.inARow.3': 'trei la rând',
+  'field.inARow.4': 'patru la rând',
   'field.inARow.5': 'cinci la rând',
+  'field.inARow.6': 'șase la rând',
   'field.inARow.7': 'șapte la rând',
+  'field.inARow.8': 'opt la rând',
   'field.inARow.9': 'nouă la rând',
   'field.inARow.other': '{row} la rând',
 
