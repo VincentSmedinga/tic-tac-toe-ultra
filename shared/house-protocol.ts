@@ -6,6 +6,7 @@ import {
   fieldSchema,
   roomCodeSchema,
   shapeSchema,
+  toldFieldSchema,
   tokenSchema,
 } from './protocol.ts'
 import { PLAYER_LIMITS } from './room.ts'
@@ -95,7 +96,7 @@ export const houseStateSchema = z.object({
   invitation: z
     .object({
       from: z.string(),
-      field: fieldSchema,
+      field: toldFieldSchema,
       people: z.array(z.object({ id: z.string(), answer: z.enum(ANSWERS) })),
     })
     .optional(),

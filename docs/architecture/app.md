@@ -18,7 +18,7 @@ The decisions are in [docs/plan.md](../plan.md), Decisions and Scrolling between
 - "Stoppen" asks first in a room (`OnlineGame.tsx`, "Blijven" has the focus), is disabled while the connection is not open, and on `/samen` (`Game.tsx`) goes to the start at once.
 - A seat that left stays in `state.players` with `left`: the room says who left (`online.left`) and not "even weg", shows only the shapes of the round (`config.players`), and offers no rematch when fewer than two are left.
 - `play/` is the game on one screen: `Game` keeps the state with the engine, and starts with `ShapePicker`, once per player. The player who starts alternates every round.
-- `play/FieldPicker.tsx` and `field.ts` choose and describe the field: presets, an own field with odd numbers only, a suggested row.
+- `play/FieldPicker.tsx` and `field.ts` choose and describe the field: presets, an own field with odd sides and any row that fits (3 to 9), a suggested row.
 - The tests drive the room page with a fake socket (`RoomPage.test.tsx`).
 
 ## Scrolling between screens

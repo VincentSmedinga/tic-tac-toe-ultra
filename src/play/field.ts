@@ -3,17 +3,23 @@ import type { FieldSettings } from '../../shared/room.ts'
 import type { Text } from '../i18n/types.ts'
 
 /**
- * What a row of this many is called: "drie op een rij". Every row a room allows is odd; the usual
- * ones are written out, each as a whole text, and the others are the number in a text.
+ * What a row of this many is called: "drie op een rij". Every row a room allows is written out,
+ * each as a whole text, and any other is the number in a text.
  */
 export function rowLabel(t: Text, winLength: number): string {
   switch (winLength) {
     case 3:
       return t('field.inARow.3')
+    case 4:
+      return t('field.inARow.4')
     case 5:
       return t('field.inARow.5')
+    case 6:
+      return t('field.inARow.6')
     case 7:
       return t('field.inARow.7')
+    case 8:
+      return t('field.inARow.8')
     case 9:
       return t('field.inARow.9')
     default:
@@ -41,10 +47,15 @@ export function presetOf(field: FieldSettings): string | null {
   return found?.id ?? null
 }
 
-/** The longest row a field can have: odd, within the limits, and no longer than its longest side. */
+/** The longest row a field can have: within the limits, and no longer than its longest side. */
 export function longestRow({ width, height }: Pick<FieldSettings, 'width' | 'height'>): number {
-  const reach = Math.min(FIELD_LIMITS.maxWin, Math.max(width, height))
-  return reach % 2 === 1 ? reach : reach - 1
+  return Math.min(FIELD_LIMITS.maxWin, Math.max(width, height))
+}
+
+/** Every number in a row that fits on a field of this size, the shortest first. */
+export function rowChoices(size: Pick<FieldSettings, 'width' | 'height'>): number[] {
+  const { minWin } = FIELD_LIMITS
+  return Array.from({ length: longestRow(size) - minWin + 1 }, (_, index) => minWin + index)
 }
 
 /**

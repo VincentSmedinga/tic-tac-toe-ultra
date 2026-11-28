@@ -46,17 +46,16 @@ const fieldShape = z.object({
   outline: outlineSchema.optional(),
 })
 
-/** The field of a room, as asked for when it is made and as told to the players. */
-export const fieldSchema = fieldShape.refine(isValidField, {
-  message: 'odd numbers with a row that fits on the field, or an outline as it is',
-})
+const FIELD_MESSAGE =
+  'odd sides, and a row of 3 to 9 that fits on the field, or an outline as it is'
+
+/** A field somebody asks for: for a new room, or with an invitation in a house. */
+export const fieldSchema = fieldShape.refine(isValidField, { message: FIELD_MESSAGE })
 
 /** What whoever makes a room asks for: the field, and how many people may play (two by default). */
 export const roomSettingsSchema = fieldShape
   .extend({ players: z.number().int().min(PLAYER_LIMITS.min).max(PLAYER_LIMITS.max).optional() })
-  .refine(isValidField, {
-    message: 'odd numbers with a row that fits on the field, or an outline as it is',
-  })
+  .refine(isValidField, { message: FIELD_MESSAGE })
 
 export const clientMessageSchema = z.discriminatedUnion('type', [
   /** `shape` is the one this browser used last: taken when it is free and none is chosen yet. */
@@ -112,6 +111,13 @@ export const configSchema = z.object({
   outline: outlineSchema.optional(),
 })
 export const moveSchema = z.object({ player: z.string(), x: z.number().int(), y: z.number().int() })
+
+/**
+ * A field as the server tells it. The app takes any field a game could be played on and leaves the
+ * limits to the server (`fieldSchema`), so an app that was left open while the limits changed can
+ * still read the room it is in.
+ */
+export const toldFieldSchema = configSchema.omit({ players: true })
 
 /** The address of a stored game: random and unguessable, so knowing it is the right to see it. */
 export const GAME_ID_LENGTH = 16
@@ -292,7 +298,7 @@ export const stateMessageSchema = z.object({
   /** The seat of the one who receives this. */
   you: z.string(),
   /** The field of this room, from the moment it is made: how big, and how many in a row win. */
-  field: fieldSchema,
+  field: toldFieldSchema,
   /** How many seats the room has, taken or not: the first one is the one who may start the game. */
   seats: z.number().int().min(PLAYER_LIMITS.min).max(PLAYER_LIMITS.max),
   /** Which round of the evening this is; the starting player alternates with it. */

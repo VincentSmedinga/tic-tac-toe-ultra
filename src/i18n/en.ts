@@ -135,8 +135,11 @@ export const en: Dictionary = {
   'field.takeTip': 'Take the tip',
   'field.label': '{width} × {height}, {row}',
   'field.inARow.3': 'three in a row',
+  'field.inARow.4': 'four in a row',
   'field.inARow.5': 'five in a row',
+  'field.inARow.6': 'six in a row',
   'field.inARow.7': 'seven in a row',
+  'field.inARow.8': 'eight in a row',
   'field.inARow.9': 'nine in a row',
   'field.inARow.other': '{row} in a row',
 

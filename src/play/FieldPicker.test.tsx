@@ -54,7 +54,7 @@ describe('FieldPicker', () => {
     expect(screen.getByRole('button', { name: /Groter/ })).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('has no lists until you want a field of your own, and then only odd numbers', async () => {
+  it('has no lists until you want a field of your own, and then only odd sides', async () => {
     render(<Holder />)
     expect(screen.queryByLabelText('Breedte')).not.toBeInTheDocument()
     await userEvent.setup().click(screen.getByRole('button', { name: /Eigen veld/ }))
@@ -81,11 +81,21 @@ describe('FieldPicker', () => {
     const user = userEvent.setup()
     const rows = () =>
       [...screen.getByLabelText('Op een rij').querySelectorAll('option')].map((o) => o.value)
-    expect(rows()).toEqual(['3', '5', '7', '9'])
+    expect(rows()).toEqual(['3', '4', '5', '6', '7', '8', '9'])
     await user.selectOptions(screen.getByLabelText('Breedte'), '5')
     await user.selectOptions(screen.getByLabelText('Hoogte'), '5')
-    expect(rows()).toEqual(['3', '5'])
+    expect(rows()).toEqual(['3', '4', '5'])
     expect(screen.getByLabelText('Op een rij')).toHaveValue('5')
+  })
+
+  it('takes an even row and says it', async () => {
+    const seen = vi.fn()
+    render(<Holder start={{ width: 7, height: 7, winLength: 5 }} seen={seen} />)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /Eigen veld/ }))
+    await user.selectOptions(screen.getByLabelText('Op een rij'), '4')
+    expect(seen).toHaveBeenLastCalledWith({ width: 7, height: 7, winLength: 4 })
+    expect(summary()).toHaveTextContent('7 × 7, vier op een rij')
   })
 
   it('marks the row that makes a good game, and follows that suggestion while it is the one in use', async () => {
