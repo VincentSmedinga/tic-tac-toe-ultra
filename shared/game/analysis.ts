@@ -2,8 +2,8 @@
  * The analysis of a finished game: a rank for every move, the way chess marks them (`!!`, `!`, `?!`,
  * `?`, `??`), worked out from the stored `config` and `moves` and never stored itself, so a better
  * analysis later improves the games that are already played. Pure and immutable, like the rest of
- * the engine: it plays through `applyMove` and looks through `completesLine`, and never decides
- * a rule of its own. The decisions are in docs/plan.md, Ranking the moves of a game.
+ * the engine: it plays through `applyMove` and looks through `completesLine` (tactics.ts), and
+ * never decides a rule of its own. The decisions are in docs/plan.md, Ranking the moves of a game.
  *
  * Two kinds of answer, and every move says which one it has:
  *
@@ -15,10 +15,11 @@
  *   and (two players only) a double threat that was handed to the opponent. A move whose rank can't
  *   be told gets none. This is all there is for several players and for fields that are too big.
  */
-import { applyMove, completesLine } from './game.ts'
+import { applyMove } from './game.ts'
 import type { Cell, GameConfig, GameState, Move, PlayerId } from './game.ts'
 import { cellCount, hasCell } from './outline.ts'
 import { replayStates } from './replay.ts'
+import { cellAt, forksOf, nearby, place, threatsAround, winningCells } from './tactics.ts'
 
 export type Rank = 'brilliant' | 'good' | 'dubious' | 'mistake' | 'blunder'
 
@@ -76,17 +77,8 @@ export const EXACT_FIELD_LIMIT = 36
 export const EXACT_NODE_LIMIT = 250_000
 /** How many solved positions a kept solver holds on to between games. */
 const MEMO_LIMIT = 300_000
-/** How far from a mark the tactical search looks for a move on a big field. */
-const NEAR = 2
 /** Alternatives looked at when checking that a move could have been better. */
 const ALTERNATIVES = 40
-
-const DIRECTIONS = [
-  [1, 0],
-  [0, 1],
-  [1, 1],
-  [1, -1],
-] as const
 
 /**
  * Ranks every move of a game. Null when the game can't be read (a move breaks a rule): the same
@@ -327,10 +319,6 @@ function judgeExactly(
   return { rank, certainty: 'exact', value, better }
 }
 
-function cellAt(width: number, index: number): Cell {
-  return { x: index % width, y: Math.floor(index / width) }
-}
-
 /* ----------------------------------------------------------------------------------------------
  * Tactical: what can be shown from the position, for any number of players and any field.
  * -------------------------------------------------------------------------------------------- */
@@ -376,84 +364,6 @@ function judgeTactically(before: GameState, after: GameState, move: Move): MoveA
     return result('blunder')
   }
   return none
-}
-
-/** The empty cells where `player` completes a line, whoever's turn it is. */
-function winningCells(state: GameState, player: PlayerId): Cell[] {
-  const { width } = state.config
-  const cells: Cell[] = []
-  for (const [index, mark] of state.cells.entries()) {
-    if (mark !== null) continue
-    const cell = cellAt(width, index)
-    if (completesLine(state, cell, player)) cells.push(cell)
-  }
-  return cells
-}
-
-/**
- * The cells where `move.player` wins next, that the mark of `move` made possible: only on the four
- * lines through the move can a new win have appeared, so this is cheap on a big field.
- */
-function threatsAround(state: GameState, move: Move, player: PlayerId): Cell[] {
-  const reach = state.config.winLength - 1
-  const found: Cell[] = []
-  for (const [dx, dy] of DIRECTIONS) {
-    for (let step = -reach; step <= reach; step++) {
-      if (step === 0) continue
-      const cell = { x: move.x + dx * step, y: move.y + dy * step }
-      if (completesLine(state, cell, player)) found.push(cell)
-    }
-  }
-  return found.filter(
-    (cell, index) => found.findIndex(({ x, y }) => x === cell.x && y === cell.y) === index,
-  )
-}
-
-/** Puts a mark on a copy of the position, for looking ahead: nothing but the cells is checked. */
-function place(state: GameState, cell: Cell, player: PlayerId): GameState {
-  const { width } = state.config
-  return {
-    ...state,
-    cells: state.cells.with(cell.y * width + cell.x, player),
-    moves: [...state.moves, { player, ...cell }],
-    moveCount: state.moveCount + 1,
-  }
-}
-
-/** The empty cells near a mark (or the middle of an empty field): where a move can matter. */
-function nearby(state: GameState): Cell[] {
-  const { width, height } = state.config
-  const middle = { x: Math.floor(width / 2), y: Math.floor(height / 2) }
-  if (state.moveCount === 0 && hasCell(state.config, middle.x, middle.y)) return [middle]
-  const small = cellCount(state.config) <= 36
-  const found: Cell[] = []
-  for (const [index, mark] of state.cells.entries()) {
-    if (mark !== null) continue
-    const cell = cellAt(width, index)
-    if (!hasCell(state.config, cell.x, cell.y)) continue
-    if (small || isNearMark(state, cell)) found.push(cell)
-  }
-  return found
-}
-
-function isNearMark(state: GameState, { x, y }: Cell): boolean {
-  const { width, height } = state.config
-  for (let dy = -NEAR; dy <= NEAR; dy++) {
-    for (let dx = -NEAR; dx <= NEAR; dx++) {
-      const nx = x + dx
-      const ny = y + dy
-      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
-      if (state.cells[ny * width + nx] !== null) return true
-    }
-  }
-  return false
-}
-
-/** The moves of `player` that make a double threat. */
-function forksOf(state: GameState, player: PlayerId): Cell[] {
-  return nearby(state).filter(
-    (cell) => threatsAround(place(state, cell, player), { player, ...cell }, player).length >= 2,
-  )
 }
 
 /** Whether makes a double threat in a position that is already won, for a mover who has no win yet. */

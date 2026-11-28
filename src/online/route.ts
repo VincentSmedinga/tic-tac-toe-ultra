@@ -4,10 +4,12 @@ import { houseCodeSchema } from '../../shared/house-protocol.ts'
 import { roomCodeSchema } from '../../shared/protocol.ts'
 import { pushEntry } from './scroll.ts'
 
-/** Where in the app we are: the start screen, the game on one screen, a room, a house, played games, the statistics, or the settings. */
+/** Where in the app we are: the start screen, the game on one screen or against the computer, a room, a house, played games, the statistics, or the settings. */
 export type Route =
   | { name: 'start'; notice?: 'bad-code' | 'bad-house-code' }
   | { name: 'local' }
+  /** One player against the computer, on this screen. */
+  | { name: 'computer' }
   | { name: 'room'; code: string }
   /** A house, where the family meets: see docs/architecture/house.md. */
   | { name: 'house'; code: string }
@@ -21,6 +23,7 @@ export type Route =
 export function parseRoute(pathname: string): Route {
   const parts = pathname.split('/').filter(Boolean)
   if (parts.length === 1 && parts[0] === 'samen') return { name: 'local' }
+  if (parts.length === 1 && parts[0] === 'computer') return { name: 'computer' }
   if (parts.length === 1 && parts[0] === 'spellen') return { name: 'games' }
   if (parts.length === 1 && parts[0] === 'statistieken') return { name: 'stats' }
   if (parts.length === 1 && parts[0] === 'instellingen') return { name: 'settings' }

@@ -7,7 +7,15 @@ const page = readFileSync(new URL('index.html', root), 'utf8')
 
 describe('the pages of the app', () => {
   it('are the addresses of the router (src/online/route.ts), and nothing else', () => {
-    for (const path of ['/', '/samen', '/spellen', '/statistieken', '/spel/abc', '/kamer/BCDF']) {
+    for (const path of [
+      '/',
+      '/samen',
+      '/computer',
+      '/spellen',
+      '/statistieken',
+      '/spel/abc',
+      '/kamer/BCDF',
+    ]) {
       expect(isPage(path)).toBe(true)
     }
     for (const path of ['/assets/index.js', '/og-image.png', '/sw.js', '/manifest.webmanifest']) {

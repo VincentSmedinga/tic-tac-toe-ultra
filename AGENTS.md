@@ -69,7 +69,7 @@ Tests sit next to the code as `*.test.ts(x)`: in `src/` they run in jsdom, in `s
 
 ## Structure
 
-- `shared/game/`: the game engine, pure TypeScript with no browser or Node APIs, used by both the app and the server.
+- `shared/game/`: the game engine and the computer player, pure TypeScript with no browser or Node APIs, for both the app and the server.
 - `shared/`: what the app and the server share: the engine, `protocol.ts` and `house-protocol.ts` (the WebSocket messages, zod), `room.ts` and `house.ts`.
 - `src/`: the React app: board, shapes, lobby, replay, statistics.
 - `server/`: the Worker (`index.ts`) and the rooms, houses and archive (Durable Objects); the server is authoritative.
@@ -84,6 +84,7 @@ Read the file for the area you work in before changing it:
 - [game-engine.md](docs/architecture/game-engine.md): the rules, `shared/`, players as shapes, the analysis of a game.
 - [server.md](docs/architecture/server.md): rooms, routes, messages, tokens, the archive.
 - [house.md](docs/architecture/house.md): the house, where the family meets: its server, messages and screen.
+- [computer.md](docs/architecture/computer.md): the computer player: its levels, its characters and the game against it.
 - [stats.md](docs/architecture/stats.md): the statistics API and the page Statistieken.
 - [app.md](docs/architecture/app.md): screens, the router, scrolling between screens, the footer.
 - [appearance.md](docs/architecture/appearance.md): looks, light and dark, shape colours and their tests.

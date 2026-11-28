@@ -51,6 +51,18 @@ describe('App', () => {
     expect(await screen.findByRole('button', { name: 'Start' })).toBeVisible()
   })
 
+  it('goes from the start screen to a game against the computer, with a way back', async () => {
+    openAt('/')
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('link', { name: 'Tegen de computer' }))
+    expect(window.location.pathname).toBe('/computer')
+    expect(document.querySelector('.app')).toHaveAttribute('data-screen', 'game')
+    await user.click(await screen.findByRole('button', { name: 'Start' }))
+    expect(screen.getByRole('group', { name: 'Speelveld' })).toBeVisible()
+    await user.click(screen.getByRole('link', { name: 'Terug naar het begin' }))
+    expect(await screen.findByRole('button', { name: 'Nieuwe kamer' })).toBeVisible()
+  })
+
   it('says so on the start screen when the address of a room is no code', () => {
     openAt('/kamer/abcd')
     expect(screen.getByRole('alert')).toHaveTextContent('Dat is geen geldige code')

@@ -8,6 +8,7 @@ import { SettingsPage } from './settings/SettingsPage.tsx'
 import { GamePage } from './games/GamePage.tsx'
 import { GamesPage } from './games/GamesPage.tsx'
 import { StatsPage } from './stats/StatsPage.tsx'
+import { ComputerGame } from './play/ComputerGame.tsx'
 import { Game } from './play/Game.tsx'
 import { HousePage } from './house/HousePage.tsx'
 import { RoomPage } from './online/RoomPage.tsx'
@@ -24,7 +25,7 @@ export function App() {
     applyLanguage(language)
   }, [language])
   // On a phone a game has the screen to itself: no row of places, a way back in the header.
-  const inGame = route.name === 'local' || route.name === 'room'
+  const inGame = route.name === 'local' || route.name === 'computer' || route.name === 'room'
   return (
     <div className="app" data-screen={inGame ? 'game' : 'page'}>
       <AppearanceSync />
@@ -34,6 +35,7 @@ export function App() {
       <main>
         {route.name === 'start' && <StartScreen notice={route.notice} />}
         {route.name === 'local' && <Game />}
+        {route.name === 'computer' && <ComputerGame />}
         {route.name === 'room' && <RoomPage key={route.code} code={route.code} />}
         {route.name === 'house' && <HousePage key={route.code} code={route.code} />}
         {route.name === 'games' && <GamesPage />}
