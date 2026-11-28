@@ -19,6 +19,13 @@ The product decisions are in [docs/plan.md](../plan.md), Decisions and Architect
 - A move after the point where a game was drawn (a game stored before dead positions ended it) gets no rank.
 - `analysis.test.ts` has the table test of the 3 × 3 solution: for every reachable position the value of every move against an independent minimax, and the rules that follow (a move that keeps the value is never a mistake, a move that gives it up always is, a move that loses a win is never good, no first move is a mistake).
 - The engine works for any field size, winning length and number of players (two to twelve).
+- A config may have an `outline` (`outline.ts`): a name for the cells of the `width` × `height` box that exist, and the size must be the outline's.
+- Whether a cell exists is `hasCell`, and how many there are is `cellCount`: never `width * height`, and never a null in `cells`, which a missing cell also is.
+- A move on a cell that doesn't exist is `out-of-bounds`, like one beside the box.
+- The cells of an outline never change once games are stored with it; a different form is a new name.
+- A new outline needs a line of every length up to the longest side of its box, or `createGame` needs a check of its own (`outline.test.ts`).
+- A room takes an outline only in the one size and row of `OUTLINE_FIELDS` (`shared/room.ts`).
+- The analysis only treats positions as the same under the turns and mirrors that keep the field's cells (`symmetriesOf`), and a kept solver is for one outline.
 - The player of a game is the shape: the player id, the `player` of a move and the players of a stored game are shape ids (`cross`, `heart`, …).
 - `shared/shapes.ts` has the shape ids (thirty-six; new ones go at the end); `src/shapes/shapes.ts` has the drawings and what each comes from, the dictionaries the names.
 - The number of players is limited by the room (`PLAYER_LIMITS`), not by the number of shapes.
