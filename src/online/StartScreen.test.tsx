@@ -101,6 +101,10 @@ describe('StartScreen', () => {
       'href',
       '/samen',
     )
+    expect(screen.getByRole('link', { name: 'Tegen de computer' })).toHaveAttribute(
+      'href',
+      '/computer',
+    )
   })
 
   it('has no name field: the name is on the settings page, and a line says whose it is', () => {

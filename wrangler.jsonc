@@ -33,6 +33,7 @@
       "/api/*",
       "/",
       "/samen",
+      "/computer",
       "/spellen",
       "/statistieken",
       "/instellingen",
