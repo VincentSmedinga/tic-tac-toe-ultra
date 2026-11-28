@@ -5,10 +5,10 @@ The decisions are in [docs/plan.md](../plan.md), Decisions and Scrolling between
 
 ## Screens and the router
 
-- `src/online/route.ts` and `Link.tsx` are a minimal router on `history.pushState`: `/` the start screen, `/samen` the game on one screen, `/kamer/<code>` a room, `/huis/<code>` a house (see [house.md](house.md)), `/spellen`, `/spel/<id>`, `/statistieken`, `/instellingen`.
+- `src/online/route.ts` and `Link.tsx` are a minimal router on `history.pushState`: `/` the start screen, `/samen` the game on one screen, `/computer` a game against the computer (see [computer.md](computer.md)), `/kamer/<code>` a room, `/huis/<code>` a house (see [house.md](house.md)), `/spellen`, `/spel/<id>`, `/statistieken`, `/instellingen`.
 - The addresses stay Dutch in every language.
 - A new address goes in the router, in `PAGE_PATHS` and in `run_worker_first`, see [pwa.md](pwa.md).
-- `StartScreen.tsx` is about one thing: "Nieuwe kamer", a room made with what the last one was made with (`getRoomChoice` in `identity.ts`, a classic room for two the first time). A line "2 spelers · 3 × 3, drie op een rij · Aanpassen" opens the number of players and the field picker. Joining with a code is one row, "Samen op één scherm" a button, and a line says whose name is used and links to the settings.
+- `StartScreen.tsx` is about one thing: "Nieuwe kamer", a room made with what the last one was made with (`getRoomChoice` in `identity.ts`, a classic room for two the first time). A line "2 spelers · 3 × 3, drie op een rij · Aanpassen" opens the number of players and the field picker. Joining with a code is one row, "Samen op één scherm" and "Tegen de computer" buttons, and a line says whose name is used and links to the settings.
 - `RoomPage.tsx` is the lobby (code, who is there, free seats, the start button of the first seat, the shape picker) until `isStarted` in `started.ts` says every seat has a shape.
 - `OnlineGame.tsx` is the board of a room. It only follows the server's `state` and sends a move or a rematch.
 - `useRoom.ts` is one player's connection to a room: first asking whether it exists, then the WebSocket, joining with the token.
@@ -17,7 +17,7 @@ The decisions are in [docs/plan.md](../plan.md), Decisions and Scrolling between
 - "Terug naar het begin" and the menu do not leave a room: the seat stays and the start screen offers the way back. Only "Stoppen" on the end-of-game screen leaves: `leave` goes to the room, and when it closes the socket with `CLOSE_LEFT` the page clears the last room (`clearLastRoom`) and goes to the start, or to the house the room was made from (the state's `house`). `RoomPage.tsx` also clears it on the problem `left`.
 - "Stoppen" asks first in a room (`OnlineGame.tsx`, "Blijven" has the focus), is disabled while the connection is not open, and on `/samen` (`Game.tsx`) goes to the start at once.
 - A seat that left stays in `state.players` with `left`: the room says who left (`online.left`) and not "even weg", shows only the shapes of the round (`config.players`), and offers no rematch when fewer than two are left.
-- `play/` is the game on one screen: `Game` keeps the state with the engine, and starts with `ShapePicker`, once per player. The player who starts alternates every round.
+- `play/` is the game on one screen: `Game` starts with `ShapePicker`, once per player, and `LocalPlay` keeps the state with the engine, also against the computer. The player who starts alternates every round.
 - `play/FieldPicker.tsx` and `field.ts` choose and describe the field: presets, an own field with odd sides and any row that fits (3 to 9), a suggested row.
 - The tests drive the room page with a fake socket (`RoomPage.test.tsx`).
 
@@ -34,7 +34,7 @@ The decisions are in [docs/plan.md](../plan.md), Decisions and Scrolling between
 - The page is `.app` with a `header` (`SiteHeader`: the wordmark), the nav (`MainNav`), and the screen in `main`. There is no footer.
 - `MainNav` (`src/layout/`) is a `nav` named "Hoofdmenu" with four links: the start, the games played, the statistics and the settings. The place you are in has `aria-current="page"`; `placeOf` in `place.ts` says which (a replay belongs to the games, a game being played to none).
 - It comes right after the header in the page, so the keyboard reaches it first; on a phone `order: 1` puts it after the screen, as a bar of tabs, and from 48 rem it is a row under the title.
-- A game on a phone has no bar. `.app` has `data-screen="game"` on `/samen` and in a room, and then the nav is hidden and the header is a "‹ Terug naar het begin" link (`.back-link`) with the title only for screen readers. From 48 rem the nav stays and the link is hidden.
+- A game on a phone has no bar. `.app` has `data-screen="game"` on `/samen`, on `/computer` and in a room, and then the nav is hidden and the header is a "‹ Terug naar het begin" link (`.back-link`) with the title only for screen readers. From 48 rem the nav stays and the link is hidden.
 - The menu is part of the page, never `position: fixed` or `sticky`: iOS draws a bar behind such an element at the edge of the screen, see [appearance.md](appearance.md). `MainNav.test.tsx` reads the CSS for it.
 - A new screen goes in the menu only if it is one of the places you move between all day; anything else is reached from a screen.
 - A choice that is kept per device (the look, the language, the name, the app) goes on the settings page, not on the screen it is about.

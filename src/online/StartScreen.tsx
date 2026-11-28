@@ -50,7 +50,7 @@ function cleanCode(text: string): string {
   return text.toUpperCase().replace(letters, '').slice(0, ROOM_CODE_LENGTH)
 }
 
-/** Where you start: a new room, a house, a room or house of someone else, or the game on one screen. */
+/** Where you start: a new room, a house, a room or house of someone else, or a game on this screen alone. */
 export function StartScreen({
   notice,
   api = roomApi,
@@ -317,6 +317,9 @@ export function StartScreen({
 
       <Link to="/samen" className="button">
         {t('start.local.title')}
+      </Link>
+      <Link to="/computer" className="button">
+        {t('computer.title')}
       </Link>
 
       <p className="start-name">

@@ -14,6 +14,12 @@ describe('parseRoute', () => {
     expect(parseRoute('/samen/')).toEqual({ name: 'local' })
   })
 
+  it('knows the game against the computer', () => {
+    expect(parseRoute('/computer')).toEqual({ name: 'computer' })
+    expect(parseRoute('/computer/')).toEqual({ name: 'computer' })
+    expect(parseRoute('/computer/meer')).toEqual({ name: 'start' })
+  })
+
   it('knows the statistics', () => {
     expect(parseRoute('/statistieken')).toEqual({ name: 'stats' })
     expect(parseRoute('/statistieken/')).toEqual({ name: 'stats' })

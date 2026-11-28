@@ -11,6 +11,7 @@ export interface Pages {
 export const PAGE_PATHS = [
   '/',
   '/samen',
+  '/computer',
   '/spellen',
   '/statistieken',
   '/instellingen',

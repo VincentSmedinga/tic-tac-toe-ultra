@@ -242,7 +242,7 @@ Issue #81: with the games played, the statistics, three languages, the full scre
 - **A game on a phone has no bar.** The board keeps all its room, and the header gives way to a "‹ Terug naar het begin" link (the title stays for screen readers). A room is not lost by leaving it: the start screen offers the way back. From 48 rem the row stays in a game, there is room.
 - **The settings page (`/instellingen`) holds what was in the footer:** Uiterlijk (Thema, Licht of donker, Animaties), Taal, the name ("Wie ben je?"), "De app" (the install hint, only where it applies) and "Over" (what the game is, the version, the fonts, a link to the code). Each is kept per device and applied at once.
 - **There is no footer.** What it held is the menu or the settings page.
-- **The start screen is about one thing.** A big "Nieuwe kamer" makes a room with what the last one was made with (two players, 3 × 3 the first time); the line under it, "2 spelers · 3 × 3, drie op een rij · Aanpassen", opens the number of players and the field picker where they stand. Joining with a code is one row, "Samen op één scherm" is a second button, and the name lives on the settings page, with a line at the end of the start screen ("Je speelt als …", or "Voeg je naam toe") that links there. The room you are still in comes first, as before.
+- **The start screen is about one thing.** A big "Nieuwe kamer" makes a room with what the last one was made with (two players, 3 × 3 the first time); the line under it, "2 spelers · 3 × 3, drie op een rij · Aanpassen", opens the number of players and the field picker where they stand. Joining with a code is one row, "Samen op één scherm" and "Tegen de computer" are the next buttons, and the name lives on the settings page, with a line at the end of the start screen ("Je speelt als …", or "Voeg je naam toe") that links there. The room you are still in comes first, as before.
 - **Later:** "Dit apparaat vergeten" on the settings page (it would also lose the list of played games, so it needs a warning).
 
 ## Leaving a game
@@ -255,11 +255,23 @@ Issue #88. Before it, a room could not be left: closing the page or going to the
 - **The person who left cannot come back.** The same token gets `left` ("Je hebt dit spel verlaten"), so that "Stoppen" means something to the people who stay.
 - **A room nobody is in is deleted at once**, as soon as no game waits for the archive and no socket is open; a room in which somebody is left lives its 24 hours as before. The code is free again.
 - **Leaving forgets the room on this device** (`clearLastRoom`), and only this way: the header link and the menu keep the offer on the start screen.
-- **A question first in a room, none on one screen.** Leaving is for good and the button sits next to "Nog een keer"; "Blijven" has the focus. On `/samen` nothing is kept anywhere, so "Stoppen" goes to the start.
+- **A question first in a room, none on one screen.** Leaving is for good and the button sits next to "Nog een keer"; "Blijven" has the focus. On `/samen` (and `/computer`) nothing is kept anywhere, so "Stoppen" goes to the start.
 - **From a room made from a house, "Stoppen" goes back to the house** and not to the start (see House).
 - **No leaving without a connection.** The button is disabled while the connection isn't open; there is no local-only "leave" that would promise a freed seat it can't deliver.
 - **The game stays.** The archive is not touched: a game is kept when its round ends, with the tokens of everyone who played it, and stays in their lists.
 - **The words:** Stoppen (nl), Leave (en), Ophâlde (fy), and "{names} heeft/hebben het spel verlaten." in place of "even weg" for a seat that left.
+
+## Against the computer
+
+Issue #52, so that you can play when nobody else is there. The levels were in the issue; the characters are an idea from the family, added on 2026-11-28. How it plays and what it was measured against is in [architecture/computer.md](architecture/computer.md).
+
+- **First on one screen, in the app.** The computer thinks on the device, in a Web Worker, so it works without the server being asked anything. It is a pure function of the engine, so that the room server can use the same one later; a computer in a room is the next step. Not chosen: letting the browser of the room's owner send its moves, which stops when that browser closes.
+- **One player against one computer.** Several computers belong to bigger games and rooms, later.
+- **Three levels:** Makkelijk, Gemiddeld and Moeilijk. Makkelijk takes and blocks a win only part of the time, so that a young child can beat it. Moeilijk can't be beaten on 3 × 3, and the choice says so.
+- **Four characters:** Gewoon, Verdediger, Aanvaller and Wildebras. The level is how well the computer plays, the character is what it likes to do. The Wildebras is the "aggressive" one: it threatens and sits right next to your marks, which sets it apart from the Aanvaller. To be tried by the family.
+- **No character on a field of nine cells,** where it makes no difference.
+- **A fixed number of positions, not a time limit,** so that the same random numbers give the same game on every device.
+- **Nothing is kept:** like the game on one screen, it is not in the played games or the statistics.
 
 ## Style guide
 
