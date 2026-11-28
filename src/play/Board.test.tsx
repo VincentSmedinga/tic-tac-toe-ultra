@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { applyMove, createGame } from '../../shared/game/index.ts'
+import { applyMove, createGame, OUTLINES } from '../../shared/game/index.ts'
 import type { GameConfig, GameState } from '../../shared/game/index.ts'
 import { arrivalEnd, arrivalPlan } from '../motion/arrival.ts'
 import { resetAnimations, setAnimations } from '../motion/preference.ts'
@@ -414,5 +414,108 @@ describe('writing a shape', () => {
     const svg = cell('Rij 2, kolom 2: kruis').querySelector('svg')
     expect(svg).toHaveAttribute('aria-hidden', 'true')
     expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(9)
+  })
+})
+
+describe('a field with an outline', () => {
+  const outlined = (outline: 'pyramid' | 'plus') =>
+    createGame({
+      width: OUTLINES[outline].width,
+      height: OUTLINES[outline].height,
+      winLength: 5,
+      players: ['cross', 'circle'],
+      outline,
+    })
+  const cell = (row: number, column: number) =>
+    screen.getByRole('button', {
+      name: `Rij ${row.toString()}, kolom ${column.toString()}: leeg`,
+    })
+
+  it.each([
+    ['pyramid', 49],
+    ['plus', 45],
+  ] as const)('shows the cells of the %s only, each in its place', (outline, cells) => {
+    const { container } = render(<Board game={outlined(outline)} onPlay={vi.fn()} />)
+    expect(screen.getAllByRole('button', { name: /^Rij / })).toHaveLength(cells)
+    const { width, height } = OUTLINES[outline]
+    // The places without a cell are still there, empty, so that every cell keeps its place.
+    expect(container.querySelectorAll('.board-hole')).toHaveLength(width * height - cells)
+    expect(container.querySelector('.board')?.children).toHaveLength(width * height + 2)
+    expect(container.querySelector('.board')).toHaveAttribute('data-outline', outline)
+  })
+
+  it('plays a cell where it is in the box', async () => {
+    const onPlay = vi.fn()
+    render(<Board game={outlined('pyramid')} onPlay={onPlay} />)
+    await userEvent.click(cell(1, 7))
+    expect(onPlay).toHaveBeenCalledWith({ x: 6, y: 0 })
+  })
+
+  it('has a line along every side of its cells, also round the edge, and none elsewhere', () => {
+    // Every unit of a line, as "axis after along".
+    const drawn = new Set(
+      boardLines(9, 9, 'plus').flatMap(({ axis, after, from, to }) =>
+        Array.from(
+          { length: to - from },
+          (_, step) => `${axis} ${after.toString()} ${(from + step).toString()}`,
+        ),
+      ),
+    )
+    // The top of the plus: its left edge, no line left of that, and its upper edge.
+    expect(drawn).toContain('vertical 3 0')
+    expect(drawn).not.toContain('vertical 2 0')
+    expect(drawn).toContain('horizontal 0 3')
+    expect(drawn).not.toContain('horizontal 0 2')
+    // The left arm reaches the edge of the box.
+    expect(drawn).toContain('vertical 0 3')
+    expect(drawn).not.toContain('vertical 0 2')
+    // 45 cells in a form with a way round of 36 sides: (45 × 4 + 36) / 2 sides.
+    expect(drawn.size).toBe(108)
+  })
+
+  it('draws a rectangle as before: no line round it', () => {
+    expect(boardLines(3, 3).map(({ after, from, to }) => [after, from, to])).toEqual([
+      [1, 0, 3],
+      [2, 0, 3],
+      [1, 0, 3],
+      [2, 0, 3],
+    ])
+  })
+
+  it('is one tab stop, on its first cell', () => {
+    render(<Board game={outlined('plus')} onPlay={vi.fn()} />)
+    const stops = screen
+      .getAllByRole('button', { name: /^Rij / })
+      .filter((button) => button.tabIndex === 0)
+    expect(stops).toEqual([cell(1, 4)])
+  })
+
+  it('steps over the places without a cell with the keys', async () => {
+    const user = userEvent.setup()
+    render(<Board game={outlined('plus')} onPlay={vi.fn()} />)
+    await user.tab()
+    expect(cell(1, 4)).toHaveFocus()
+    // Nothing further left on this row, and Home is the first cell there is.
+    await user.keyboard('{ArrowLeft}')
+    expect(cell(1, 4)).toHaveFocus()
+    await user.keyboard('{End}')
+    expect(cell(1, 6)).toHaveFocus()
+    await user.keyboard('{Home}')
+    expect(cell(1, 4)).toHaveFocus()
+    // Down to the long row, to its start, and nothing above that.
+    await user.keyboard('{ArrowDown}{ArrowDown}{ArrowDown}{Home}')
+    expect(cell(4, 1)).toHaveFocus()
+    await user.keyboard('{ArrowUp}')
+    expect(cell(4, 1)).toHaveFocus()
+    await user.keyboard('{End}')
+    expect(cell(4, 9)).toHaveFocus()
+  })
+
+  it('starts at the first cell again when the field changes under the keyboard', async () => {
+    const user = userEvent.setup()
+    const { rerender } = render(<Board game={board()} onPlay={vi.fn()} />)
+    await user.tab()
+    rerender(<Board game={outlined('pyramid')} onPlay={vi.fn()} />)
+    expect(cell(1, 7).tabIndex).toBe(0)
   })
 })
