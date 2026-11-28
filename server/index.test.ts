@@ -117,6 +117,14 @@ describe('making a room with a field of its own', () => {
     expect(fields).toEqual([{ width: 3, height: 3, winLength: 3 }])
   })
 
+  it('makes a room on an outline, and none on a changed one', async () => {
+    const { env, fields } = fakeEnv()
+    const pyramid = { width: 13, height: 7, winLength: 5, outline: 'pyramid' }
+    expect((await post(JSON.stringify(pyramid), env)).status).toBe(201)
+    expect((await post(JSON.stringify({ ...pyramid, height: 9 }), env)).status).toBe(400)
+    expect(fields).toEqual([pyramid])
+  })
+
   it('makes the room for two when nothing is said about how many play', async () => {
     const { env, seatCounts } = fakeEnv()
     await post(undefined, env)

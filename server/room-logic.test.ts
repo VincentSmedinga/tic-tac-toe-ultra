@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { roomConfig } from '../shared/room.ts'
+import { stateMessageSchema } from '../shared/protocol.ts'
+import { OUTLINE_FIELDS, roomConfig } from '../shared/room.ts'
 import {
   choose,
   finishedGame,
@@ -535,6 +536,41 @@ describe('the field of a room', () => {
     )
     expect(finished?.config).toMatchObject(big)
     expect(finished?.result).toEqual({ kind: 'won', winner: 'star' })
+  })
+})
+
+describe('a room on an outline', () => {
+  const { plus } = OUTLINE_FIELDS
+  const start = (): RoomState =>
+    room(join(room(join(newRoom(plus), TOKEN_X, undefined, 'star')), TOKEN_O, undefined, 'heart'))
+  // Five in a row along a bar for the star, the heart plays down the top arm.
+  const won = (): RoomState =>
+    playCells(start(), [
+      [0, 4],
+      [3, 0],
+      [1, 4],
+      [3, 1],
+      [2, 4],
+      [3, 2],
+      [3, 4],
+      [4, 0],
+      [4, 4],
+    ])
+
+  it('tells the players the outline, with the field and with the game', () => {
+    const state = stateFor(start(), TOKEN_X, 'BCDF', new Set())
+    const read = stateMessageSchema.parse(state)
+    expect(read.field).toEqual(plus)
+    expect(read.config?.outline).toBe('plus')
+  })
+
+  it('refuses a move on a cell that does not exist', () => {
+    expect(play(start(), TOKEN_X, { x: 0, y: 0 })).toEqual({ ok: false, error: 'out-of-bounds' })
+  })
+
+  it('keeps the outline in the stored game and in a rematch', () => {
+    expect(finishedGame(won())?.config.outline).toBe('plus')
+    expect(fieldOf(room(rematch(won(), TOKEN_X)))).toEqual(plus)
   })
 })
 

@@ -198,6 +198,7 @@ function summaryOf(game: StoredGame): GameSummary {
     result,
     width: config.width,
     height: config.height,
+    ...(config.outline === undefined ? {} : { outline: config.outline }),
     moves: moves.length,
   }
 }
