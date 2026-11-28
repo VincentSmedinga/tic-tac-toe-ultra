@@ -12,6 +12,8 @@ The product decisions are in [docs/plan.md](../plan.md), Decisions and Architect
 - The cells that are still empty when a game is drawn stay empty: the status is `draw` and `applyMove` answers `game-over`, as after a win.
 - A game stored before this was played on to a full field after its dead position: `replayGame` reads those moves back (`applyMoveAfterDraw`) and keeps the game drawn. Never use it for a game being played.
 - `completesLine(state, cell, player)` says whether a player would complete a line on an empty cell, whoever's turn it is: a look at the position, used by the analysis.
+- `chooseMove` (`bot.ts`) is the computer player, see [computer.md](computer.md).
+- `tactics.ts` has what the analysis and the computer both look for in a position: winning cells, threats and the cells near the marks.
 - A game is its `config` plus its `moves`, kept in the `GameState`. That is what gets stored.
 - `replayGame(config, moves)` and `stateAfter(state, count)` (`replay.ts`) read a stored game back and step through it; `replayStates` gives every state along a game in one pass.
 - `analyseGame(config, moves)` (`analysis.ts`) ranks every move of a game (`brilliant`, `good`, `dubious`, `mistake`, `blunder`, or none) and `summariseGame` (`summary.ts`) sums it up per player. Both are derived from the stored game and never stored, see [replay-and-games.md](replay-and-games.md).
