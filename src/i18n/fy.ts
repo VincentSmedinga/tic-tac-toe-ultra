@@ -135,8 +135,11 @@ export const fy: Dictionary = {
   'field.takeTip': 'Nim de tip oer',
   'field.label': '{width} × {height}, {row}',
   'field.inARow.3': 'trije op in rige',
+  'field.inARow.4': 'fjouwer op in rige',
   'field.inARow.5': 'fiif op in rige',
+  'field.inARow.6': 'seis op in rige',
   'field.inARow.7': 'sân op in rige',
+  'field.inARow.8': 'acht op in rige',
   'field.inARow.9': 'njoggen op in rige',
   'field.inARow.other': '{row} op in rige',
 

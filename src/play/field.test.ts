@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FIELD_LIMITS, FIELD_PRESETS, isValidField, oddNumbers } from '../../shared/room.ts'
 import { textFor } from '../i18n/store.ts'
-import { fieldLabel, isClassic, longestRow, presetOf, suggestedRow } from './field.ts'
+import { fieldLabel, isClassic, longestRow, presetOf, rowChoices, suggestedRow } from './field.ts'
 
 describe('fieldLabel', () => {
   const nl = textFor('nl')
@@ -18,6 +18,18 @@ describe('fieldLabel', () => {
     const field = { width: 7, height: 5, winLength: 5 }
     expect(fieldLabel(textFor('en'), field)).toBe('7 × 5, five in a row')
     expect(fieldLabel(textFor('fy'), field)).toBe('7 × 5, fiif op in rige')
+  })
+
+  it.each([
+    [4, 'vier op een rij', 'four in a row', 'fjouwer op in rige', 'patru la rând'],
+    [6, 'zes op een rij', 'six in a row', 'seis op in rige', 'șase la rând'],
+    [8, 'acht op een rij', 'eight in a row', 'acht op in rige', 'opt la rând'],
+  ])('has words for %i in a row', (winLength, dutch, english, frisian, romanian) => {
+    const field = { width: 9, height: 9, winLength }
+    expect(fieldLabel(nl, field)).toBe(`9 × 9, ${dutch}`)
+    expect(fieldLabel(textFor('en'), field)).toBe(`9 × 9, ${english}`)
+    expect(fieldLabel(textFor('fy'), field)).toBe(`9 × 9, ${frisian}`)
+    expect(fieldLabel(textFor('ro'), field)).toBe(`9 × 9, ${romanian}`)
   })
 
   it('writes a row that has no word as a number', () => {
@@ -40,15 +52,20 @@ describe('the classic field and the presets', () => {
   })
 })
 
-describe('the odd numbers', () => {
-  it('are the sides and rows a room allows, and nothing else', () => {
+describe('the sizes and rows to choose from', () => {
+  it('has only odd sides', () => {
     expect(oddNumbers(FIELD_LIMITS.minSide, FIELD_LIMITS.maxSide)).toEqual([
       3, 5, 7, 9, 11, 13, 15, 17, 19,
     ])
-    expect(oddNumbers(FIELD_LIMITS.minWin, FIELD_LIMITS.maxWin)).toEqual([3, 5, 7, 9])
   })
 
-  it('make the longest row the biggest odd number that fits', () => {
+  it('offers every row from three up to the longest that fits', () => {
+    expect(rowChoices({ width: 3, height: 3 })).toEqual([3])
+    expect(rowChoices({ width: 3, height: 7 })).toEqual([3, 4, 5, 6, 7])
+    expect(rowChoices({ width: 19, height: 19 })).toEqual([3, 4, 5, 6, 7, 8, 9])
+  })
+
+  it('makes the longest row the longest side, up to nine', () => {
     expect(longestRow({ width: 3, height: 3 })).toBe(3)
     expect(longestRow({ width: 5, height: 3 })).toBe(5)
     expect(longestRow({ width: 7, height: 7 })).toBe(7)

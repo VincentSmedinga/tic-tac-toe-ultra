@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useText } from '../i18n/store.ts'
 import { FIELD_LIMITS, FIELD_PRESETS, oddNumbers } from '../../shared/room.ts'
 import type { FieldSettings } from '../../shared/room.ts'
-import { fieldLabel, longestRow, presetOf, suggestedRow } from './field.ts'
+import { fieldLabel, longestRow, presetOf, rowChoices, suggestedRow } from './field.ts'
 import './FieldPicker.css'
 
 interface FieldPickerProps {
@@ -14,15 +14,15 @@ const SIDES = oddNumbers(FIELD_LIMITS.minSide, FIELD_LIMITS.maxSide)
 
 /**
  * The field of a game: a few ready-made choices, or the width, the height and the number in a row
- * of your own. Everything is odd, so the lists hold only odd numbers; the row can't be longer than
- * the field is wide or high, so it comes down by itself when the field gets smaller.
+ * of your own. The sides are odd, the row is any number that fits: it can't be longer than the
+ * longest side, so it comes down by itself when the field gets smaller.
  */
 export function FieldPicker({ value, onChange }: FieldPickerProps) {
   const t = useText()
   // Your own field stays open while it happens to equal a preset, until another preset is tapped.
   const [custom, setCustom] = useState(() => presetOf(value) === null)
   const preset = custom ? null : presetOf(value)
-  const rows = oddNumbers(FIELD_LIMITS.minWin, longestRow(value))
+  const rows = rowChoices(value)
 
   const suggestion = suggestedRow(value)
 
