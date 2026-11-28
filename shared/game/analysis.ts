@@ -17,6 +17,7 @@
  */
 import { applyMove, completesLine } from './game.ts'
 import type { Cell, GameConfig, GameState, Move, PlayerId } from './game.ts'
+import { cellCount, hasCell } from './outline.ts'
 import { replayStates } from './replay.ts'
 
 export type Rank = 'brilliant' | 'good' | 'dubious' | 'mistake' | 'blunder'
@@ -103,7 +104,7 @@ export function analyseGame(
 
   const results: MoveAnalysis[] = []
   const solver =
-    config.players.length === 2 && config.width * config.height <= EXACT_FIELD_LIMIT
+    config.players.length === 2 && cellCount(config) <= EXACT_FIELD_LIMIT
       ? solverFor(config, limits)
       : null
   // From the last move to the first, so that the positions solved late in the game are there, in
@@ -120,7 +121,7 @@ export function analyseGame(
       continue
     }
     if (exactPossible && solver !== null) {
-      if (before.cells.length - before.moveCount > EXACT_EMPTY_LIMIT) exactPossible = false
+      if (cellCount(before.config) - before.moveCount > EXACT_EMPTY_LIMIT) exactPossible = false
       else {
         const judged = judgeExactly(solver, before, after, move)
         if (judged) {
@@ -170,13 +171,18 @@ export class Solver {
   constructor(config: GameConfig, limit: number) {
     this.config = config
     this.limit = limit
-    this.symmetries = symmetriesOf(config.width, config.height)
+    this.symmetries = symmetriesOf(config)
   }
 
-  /** Whether this solver was made for a field like this one: the same size and the same line. */
-  fits({ width, height, winLength }: GameConfig): boolean {
+  /** Whether this solver was made for a field like this one: the same cells and the same line. */
+  fits({ width, height, winLength, outline }: GameConfig): boolean {
     const own = this.config
-    return own.width === width && own.height === height && own.winLength === winLength
+    return (
+      own.width === width &&
+      own.height === height &&
+      own.winLength === winLength &&
+      own.outline === outline
+    )
   }
 
   /** Starts a new game: the budget is for that game, what is solved stays. */
@@ -200,12 +206,13 @@ export class Solver {
   private scoresOf(state: GameState): Map<number, number> {
     const { width } = this.config
     const player = this.toMove(state)
-    const empty = state.cells.length - state.moveCount
+    const empty = cellCount(this.config) - state.moveCount
     const scores = new Map<number, number>()
     for (const [index, mark] of state.cells.entries()) {
-      if (mark !== null) continue
+      const { x, y } = cellAt(width, index)
+      if (mark !== null || !hasCell(this.config, x, y)) continue
       if (++this.nodes > this.limit) throw new OutOfNodes()
-      const result = applyMove(state, { player, x: index % width, y: Math.floor(index / width) })
+      const result = applyMove(state, { player, x, y })
       if (!result.ok) throw new Error('unreachable: an empty cell is a legal move')
       const { status } = result.state
       scores.set(
@@ -248,9 +255,12 @@ export class Solver {
 
 /**
  * Where each cell comes from under the turns and mirrors that keep the field itself: four for a
- * field that is wider than it is high (or the other way round), eight for a square one.
+ * rectangle that is wider than it is high (or the other way round), eight for a square one. Of
+ * those, an outline keeps the ones that put every cell of the field on a cell of the field: two for
+ * the pyramid, all eight for the plus.
  */
-function symmetriesOf(width: number, height: number): number[][] {
+export function symmetriesOf(config: GameConfig): number[][] {
+  const { width, height } = config
   const orders: number[][] = []
   const maps: ((x: number, y: number) => [number, number])[] = [
     (x, y) => [x, y],
@@ -268,13 +278,15 @@ function symmetriesOf(width: number, height: number): number[][] {
   }
   for (const map of maps) {
     const order: number[] = []
+    let keeps = true
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const [fromX, fromY] = map(x, y)
+        keeps &&= hasCell(config, x, y) === hasCell(config, fromX, fromY)
         order.push(fromY * width + fromX)
       }
     }
-    orders.push(order)
+    if (keeps) orders.push(order)
   }
   return orders
 }
@@ -411,12 +423,14 @@ function place(state: GameState, cell: Cell, player: PlayerId): GameState {
 /** The empty cells near a mark (or the middle of an empty field): where a move can matter. */
 function nearby(state: GameState): Cell[] {
   const { width, height } = state.config
-  if (state.moveCount === 0) return [{ x: Math.floor(width / 2), y: Math.floor(height / 2) }]
-  const small = width * height <= 36
+  const middle = { x: Math.floor(width / 2), y: Math.floor(height / 2) }
+  if (state.moveCount === 0 && hasCell(state.config, middle.x, middle.y)) return [middle]
+  const small = cellCount(state.config) <= 36
   const found: Cell[] = []
   for (const [index, mark] of state.cells.entries()) {
     if (mark !== null) continue
     const cell = cellAt(width, index)
+    if (!hasCell(state.config, cell.x, cell.y)) continue
     if (small || isNearMark(state, cell)) found.push(cell)
   }
   return found
